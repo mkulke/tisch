@@ -34,16 +34,17 @@ body {
 
 #panel-container {
 
-  padding: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
   list-style-type: none;
   margin: 0px;
 }
 
 .panel {
 
-  /*margin-left: 10px;
-  margin-right: 10px;
-  margin-top: 10px;*/
+  margin-left: 0px;
+  margin-right: 0px;
+  margin-top: 10px;
   box-shadow: 5px 5px 15px #999;
   -webkit-box-shadow: 5px 5px 15px #999;
   -moz-box-shadow: 5px 5px 15px #999;

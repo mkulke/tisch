@@ -1,8 +1,54 @@
+var itemMap = {}
+
+function populate_map(items) {
+
+  $.each(items, function(i, item) {
+  
+    itemMap[item._id] = item;
+  });
+}
+
+function update_item(id, type, post_data) {
+
+  $.ajax({
+    
+    url: '/' + type + '/' + id,
+    type: 'POST',
+    dataType: 'json',
+    data: post_data,
+    success: function(data, textStatus, jqXHR) {
+  
+      itemMap[id] = data;
+      $('#' + id + ' .save-button').hide();
+    },
+    error: function(jqHXR, textStatus, errorThrown) {
+    
+      switch(textStatus) {
+    
+        case 'timeout':
+        
+          var errorMessage = 'Operation timed out. Possible reasons include network and server issues.';
+          break;
+        case 'error':
+        
+          var errorMessage = 'Operation failed. ' + errorThrown;
+          break;
+        default:
+        
+          var errorMessage = 'Operation failed for unknown reasons. Check server logs.';
+      }
+      $('#error-panel #message').text(errorMessage);
+      $('#error-panel').slideDown(100);
+    }
+  });
+}
+
 $(document).ready(function() {
 
   // This enables drag and drop on the list items
   $("#panel-container").sortable({
   
+    tolerance: 'pointer',
     containment: '#panel-container'
   });
   $("#panel-container").disableSelection();

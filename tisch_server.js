@@ -94,7 +94,34 @@ function show_task(response, task_id) {
   });
 }
 
-function update_task(response, task_id, post_data) {
+function respond_json(err, result, response) {
+
+  assert.equal(null, err, "findAndModify query prodoced an error.");
+      
+  if (result == null) {
+  
+    response.writeHead(409, 'The story could not be modified. It might have been accessed by someone else before your changes were submitted. Reloading the page will fetch the current state.');
+  } else {
+  
+    response.writeHead(200, {'Content-Type': 'application/json'});
+    response.write(JSON.stringify(result));            
+  }
+  response.end();
+}
+
+function respond_html(err, result, response) {
+
+  assert.equal(null, err);
+  assert.notEqual(null, result);
+ 
+  var html = task_template({task: result});
+
+  response.writeHead(200, {'Content-Type': 'text/html'});
+  response.write(html);
+  response.end();
+}
+
+function update_task(response, task_id, post_data, respond) {
 
   MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
 
@@ -109,21 +136,12 @@ function update_task(response, task_id, post_data) {
 
     db.collection("task").findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
 
-      assert.equal(null, err);
-      assert.notEqual(null, result);
-     
-      var html = task_template({task: result});
-
-      response.writeHead(200, {'Content-Type': 'text/html'});
-      response.write(html);
-      response.end();
+      respond(err, result, response);
     }); 
   });
 }
 
-function update_story(response, story_id, post_data, html) {
-
-  assert.notEqual(true, html, 'html response not supported yet.');
+function update_story(response, story_id, post_data, respond) {
 
   MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
 
@@ -138,17 +156,7 @@ function update_story(response, story_id, post_data, html) {
 
     db.collection("story").findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
 
-      assert.equal(null, err, "findAndModify query prodoced an error.");
-      
-      if (result == null) {
-      
-        response.writeHead(409, 'The story could not be modified. It might have been accessed by someone else before your changes were submitted. Reloading the page will fetch the current state.');
-      } else {
-      
-        response.writeHead(200, {'Content-Type': 'application/json'});
-        response.write(JSON.stringify(result));            
-      }
-      response.end();
+      respond(err, result, response); 
     }); 
   });
 }
@@ -162,6 +170,12 @@ function process_request(request, response) {
   var pathname = url_parts.pathname
   var view = unescape(pathname.split("/")[1]);
   var item = unescape(pathname.split("/")[2]);
+  var html = true;
+  var accept = request.headers["accept"];
+  if ((accept != null) && (accept.indexOf("application/json") != -1)) {
+  
+    html = false;
+  }
   
   switch (view) {
   
@@ -177,14 +191,10 @@ function process_request(request, response) {
         break;
       }
       else if (request.method == "POST") {
-      
-        var respondWithHTML = true;
-        var accept = request.headers["accept"];
-        if ((accept != null) && (accept.indexOf("application/json") != -1)) {
-        
-          respondWithHTML = false;
-        }
-        update_story(response, item, request.body, respondWithHTML)
+              
+        assert.notEqual(true, html, 'html response not supported yet.');
+
+        update_story(response, item, request.body, respond_json)
         break;
       }        
     case "task":
@@ -196,7 +206,7 @@ function process_request(request, response) {
       }
       else if (request.method == "POST") {
       
-        update_task(response, item, request.body)
+        update_task(response, item, request.body, html ? respond_html : respond_json)
         break;
       }
     default:
