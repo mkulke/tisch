@@ -76,7 +76,7 @@ $(document).ready(function() {
     });
   });
   
-  $('.panel').on('keyup', ['input', 'textarea'], function(event) {
+  $('.panel, .main-panel').on('keyup', ['input', 'textarea'], function(event) {
 
     if((event.target.localName == 'input') && (event.which == 13)) {
     
@@ -88,8 +88,7 @@ $(document).ready(function() {
   });
   
   // prevent submit form action when pressing return in textfields
-    
-  $('.panel').on('keypress', 'input', function(event) {
+  $('.panel, .main-panel').on('keypress', 'input', function(event) {
   
     if(event.which == 13) {
     

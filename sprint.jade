@@ -5,21 +5,34 @@ html
     script(type='text/javascript', src='/sprint.js')
     script(type='text/javascript')
     
-      populate_map(!{JSON.stringify(stories)});
+      var items = !{JSON.stringify(stories)};
+      items.push(!{JSON.stringify(sprint)});
+      populate_map(items);
   body
     #error-panel
       #message
       #icons
-        img(class='ok-button', src='/ok.png', alt='ok')   
+        img(class='ok-button', src='/ok.png', alt='ok')
+    .main-panel(id=sprint._id)
+      form
+        .title
+          span
+            input(type='text', name='title', value=sprint.title)
+          span(class='icons')
+            img(class='save-button', src='/save.png', alt='save')
+        .description
+          textarea(name='description').
+            #{sprint.description}
     ul(id='panel-container')
       each story, i in stories
       
-        li(class='panel', id='#{story._id}')
+        li(class='panel', id=story._id)
           form
             .title
               span
                 input(type='text', name='title', value=story.title)
               span(class='icons')
+                img(class='open-button', src='/open.png', alt='open')
                 img(class='save-button', src='/save.png', alt='save')
                 img(class='show-button', src='/show.png', alt='show')
                 img(class='hide-button', src='/hide.png', alt='hide')

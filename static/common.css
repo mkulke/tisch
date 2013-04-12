@@ -14,8 +14,7 @@ body {
 
 #error-panel {
 
-  margin: 0px;
-  padding: 10px;
+  padding: 5px;
   background-color: #F47E7D;
   display: none;
   font-family: "Arial", Sans-serif;
@@ -28,7 +27,7 @@ body {
 
 #error-panel #icons {
 
-  margin-right: 5px;
+  /*margin-right: 5px;*/
   text-align: right;
 }
 
@@ -38,6 +37,19 @@ body {
   padding-right: 10px;
   list-style-type: none;
   margin: 0px;
+}
+
+.main-panel {
+
+  box-shadow: 5px 5px 15px #999;
+  -webkit-box-shadow: 5px 5px 15px #999;
+  -moz-box-shadow: 5px 5px 15px #999;
+}
+
+.main-panel .body {
+
+  padding: 5px;
+  background-color: #FFFFFF;
 }
 
 .panel {
@@ -50,41 +62,42 @@ body {
   -moz-box-shadow: 5px 5px 15px #999;
 }
 
-.panel .title {
+.title {
 
   padding: 5px;
   background-color: #389090;
   color: #FFFFFF;
 }
 
-.panel .description {
+.description {
 
   padding: 5px;
   background-color: #FFFFFF;
 }
 
-.panel .title .icons {
+.title .icons {
 
-  /*padding-left: 5px;
-  position: absolute;
-  top: auto;
-  bottom: auto;
-  right: 15px;*/
   float: right;
 }
 
 .panel .title .icons .show-button {
 
+  margin-left: 5px;
   display: none;  
 }
 
-.panel .title .icons .save-button {
+.panel .title .icons .hide-button {
 
-  display: none;  
-  margin-right: 5px;
+  margin-left: 5px;
 }
 
-.panel .title input {
+.title .icons .save-button {
+   
+  margin-left: 5px; 
+  display: none;
+}
+
+.title input {
 
   margin: 0px;
   outline: none;
@@ -96,7 +109,7 @@ body {
   color: #FFFFFF;
 }
 
-.panel .description textarea {
+.description textarea {
 
   outline: none;
   margin: 0px;

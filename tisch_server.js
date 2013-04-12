@@ -121,26 +121,6 @@ function respond_html(err, result, response) {
   response.end();
 }
 
-function update_task(response, task_id, post_data, respond) {
-
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
-
-    assert.equal(null, err);
-    assert.ok(db != null);
-
-    var data = {
-  
-      $set: {description: post_data.description, status: post_data.status}, 
-      $inc: {_rev: 1}
-    }
-
-    db.collection("task").findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
-
-      respond(err, result, response);
-    }); 
-  });
-}
-
 function update_story(response, story_id, post_data, respond) {
 
   MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
@@ -157,6 +137,46 @@ function update_story(response, story_id, post_data, respond) {
     db.collection("story").findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
 
       respond(err, result, response); 
+    }); 
+  });
+}
+
+function update_sprint(response, sprint_id, post_data, respond) {
+
+  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
+
+    assert.equal(null, err);
+    assert.ok(db != null);
+
+    var data = {
+    
+      $set: {description: post_data.description, title: post_data.title}, 
+      $inc: {_rev: 1}
+    }
+
+    db.collection("sprint").findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
+
+      respond(err, result, response); 
+    }); 
+  });
+}
+
+function update_task(response, task_id, post_data, respond) {
+
+  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
+
+    assert.equal(null, err);
+    assert.ok(db != null);
+
+    var data = {
+  
+      $set: {description: post_data.description, status: post_data.status}, 
+      $inc: {_rev: 1}
+    }
+
+    db.collection("task").findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
+
+      respond(err, result, response);
     }); 
   });
 }
@@ -181,8 +201,18 @@ function process_request(request, response) {
   
     case "sprint":
     
-      show_sprint(response, item);
-      break;
+      if (request.method == "GET") {
+        
+        show_sprint(response, item);
+        break;      
+      }
+      else if (request.method == "POST") {
+      
+        assert.notEqual(true, html, 'html response not supported yet.');
+      
+        update_sprint(response, item, request.body, respond_json)
+        break;
+      }
     case "story":
     
       if (request.method == "GET") {
