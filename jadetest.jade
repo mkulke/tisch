@@ -1,0 +1,8 @@
+html
+    head
+        Stories
+    body
+        ul
+            each story in stories
+                li: a(href='/story/' + story._id) #{story._id}
+        

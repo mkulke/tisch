@@ -1,0 +1,109 @@
+body {
+
+  font-family: "Arial", Sans-serif;
+  font-size: 10pt;
+  margin: 0px;
+  background-image: url(/furley_bg.png);
+  background-repeat: repeat;
+}
+
+.form_field {
+
+    display: block;
+}
+
+#error-panel {
+
+  margin: 0px;
+  padding: 10px;
+  background-color: #F47E7D;
+  display: none;
+  font-family: "Arial", Sans-serif;
+  font-size: 10pt;
+  color: #FFFFFF;
+  box-shadow: 5px 5px 15px #999;
+  -webkit-box-shadow: 5px 5px 15px #999;
+  -moz-box-shadow: 5px 5px 15px #999;
+}
+
+#error-panel #icons {
+
+  margin-right: 5px;
+  text-align: right;
+}
+
+#panel-container {
+
+  padding: 10px;
+  list-style-type: none;
+  margin: 0px;
+}
+
+.panel {
+
+  /*margin-left: 10px;
+  margin-right: 10px;
+  margin-top: 10px;*/
+  box-shadow: 5px 5px 15px #999;
+  -webkit-box-shadow: 5px 5px 15px #999;
+  -moz-box-shadow: 5px 5px 15px #999;
+}
+
+.panel .title {
+
+  padding: 5px;
+  background-color: #389090;
+  color: #FFFFFF;
+}
+
+.panel .description {
+
+  padding: 5px;
+  background-color: #FFFFFF;
+}
+
+.panel .title .icons {
+
+  /*padding-left: 5px;
+  position: absolute;
+  top: auto;
+  bottom: auto;
+  right: 15px;*/
+  float: right;
+}
+
+.panel .title .icons .show-button {
+
+  display: none;  
+}
+
+.panel .title .icons .save-button {
+
+  display: none;  
+  margin-right: 5px;
+}
+
+.panel .title input {
+
+  margin: 0px;
+  outline: none;
+  padding: 0px;
+  font-family: "Arial", Sans-serif;
+  font-size: 11pt;
+  border: 0px;
+  background-color: #389090   ;
+  color: #FFFFFF;
+}
+
+.panel .description textarea {
+
+  outline: none;
+  margin: 0px;
+  padding: 0px;
+  font-family: "Arial", Sans-serif;
+  font-size: 10pt;
+  resize: none;
+  border: 0px;
+  height: 100px;
+  width: 100%;
+}

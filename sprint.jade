@@ -1,0 +1,28 @@
+html
+  head
+    title Stories
+    include common
+    script(type='text/javascript', src='/sprint.js')
+    script(type='text/javascript')
+    
+      populate_map(!{JSON.stringify(stories)});
+  body
+    #error-panel
+      #message
+      #icons
+        img(class='ok-button', src='/ok.png', alt='ok')   
+    ul(id='panel-container')
+      each story, i in stories
+      
+        li(class='panel', id='#{story._id}')
+          form
+            .title
+              span
+                input(type='text', name='title', value=story.title)
+              span(class='icons')
+                img(class='save-button', src='/save.png', alt='save')
+                img(class='show-button', src='/show.png', alt='show')
+                img(class='hide-button', src='/hide.png', alt='hide')
+            .description
+              textarea(name='description').
+                #{story.description}

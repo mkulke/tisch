@@ -1,0 +1,29 @@
+html
+  head
+    title Tasks
+    include common
+    script(type='text/javascript', src='/story.js')
+    script(type='text/javascript')
+    
+      populate_map(!{JSON.stringify(tasks)});
+  body
+    #error-panel
+      #message
+      #icons
+        img(class='ok-button', src='/ok.png', alt='ok')   
+    ul(id='panel-container')
+      each task, i in tasks
+    
+          li(class='panel', id='#{story._id}')
+            form
+              .title
+                span
+                  input(type='text', name='summary', value=task.summary)
+                span(class='icons')
+                  img(class='save-button', src='/save.png', alt='save')
+                  img(class='show-button', src='/show.png', alt='show')
+                  img(class='hide-button', src='/hide.png', alt='hide')
+              .description
+                textarea(name='description').
+                  #{task.description}
+        
