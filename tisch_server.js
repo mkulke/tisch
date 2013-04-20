@@ -27,7 +27,7 @@ function show_sprint(http_response, sprint_id) {
       assert.equal(null, err);
       assert.notEqual(null, sprint);
       
-      db.collection("story").find({sprint_id: ObjectID(sprint_id)}).toArray(function(err, stories) {
+      db.collection("story").find({sprint_id: ObjectID(sprint_id)}).sort({priority: 1}).toArray(function(err, stories) {
 
         assert.equal(null, err);
 
@@ -130,7 +130,7 @@ function update_story(response, story_id, post_data, respond) {
 
     var data = {
     
-      $set: {description: post_data.description, title: post_data.title}, 
+      $set: {description: post_data.description, title: post_data.title, priority: parseFloat(post_data.priority)}, 
       $inc: {_rev: 1}
     }
 

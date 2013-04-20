@@ -5,7 +5,9 @@ html
     script(type='text/javascript', src='/story.js')
     script(type='text/javascript')
     
-      populate_map(!{JSON.stringify(tasks)});
+      var items = !{JSON.stringify(tasks)};
+      items.push(!{JSON.stringify(story)});
+      populateItemMap(items);
   body
     #error-panel
       #message

@@ -1,6 +1,6 @@
-var itemMap = {}
+var itemMap = {};
 
-function populate_map(items) {
+function populateItemMap() {
 
   $.each(items, function(i, item) {
   
@@ -8,7 +8,7 @@ function populate_map(items) {
   });
 }
 
-function update_item(id, type, post_data) {
+function updateItem(id, type, post_data) {
 
   $.ajax({
     
@@ -68,11 +68,11 @@ $(document).ready(function() {
   
   $('.panel').on('click', '.show-button', function(event) {
 
-    var story = $(event.delegateTarget);
-    $('.description', story).slideDown(100, function() {
+    var item = $(event.delegateTarget);
+    $('.description', item).slideDown(100, function() {
     
-      $('.show-button', story).hide();
-      $('.hide-button', story).show();
+      $('.show-button', item).hide();
+      $('.hide-button', item).show();
     });
   });
   
@@ -100,5 +100,36 @@ $(document).ready(function() {
   $('#error-panel').on('click', '.ok-button', function(event) {
 
     $('#error-panel').slideUp(100);
+  });
+  
+  $('#panel-container').on('sortstop', function(event, ui) {
+  
+    var item = ui.item;
+    var previousPriority = 0;
+    var nextPriority = 0;
+    var priority = 0;
+    
+    if (item.index() > 0) {
+    
+      var previousId = ui.item.prev().attr('id');
+      previousPriority = itemMap['priority'];
+    }
+    
+    // last item
+    if(item.index() + 1 == $('#panel-container li').size()) {
+    
+      priority = previousPriority + 1;
+    }
+    else {
+    
+      var nextId = ui.item.next().attr('id');
+      nextPriority = itemMap[nextId]['priority'];
+      priority = (nextPriority - previousPriority) / 2 + previousPriority;
+    }
+    
+    var id = ui.item.attr('id');
+    itemMap[id]['priority'] = priority;
+    
+    $('.save-button', item).show();
   });
 });

@@ -11,7 +11,7 @@ $(document).ready(function() {
     post_data['title'] = title;
     post_data['description'] = description;
     
-    update_item(id, 'story', post_data);
+    updateItem(id, 'story', post_data);
   });
   
   $('.main-panel').on('click', '.save-button', function(event) {
@@ -25,7 +25,7 @@ $(document).ready(function() {
     post_data['title'] = title;
     post_data['description'] = description;
     
-    update_item(id, 'sprint', post_data);
+    updateItem(id, 'sprint', post_data);
   });
   
   $('.panel').on('click', '.open-button', function(event) {

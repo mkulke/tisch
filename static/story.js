@@ -11,6 +11,6 @@ $(document).ready(function() {
     post_data['summary'] = summary;
     post_data['description'] = description;
     
-    update_item(id, 'task', post_data);
+    updateItem(id, 'task', post_data);
   });
 });
