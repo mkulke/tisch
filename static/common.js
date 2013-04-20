@@ -83,8 +83,15 @@ $(document).ready(function() {
       event.preventDefault();
       return false;
     }
-    var story = $(event.delegateTarget);
-    $('.save-button', story).show();
+    var field = $(event.target);
+    var attribute = field.attr('name');
+    var item = $(event.delegateTarget);
+    var id = item.attr('id');
+    
+    if (itemMap[id][attribute] != field.val()) {
+    
+      $('.save-button', item).show();
+    }
   });
   
   // prevent submit form action when pressing return in textfields
