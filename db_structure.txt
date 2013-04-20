@@ -18,7 +18,7 @@ story: [
     _id,
     description,
     estimated_time,
-    status,
+    priority,
     sprint_id
 ]
 

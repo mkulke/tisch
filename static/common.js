@@ -51,7 +51,7 @@ $(document).ready(function() {
     tolerance: 'pointer',
     containment: '#panel-container'
   });
-  $("#panel-container").disableSelection();
+  //$("#panel-container").disableSelection();
 
   // This prevents firefox from keeping form values after reload.
   $('input,textarea').attr('autocomplete', 'off');
@@ -112,7 +112,7 @@ $(document).ready(function() {
     if (item.index() > 0) {
     
       var previousId = ui.item.prev().attr('id');
-      previousPriority = itemMap['priority'];
+      previousPriority = itemMap[previousId]['priority'];
     }
     
     // last item
