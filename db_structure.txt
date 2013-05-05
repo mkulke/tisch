@@ -9,7 +9,8 @@ task: [
         spent
         remaining
     }
-    owner
+    owner,
+    priority,
     story_id
 ]
 
@@ -35,3 +36,6 @@ user: [
     _id
     name
 ]
+
+db.task.ensureIndex({story_id: 1, priority: 1}, {unique: true})
+db.story.ensureIndex({sprint_id: 1, priority: 1}, {unique: true})

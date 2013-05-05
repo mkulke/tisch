@@ -1,3 +1,17 @@
+mixin panel(id, title, description)
+  li(class='panel', id=id)
+    form
+      .title
+        span
+          input(type='text', name='title', value=title)
+        span(class='icons')
+          img(class='open-button', src='/open.png', alt='open')
+          img(class='save-button', src='/save.png', alt='save')
+          img(class='show-button', src='/show.png', alt='show')
+          img(class='hide-button', src='/hide.png', alt='hide')
+      .description
+        textarea(name='description')
+          =description
 html
   head
     title Stories
@@ -19,23 +33,15 @@ html
           span
             input(type='text', name='title', value=sprint.title)
           span(class='icons')
+            img(class='add-button', src='/add.png', alt='add')
             img(class='save-button', src='/save.png', alt='save')
         .description
           textarea(name='description').
             #{sprint.description}
     ul(id='panel-container')
+
+      mixin panel('panel-template', '', '')
+
       each story, i in stories
       
-        li(class='panel', id=story._id)
-          form
-            .title
-              span
-                input(type='text', name='title', value=story.title)
-              span(class='icons')
-                img(class='open-button', src='/open.png', alt='open')
-                img(class='save-button', src='/save.png', alt='save')
-                img(class='show-button', src='/show.png', alt='show')
-                img(class='hide-button', src='/hide.png', alt='hide')
-            .description
-              textarea(name='description').
-                #{story.description}
+        mixin panel(story._id, story.title, story.description)

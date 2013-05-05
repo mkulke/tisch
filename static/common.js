@@ -8,6 +8,42 @@ function populateItemMap() {
   });
 }
 
+function addItem(id, type) {
+
+  $.ajax({
+  
+    url: '/' + type + '/' + id,
+    type: 'PUT',
+    dataType: 'json',
+    success: function(data, textStatus, jqXHR) {
+    
+      itemMap[data._id] = data;
+    
+      var newPanel = $('#panel-template').clone(true);
+      newPanel.attr('id', data._id);      
+                  
+      // re-sort panels, the new item might not alway be of the lowest prio.
+      var panels = $('.panel').not('#panel-template').detach();
+      panels = panels.add(newPanel);
+      panels.sort(function(a, b) {
+      
+        return itemMap[a.id].priority > itemMap[b.id].priority;
+      });
+      $('#panel-container').append(panels);
+      
+      var attribute = $('#' + data._id + " input").attr('name');
+      $('#' + data._id + ' input').val(data[attribute]);
+    
+      attribute = $('#' + data._id + " textarea").attr('name');
+      $('#' + data._id + ' textarea').val(data[attribute]);
+    },
+    error: function(jqHXR, textStatus, errorThrown) {
+    
+      alert('add error');
+    }
+  });
+}
+
 function updateItem(id, type, post_data) {
 
   $.ajax({
@@ -119,7 +155,7 @@ $(document).ready(function() {
     if (item.index() > 0) {
     
       var previousId = ui.item.prev().attr('id');
-      previousPriority = itemMap[previousId]['priority'];
+      previousPriority = itemMap[previousId].priority;
     }
     
     // last item
@@ -130,12 +166,12 @@ $(document).ready(function() {
     else {
     
       var nextId = ui.item.next().attr('id');
-      nextPriority = itemMap[nextId]['priority'];
+      nextPriority = itemMap[nextId].priority;
       priority = (nextPriority - previousPriority) / 2 + previousPriority;
     }
     
     var id = ui.item.attr('id');
-    itemMap[id]['priority'] = priority;
+    itemMap[id].priority = priority;
     
     $('.save-button', item).show();
   });

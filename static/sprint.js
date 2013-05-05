@@ -33,5 +33,12 @@ $(document).ready(function() {
     var story = $(event.delegateTarget);
     var id = story.attr('id');
     window.location.href = "/story/" + id;
+  });
+  
+  $('.main-panel').on('click', '.add-button', function(event) {
+   
+    var sprint = $(event.delegateTarget);
+    var id = sprint.attr('id');
+    addItem(id, 'sprint');
   });   
 });

@@ -63,6 +63,11 @@ body {
   -moz-box-shadow: 5px 5px 15px #999;
 }
 
+#panel-template {
+
+  display: none;
+}
+
 .title {
 
   padding: 5px;
