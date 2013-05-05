@@ -86,6 +86,11 @@ body {
   float: right;
 }
 
+.panel .title .icons .remove-button {
+
+  margin-right: 5px; 
+}
+
 .panel .title .icons .show-button {
 
   margin-left: 5px;

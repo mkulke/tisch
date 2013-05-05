@@ -1,4 +1,13 @@
 $(document).ready(function() {
+
+  $('.panel').on('click', '.remove-button', function(event) {
+  
+    var story = $(event.delegateTarget);
+    var id = story.attr('id');
+    var post_data = itemMap[id];
+    
+    removeItem(id, 'story', post_data);
+  });
     
   $('.panel').on('click', '.save-button', function(event) {
   

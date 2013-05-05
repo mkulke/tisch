@@ -96,9 +96,11 @@ function show_task(response, task_id) {
 
 function respond_json(err, result, response) {
 
-  assert.equal(null, err, "findAndModify query prodoced an error.");
+  assert.equal(null, err, "query prodoced an error.");
       
   if (result == null) {
+  
+    // TODO: generalize error message.
   
     response.writeHead(409, 'The story could not be modified. It might have been accessed by someone else before your changes were submitted. Reloading the page will fetch the current state.');
   } else {
@@ -161,30 +163,32 @@ function update_sprint(response, sprint_id, post_data, respond) {
   });
 }
 
-/*function add_story_with_optimistic_loop(response, sprint_id, respond, db) {
+function remove_story(response, id, post_data) {
 
-  db.collection("story").aggregate({$group: { _id: '$sprint_id', max_priority: {$max:'$priority'}}}, function(err, result) {
-    
+  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
+
     assert.equal(null, err);
-    assert.equal(1, result.length);
-      
-    var priority = result[0]['max_priority'] + 1;
-    var objectId = new ObjectID();
-    
-    db.collection("story").insert({_id: objectId, _rev: 0, description: "", estimated_time: 0, priority: priority, sprint_id: ObjectID(sprint_id), title: "New Story"}, function(err, result) {
+    assert.ok(db != null);
 
-      // duplicate key
-    
-      if (err && err.code == 11000) {
-  
-        add_story_with_optimistic_loop(response, sprint_id, respond, db);
-      } else {
+    console.log("try to remove story w/ id " + post_data._id + " and rev " + post_data._rev);
+
+    db.collection("story").remove({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, function(err, numberOfRemovedDocs) {
+
+      assert.equal(null, err, "query prodoced an error.");
       
-        respond(err, result, response);
+      console.log("removed " + numberOfRemovedDocs + " docs.");
+      
+      if (numberOfRemovedDocs <= 0) {
+    
+        response.writeHead(409, 'The story could not be removed. It might have been accessed by someone else before your changes were submitted. Reloading the page will fetch the current state.');
+      } else {
+  
+        response.writeHead(200);
       }
-    });
+      response.end();  
+    }); 
   });
-}*/
+}
 
 function add_story(response, sprint_id, respond) {
 
@@ -268,6 +272,9 @@ function process_request(request, response) {
         
         show_sprint(response, item);
       }
+      
+      // TODO: move this one to story, the sprint_id should be put in the header. 
+      
       else if (request.method == "PUT") {
       
         assert.notEqual(true, html, 'html response not supported yet.');
@@ -286,27 +293,29 @@ function process_request(request, response) {
       if (request.method == "GET") {
               
         show_story(response, item);
-        break;
       }
       else if (request.method == "POST") {
               
         assert.notEqual(true, html, 'html response not supported yet.');
 
-        update_story(response, item, request.body, respond_json)
-        break;
-      }        
+        update_story(response, item, request.body, respond_json);
+      }
+      else if (request.method == "DELETE") {
+      
+        remove_story(response, item, request.body);
+      }
+      break;
     case "task":
 
       if (request.method == "GET") {
               
         show_task(response, item);
-        break;
       }
       else if (request.method == "POST") {
       
         update_task(response, item, request.body, html ? respond_html : respond_json)
-        break;
       }
+      break;
     default:
     
       console.log("not implemented yet");

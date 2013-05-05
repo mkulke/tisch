@@ -8,6 +8,26 @@ function populateItemMap() {
   });
 }
 
+function showErrorPanel(qHXR, textStatus, errorThrown) {
+
+  switch(textStatus) {
+
+    case 'timeout':
+    
+      var errorMessage = 'Operation timed out. Possible reasons include network and server issues.';
+      break;
+    case 'error':
+    
+      var errorMessage = 'Operation failed. ' + errorThrown;
+      break;
+    default:
+    
+      var errorMessage = 'Operation failed for unknown reasons. Check server logs.';
+  }
+  $('#error-panel #message').text(errorMessage);
+  $('#error-panel').slideDown(100);
+}
+
 function addItem(id, type) {
 
   $.ajax({
@@ -37,10 +57,23 @@ function addItem(id, type) {
       attribute = $('#' + data._id + " textarea").attr('name');
       $('#' + data._id + ' textarea').val(data[attribute]);
     },
-    error: function(jqHXR, textStatus, errorThrown) {
+    error: showErrorPanel
+  });
+}
+
+function removeItem(id, type, post_data) {
+
+  $.ajax({
+  
+    url: '/' + type + '/' + id,
+    type: 'DELETE',
+    data: post_data,
+    success: function(data, textStatus, jqXHR) {
     
-      alert('add error');
-    }
+      delete itemMap[id];
+      $('#' + id).remove();
+    },
+    error: showErrorPanel
   });
 }
 
@@ -57,25 +90,7 @@ function updateItem(id, type, post_data) {
       itemMap[id] = data;
       $('#' + id + ' .save-button').hide();
     },
-    error: function(jqHXR, textStatus, errorThrown) {
-    
-      switch(textStatus) {
-    
-        case 'timeout':
-        
-          var errorMessage = 'Operation timed out. Possible reasons include network and server issues.';
-          break;
-        case 'error':
-        
-          var errorMessage = 'Operation failed. ' + errorThrown;
-          break;
-        default:
-        
-          var errorMessage = 'Operation failed for unknown reasons. Check server logs.';
-      }
-      $('#error-panel #message').text(errorMessage);
-      $('#error-panel').slideDown(100);
-    }
+    error: showErrorPanel
   });
 }
 
