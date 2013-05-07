@@ -44,9 +44,9 @@ $(document).ready(function() {
     window.location.href = "/story/" + id;
   });
   
-  $('.main-panel').on('click', '.add-button', function(event) {
+  $('#add-button').on('click', function(event) {
    
-    var sprint = $(event.delegateTarget);
+    var sprint = $('.main-panel').first();
     var id = sprint.attr('id');
     addItem(id, 'sprint');
   });   

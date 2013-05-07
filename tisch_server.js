@@ -170,14 +170,10 @@ function remove_story(response, id, post_data) {
     assert.equal(null, err);
     assert.ok(db != null);
 
-    console.log("try to remove story w/ id " + post_data._id + " and rev " + post_data._rev);
-
     db.collection("story").remove({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, function(err, numberOfRemovedDocs) {
 
       assert.equal(null, err, "query prodoced an error.");
-      
-      console.log("removed " + numberOfRemovedDocs + " docs.");
-      
+            
       if (numberOfRemovedDocs <= 0) {
     
         response.writeHead(409, 'The story could not be removed. It might have been accessed by someone else before your changes were submitted. Reloading the page will fetch the current state.');

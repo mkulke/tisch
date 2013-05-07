@@ -34,7 +34,6 @@ html
           span
             input(type='text', name='title', value=sprint.title)
           span(class='icons')
-            img(class='add-button', src='/add.png', alt='add')
             img(class='save-button', src='/save.png', alt='save')
         .description
           textarea(name='description').
@@ -46,3 +45,4 @@ html
       each story, i in stories
       
         mixin panel(story._id, story.title, story.description)
+    img(id='add-button', src='/add-circle.png', alt='add')  
