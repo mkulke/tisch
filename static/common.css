@@ -41,6 +41,7 @@ body {
 
 .main-panel {
 
+  min-width: 800px;
   box-shadow: 5px 5px 15px #999;
   -webkit-box-shadow: 5px 5px 15px #999;
   -moz-box-shadow: 5px 5px 15px #999;
@@ -76,6 +77,11 @@ body {
   margin-bottom: 10px;
 }
 
+.panel {
+
+  min-width: 780px;
+}
+
 .title {
 
   padding: 5px;
@@ -89,14 +95,25 @@ body {
   background-color: #FFFFFF;
 }
 
+.title .inputfield {
+
+  float: left;
+  width: 200px;
+  height: 16px;
+}
+
 .title .icons {
 
   float: right;
+  width: 58px;
+  height: 16px;
+  text-align: right;
 }
 
-.panel .title .icons .remove-button {
+.title .handle {
 
-  margin-right: 5px; 
+  min-width: 522px;
+  height: 16px;
 }
 
 .panel .title .icons .show-button {
@@ -112,7 +129,7 @@ body {
 
 .title .icons .save-button {
    
-  margin-left: 5px; 
+  margin-right: 5px; 
   display: none;
 }
 
@@ -124,7 +141,8 @@ body {
   font-family: "Arial", Sans-serif;
   font-size: 11pt;
   border: 0px;
-  background-color: #389090   ;
+  width: 200px;
+  background-color: #389090;
   color: #FFFFFF;
 }
 

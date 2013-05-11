@@ -14,85 +14,8 @@ options.filename = 'story.jade';
 var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'task.jade';
 var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
+var html_headers = {'Content-Type': 'text/html', 'Cache-control': 'no-store'};
 
-function show_sprint(http_response, sprint_id) {
-
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
-
-    assert.equal(null, err);
-    assert.ok(db != null);
-
-    db.collection("sprint").findOne({_id: ObjectID(sprint_id)}, function(err, sprint) {
-    
-      assert.equal(null, err);
-      assert.notEqual(null, sprint);
-      
-      db.collection("story").find({sprint_id: ObjectID(sprint_id)}).sort({priority: 1}).toArray(function(err, stories) {
-
-        assert.equal(null, err);
-
-        db.close();
-
-        var html = sprint_template({sprint: sprint, stories: stories});
-
-        http_response.writeHead(200, {'Content-Type': 'text/html'});
-        http_response.write(html);
-        http_response.end();
-      });   
-    });
-  });
-}
-
-function show_story(http_response, story_id) {
-
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
-
-    assert.equal(null, err);
-    assert.ok(db != null);
-
-    db.collection("story").findOne({_id: ObjectID(story_id)}, function(err, story) {
-
-      assert.equal(null, err);
-      assert.notEqual(null, story);
-
-      db.collection("task").find({story_id: ObjectID(story_id)}).toArray(function(err, tasks) {
-
-        assert.equal(null, err);
-
-        db.close();
-  
-        var html = story_template({story: story, tasks: tasks});
-  
-        http_response.writeHead(200, {'Content-Type': 'text/html'});
-        http_response.write(html);
-        http_response.end();
-      });
-    });
-  });
-}
-
-function show_task(response, task_id) {
-
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
-
-    assert.equal(null, err);
-    assert.ok(db != null);
-
-    db.collection("task").findOne({_id: ObjectID(task_id)}, function(err, result) {
-
-      assert.equal(null, err);
-      assert.notEqual(null, result);
-    
-      var html = task_template({task: result});
-
-      response.writeHead(200, {'Content-Type': 'text/html'});
-      response.write(html);
-      response.end(); 
-      
-      db.close();      
-    });
-  });
-}
 
 function respond_json(err, result, response) {
 
@@ -118,9 +41,88 @@ function respond_html(err, result, response) {
  
   var html = task_template({task: result});
 
-  response.writeHead(200, {'Content-Type': 'text/html'});
+  response.writeHead(200, html_headers);
   response.write(html);
   response.end();
+}
+
+function show_sprint(response, sprint_id) {
+
+  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
+
+    assert.equal(null, err);
+    assert.ok(db != null);
+
+    db.collection("sprint").findOne({_id: ObjectID(sprint_id)}, function(err, sprint) {
+    
+      assert.equal(null, err);
+      assert.notEqual(null, sprint);
+      
+      db.collection("story").find({sprint_id: ObjectID(sprint_id)}).sort({priority: 1}).toArray(function(err, stories) {
+
+        assert.equal(null, err);
+
+        db.close();
+
+        var html = sprint_template({sprint: sprint, stories: stories});
+
+        response.writeHead(200, html_headers);
+        response.write(html);
+        response.end();
+      });   
+    });
+  });
+}
+
+function show_story(http_response, story_id) {
+
+  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
+
+    assert.equal(null, err);
+    assert.ok(db != null);
+
+    db.collection("story").findOne({_id: ObjectID(story_id)}, function(err, story) {
+
+      assert.equal(null, err);
+      assert.notEqual(null, story);
+
+      db.collection("task").find({story_id: ObjectID(story_id)}).toArray(function(err, tasks) {
+
+        assert.equal(null, err);
+
+        db.close();
+  
+        var html = story_template({story: story, tasks: tasks});
+  
+        http_response.writeHead(200, html_headers);
+        http_response.write(html);
+        http_response.end();
+      });
+    });
+  });
+}
+
+function show_task(response, task_id) {
+
+  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
+
+    assert.equal(null, err);
+    assert.ok(db != null);
+
+    db.collection("task").findOne({_id: ObjectID(task_id)}, function(err, result) {
+
+      assert.equal(null, err);
+      assert.notEqual(null, result);
+    
+      var html = task_template({task: result});
+
+      response.writeHead(200, html_headers);
+      response.write(html);
+      response.end(); 
+      
+      db.close();      
+    });
+  });
 }
 
 function update_story(response, story_id, post_data, respond) {
@@ -265,6 +267,8 @@ function process_request(request, response) {
     case "sprint":
     
       if (request.method == "GET") {
+        
+        assert.equal(true, html, 'json response not supported yet.');
         
         show_sprint(response, item);
       }

@@ -37,9 +37,17 @@ $(document).ready(function() {
     updateItem(id, 'sprint', post_data);
   });
   
-  $('.panel').on('click', '.open-button', function(event) {
+  /*$('.panel').on('click', '.open-button', function(event) {
 
     var story = $(event.delegateTarget);
+    var id = story.attr('id');
+    window.location.href = "/story/" + id;
+  });*/
+  
+  $('.panel .handle').on('dblclick', function(event) {
+  
+    var handle = $(event.delegateTarget);
+    var story = handle.parents('li').first();
     var id = story.attr('id');
     window.location.href = "/story/" + id;
   });

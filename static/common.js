@@ -39,11 +39,11 @@ function addItem(id, type) {
     
       itemMap[data._id] = data;
     
-      var newPanel = $('#panel-template').clone(true);
-      newPanel.attr('id', data._id);      
-                  
+      var newPanel = $('#panel-template').clone(true)
+      newPanel.attr('id', data._id);     
+    
       // re-sort panels, the new item might not alway be of the lowest prio.
-      var panels = $('.panel').not('#panel-template').detach();
+      var panels = $('#panel-container li').detach();
       panels = panels.add(newPanel);
       panels.sort(function(a, b) {
       
@@ -56,12 +56,16 @@ function addItem(id, type) {
     
       attribute = $('#' + data._id + " textarea").attr('name');
       $('#' + data._id + ' textarea').val(data[attribute]);
+      
+      $("html, body").animate({ scrollTop: $(document).height() }, "slow");
     },
     error: showErrorPanel
   });
 }
 
 function removeItem(id, type, post_data) {
+
+  if (confirm('Do you want to remove the item and its assigned objects?') == false) return;
 
   $.ajax({
   
@@ -71,7 +75,10 @@ function removeItem(id, type, post_data) {
     success: function(data, textStatus, jqXHR) {
     
       delete itemMap[id];
-      $('#' + id).remove();
+      $('#' + id).slideUp(100, function() {      
+      
+        $('#' + id).remove();
+      });
     },
     error: showErrorPanel
   });
@@ -93,6 +100,12 @@ function updateItem(id, type, post_data) {
     error: showErrorPanel
   });
 }
+
+function invalidateBackCache() {
+        // necessary for Safari: mobile & desktop
+    }
+
+window.addEventListener("unload", invalidateBackCache, false);
 
 $(document).ready(function() {
 
@@ -144,7 +157,7 @@ $(document).ready(function() {
       $('.save-button', item).show();
     }
   });
-  
+    
   // prevent submit form action when pressing return in textfields
   $('.panel, .main-panel').on('keypress', 'input', function(event) {
   
