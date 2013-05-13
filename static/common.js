@@ -47,10 +47,11 @@ function addItem(id, type) {
       panels = panels.add(newPanel);
       panels.sort(function(a, b) {
       
-        return itemMap[a.id].priority > itemMap[b.id].priority;
+        return itemMap[a.id].priority - itemMap[b.id].priority;
       });
-      $('#panel-container').append(panels);
       
+      $('#panel-container').append(panels);
+            
       var attribute = $('#' + data._id + " input").attr('name');
       $('#' + data._id + ' input').val(data[attribute]);
     
