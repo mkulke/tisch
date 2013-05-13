@@ -28,11 +28,12 @@ function showErrorPanel(qHXR, textStatus, errorThrown) {
   $('#error-panel').slideDown(100);
 }
 
-function addItem(id, type) {
+function addItem(type, parent_id) {
 
   $.ajax({
   
-    url: '/' + type + '/' + id,
+    url: '/' + type,
+    headers: {parent_id: parent_id},
     type: 'PUT',
     dataType: 'json',
     success: function(data, textStatus, jqXHR) {

@@ -1,0 +1,7 @@
+{
+  "en": {
+  
+    "ERROR_STORY_REMOVE": "The Story could not be removed. It might have been accessed by someone else before your changes were submitted. Reloading the page will fetch the current state.",
+    "ERROR_STORY_ADD": "Could not add a Story to Sprint. The Sprint might have been removed by another user."
+  }
+}

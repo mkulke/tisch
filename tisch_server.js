@@ -4,8 +4,10 @@ var connect = require('connect');
 var fs = require('fs');
 var assert = require('assert');
 var url = require('url');
-var MongoClient = require("mongodb").MongoClient;
-var ObjectID = require('mongodb').ObjectID
+var MongoClient = require('mongodb').MongoClient;
+var ObjectID = require('mongodb').ObjectID;
+
+var messages = require('./messages.json');
 
 var cwd = process.cwd();
 var options = { pretty: false, filename: 'sprint.jade' };
@@ -165,53 +167,93 @@ function update_sprint(response, sprint_id, post_data, respond) {
   });
 }
 
-function remove_story(response, id, post_data) {
+function removeItem(response, id, types, post_data) {
 
   MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
 
     assert.equal(null, err);
     assert.ok(db != null);
 
-    db.collection("story").remove({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, function(err, numberOfRemovedDocs) {
+    db.collection(types.parent).remove({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, function(err, no) {
 
-      assert.equal(null, err, "query prodoced an error.");
+      assert.equal(null, err);
             
-      if (numberOfRemovedDocs <= 0) {
+      if (no <= 0) {
     
-        response.writeHead(409, 'The story could not be removed. It might have been accessed by someone else before your changes were submitted. Reloading the page will fetch the current state.');
+        response.writeHead(409, messages.en.ERROR_STORY_REMOVE);
       } else {
   
-        response.writeHead(200);
+        var selector = {};
+        selector[types.parent + "_id"] = ObjectID(post_data._id);
+                
+        db.collection(types.child).remove(selector, function(err, no) {
+          
+          response.writeHead(200);
+        });
       }
       response.end();  
     }); 
   });
 }
 
-function add_story(response, sprint_id, respond) {
+function addChild(response, parent_id, types, respond) {
 
-  function optimistic_loop(response, sprint_id, respond, db) {
+  function optimistic_loop(response, parent_id, respond, db) {
 
-    db.collection("story").aggregate({$group: { _id: '$sprint_id', max_priority: {$max:'$priority'}}}, function(err, result) {
+    // get child w/ max priority.
     
+    db.collection(types.child).aggregate({$group: { _id: '$' + types.parent + '_id', max_priority: {$max: '$priority'}}}, function(err, result) {
+  
       assert.equal(null, err);
       assert.equal(1, result.length);
-      
+    
       var priority = result[0]['max_priority'] + 1;
       var objectId = new ObjectID();
-    
-      db.collection("story").insert({_id: objectId, _rev: 0, description: "", estimated_time: 0, priority: priority, sprint_id: ObjectID(sprint_id), title: "New Story"}, function(err, result) {
-
-        // duplicate key
-    
-        if (err && err.code == 11000) {
   
-          optimistic_loop(response, sprint_id, respond, db);
+      var object = {
+      
+        _id: objectId, _rev: 0, 
+        description: "", 
+        estimated_time: 0, 
+        priority: priority, 
+        title: 'New Child'
+      };
+      object[types.parent + '_id'] = ObjectID(parent_id);
+      
+      db.collection(types.child).insert(object, function(err, result) {
+
+        // if the story is a duplicate increade prio and run again.
+  
+        if (err && err.code == 11000) {
+
+          optimistic_loop(response, parent_id, respond, db);
         } else {
-      
+    
           assert.equal(1, result.length);
-      
-          respond(err, result[0], response);
+          var newChild = result[0];
+          //respond(err, result[0], response);
+    
+          // if the item was deleted meanwhile remove the inserted child, too.        
+
+          db.collection(types.parent).findOne({_id: ObjectID(parent_id)}, function(err, result) {
+
+            assert.equal(null, err);
+
+            if (result == null) {
+
+              db.collection(types.child).remove({_id: objectId}, function(err, no) {
+    
+                assert.equal(null, err);
+    
+                response.writeHead(409, messages.en.ERROR_STORY_ADD);
+                response.end();
+              });
+            }
+            else {
+          
+              respond(err, newChild, response);
+            }
+          });
         }
       });
     });
@@ -222,7 +264,7 @@ function add_story(response, sprint_id, respond) {
     assert.equal(null, err);
     assert.ok(db != null);  
     
-    optimistic_loop(response, sprint_id, respond, db);
+    optimistic_loop(response, parent_id, respond, db);
   });
 }
 
@@ -272,15 +314,6 @@ function process_request(request, response) {
         
         show_sprint(response, item);
       }
-      
-      // TODO: move this one to story, the sprint_id should be put in the header. 
-      
-      else if (request.method == "PUT") {
-      
-        assert.notEqual(true, html, 'html response not supported yet.');
-        
-        add_story(response, item, respond_json);
-      }
       else if (request.method == "POST") {
       
         assert.notEqual(true, html, 'html response not supported yet.');
@@ -299,10 +332,21 @@ function process_request(request, response) {
         assert.notEqual(true, html, 'html response not supported yet.');
 
         update_story(response, item, request.body, respond_json);
+      }      
+      else if (request.method == "PUT") {
+      
+        assert.notEqual(true, html, 'html response not supported yet.');
+      
+        var parent_id = request.headers["parent_id"];
+        assert.notEqual(true, parent_id, 'parent sprint_id missing in header.');
+        
+        addChild(response, parent_id, {parent: 'sprint', child: 'story'}, respond_json);
       }
       else if (request.method == "DELETE") {
       
-        remove_story(response, item, request.body);
+        assert.notEqual(null, item, 'request is missing id part in url.');
+      
+        removeItem(response, item, {parent: 'story', child: 'task'}, request.body);
       }
       break;
     case "task":

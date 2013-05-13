@@ -56,6 +56,6 @@ $(document).ready(function() {
    
     var sprint = $('.main-panel').first();
     var id = sprint.attr('id');
-    addItem(id, 'sprint');
+    addItem('story', id);
   });   
 });
