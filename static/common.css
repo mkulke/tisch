@@ -93,6 +93,17 @@ body {
 
   padding: 5px;
   background-color: #FFFFFF;
+  font-family: "Arial", Sans-serif;
+  font-size: 10pt;
+}
+
+.description .string {
+
+  font-family: "Arial", Sans-serif;
+  font-size: 10pt;
+  overflow : auto;
+  white-space: pre;
+  height: 100px;
 }
 
 .title .inputfield {
@@ -144,6 +155,14 @@ body {
   width: 200px;
   background-color: #389090;
   color: #FFFFFF;
+  display: none;
+}
+
+.title .string {
+
+  font-family: "Arial", Sans-serif;
+  font-size: 11pt;
+  width: 200px;
 }
 
 .description textarea {
@@ -151,10 +170,11 @@ body {
   outline: none;
   margin: 0px;
   padding: 0px;
-  font-family: "Arial", Sans-serif;
-  font-size: 10pt;
   resize: none;
   border: 0px;
-  height: 100px;
+  font-family: "Arial", Sans-serif;
+  font-size: 10pt;
   width: 100%;
+  height: 100px;
+  display: none;
 }

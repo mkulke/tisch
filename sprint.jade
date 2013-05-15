@@ -3,6 +3,8 @@ mixin panel(id, title, description)
     form
       .title
         .inputfield
+          .string
+            =title
           input(type='text', name='title', value=title)
         .icons
           //img(class='open-button', src='/open.png', alt='open')
@@ -12,6 +14,8 @@ mixin panel(id, title, description)
           img(class='hide-button', src='/hide.png', alt='hide')
         .handle
       .description
+        .string
+          =description
         textarea(name='description')
           =description
 html
@@ -24,7 +28,7 @@ html
       var items = !{JSON.stringify(stories)};
       items.push(!{JSON.stringify(sprint)});
       populateItemMap(items);
-  body(onunload='')
+  body
     #error-panel
       #message
       #icons
@@ -32,11 +36,16 @@ html
     .main-panel(id=sprint._id)
       form
         .title
-          span
+          .inputfield
+            .string
+              =sprint.title
             input(type='text', name='title', value=sprint.title)
-          span(class='icons')
+          .icons
             img(class='save-button', src='/save.png', alt='save')
+          .handle
         .description
+          .string.
+            #{sprint.description}
           textarea(name='description').
             #{sprint.description}
     ul

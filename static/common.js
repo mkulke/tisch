@@ -104,8 +104,9 @@ function updateItem(id, type, post_data) {
 }
 
 function invalidateBackCache() {
-        // necessary for Safari: mobile & desktop
-    }
+
+  // necessary for Safari: mobile & desktop
+}
 
 window.addEventListener("unload", invalidateBackCache, false);
 
@@ -173,6 +174,54 @@ $(document).ready(function() {
   $('#error-panel').on('click', '.ok-button', function(event) {
 
     $('#error-panel').slideUp(100);
+  });
+  
+  $('.panel, .main-panel').on('click', '.description .string', function(event) {
+
+    var string = $(event.target);
+    string.hide();
+    var panel = $(event.delegateTarget);
+    var id = panel.attr('id');
+    var textarea = $('#' + id + ' .description textarea');
+    
+    // hack to put cursor to end.
+    
+    var data = string.html();
+    textarea.show().focus().val('').val(data);   
+  });
+
+  $('.panel, .main-panel').on('focusout', '.description textarea', function(event) {
+
+    var textarea = $(event.target);
+    textarea.hide();
+    var panel = $(event.delegateTarget);
+    var id = panel.attr('id');
+    var string = $('#' + id + ' .description .string');
+    var data = textarea.val();
+    string.html(data).show();
+  });
+
+  $('.panel, .main-panel').on('click', '.inputfield .string', function(event) {
+
+    var string = $(event.target);
+    string.hide();
+    var panel = $(event.delegateTarget);
+    var id = panel.attr('id');
+    var input = $('#' + id + ' .inputfield input');
+    
+    var data = string.html();
+    input.show().focus().val(data);
+  });
+ 
+   $('.panel, .main-panel').on('focusout', '.inputfield input', function(event) {
+
+    var input = $(event.target);
+    input.hide();
+    var panel = $(event.delegateTarget);
+    var id = panel.attr('id');
+    var string = $('#' + id + ' .inputfield .string');
+    var data = input.val();
+    string.html(data).show();
   });
   
   $('#panel-container').on('sortstop', function(event, ui) {

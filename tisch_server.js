@@ -48,155 +48,91 @@ function respond_html(err, result, response) {
   response.end();
 }
 
-function show_sprint(response, sprint_id) {
+function showItem(db, response, types, parentId, template) {
 
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
-
+  db.collection(types.parent).findOne({_id: ObjectID(parentId)}, function(err, parent) {
+  
     assert.equal(null, err);
-    assert.ok(db != null);
-
-    db.collection("sprint").findOne({_id: ObjectID(sprint_id)}, function(err, sprint) {
+    assert.notEqual(null, parent);
     
+    var selector = {};
+    selector[types.parent + "_id"] = ObjectID(parentId);
+    db.collection(types.child).find(selector).sort({priority: 1}).toArray(function(err, children) {
+
       assert.equal(null, err);
-      assert.notEqual(null, sprint);
+
+      db.close();
+
+      var html = template(parent, children);
       
-      db.collection("story").find({sprint_id: ObjectID(sprint_id)}).sort({priority: 1}).toArray(function(err, stories) {
-
-        assert.equal(null, err);
-
-        db.close();
-
-        var html = sprint_template({sprint: sprint, stories: stories});
-
-        response.writeHead(200, html_headers);
-        response.write(html);
-        response.end();
-      });   
-    });
-  });
-}
-
-function show_story(http_response, story_id) {
-
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
-
-    assert.equal(null, err);
-    assert.ok(db != null);
-
-    db.collection("story").findOne({_id: ObjectID(story_id)}, function(err, story) {
-
-      assert.equal(null, err);
-      assert.notEqual(null, story);
-
-      db.collection("task").find({story_id: ObjectID(story_id)}).toArray(function(err, tasks) {
-
-        assert.equal(null, err);
-
-        db.close();
-  
-        var html = story_template({story: story, tasks: tasks});
-  
-        http_response.writeHead(200, html_headers);
-        http_response.write(html);
-        http_response.end();
-      });
-    });
-  });
-}
-
-function show_task(response, task_id) {
-
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
-
-    assert.equal(null, err);
-    assert.ok(db != null);
-
-    db.collection("task").findOne({_id: ObjectID(task_id)}, function(err, result) {
-
-      assert.equal(null, err);
-      assert.notEqual(null, result);
-    
-      var html = task_template({task: result});
-
       response.writeHead(200, html_headers);
       response.write(html);
-      response.end(); 
-      
-      db.close();      
-    });
+      response.end();
+    });   
   });
 }
 
-function update_story(response, story_id, post_data, respond) {
+function show_task(db, response, task_id) {
 
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
-
-    assert.equal(null, err);
-    assert.ok(db != null);
-
-    var data = {
-    
-      $set: {description: post_data.description, title: post_data.title, priority: parseFloat(post_data.priority)}, 
-      $inc: {_rev: 1}
-    }
-
-    db.collection("story").findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
-
-      respond(err, result, response); 
-    }); 
-  });
-}
-
-function update_sprint(response, sprint_id, post_data, respond) {
-
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
+  db.collection("task").findOne({_id: ObjectID(task_id)}, function(err, result) {
 
     assert.equal(null, err);
-    assert.ok(db != null);
-
-    var data = {
-    
-      $set: {description: post_data.description, title: post_data.title}, 
-      $inc: {_rev: 1}
-    }
-
-    db.collection("sprint").findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
-
-      respond(err, result, response); 
-    }); 
-  });
-}
-
-function removeItem(response, id, types, post_data) {
-
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
-
-    assert.equal(null, err);
-    assert.ok(db != null);
-
-    db.collection(types.parent).remove({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, function(err, no) {
-
-      assert.equal(null, err);
-            
-      if (no <= 0) {
-    
-        response.writeHead(409, messages.en.ERROR_STORY_REMOVE);
-      } else {
+    assert.notEqual(null, result);
   
-        var selector = {};
-        selector[types.parent + "_id"] = ObjectID(post_data._id);
-                
-        db.collection(types.child).remove(selector, function(err, no) {
-          
-          response.writeHead(200);
-        });
-      }
-      response.end();  
-    }); 
+    var html = task_template({task: result});
+
+    response.writeHead(200, html_headers);
+    response.write(html);
+    response.end(); 
+    
+    db.close();      
   });
 }
 
-function addChild(response, parent_id, types, respond) {
+function updateItem(db, response, type, post_data, respond) {
+
+  var data = {
+  
+    $set: {description: post_data.description, title: post_data.title}, 
+    $inc: {_rev: 1}
+  }
+
+  db.collection(type).findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
+
+    db.close(); 
+
+    respond(err, result, response); 
+  });
+}
+
+function removeItem(db, response, id, types, post_data) {
+
+  db.collection(types.parent).remove({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, function(err, no) {
+
+    assert.equal(null, err);
+          
+    if (no <= 0) {
+  
+      db.close(); 
+  
+      response.writeHead(409, messages.en.ERROR_STORY_REMOVE);
+    } else {
+
+      var selector = {};
+      selector[types.parent + "_id"] = ObjectID(post_data._id);
+              
+      db.collection(types.child).remove(selector, function(err, no) {
+        
+        db.close(); 
+        
+        response.writeHead(200);
+      });
+    }
+    response.end(); 
+  }); 
+}
+
+function addItem(db, response, parent_id, types, respond) {
 
   function optimistic_loop(response, parent_id, respond, db) {
 
@@ -216,7 +152,7 @@ function addChild(response, parent_id, types, respond) {
         description: "", 
         estimated_time: 0, 
         priority: priority, 
-        title: 'New Child'
+        title: 'New Item'
       };
       object[types.parent + '_id'] = ObjectID(parent_id);
       
@@ -243,6 +179,8 @@ function addChild(response, parent_id, types, respond) {
 
               db.collection(types.child).remove({_id: objectId}, function(err, no) {
     
+                db.close();
+    
                 assert.equal(null, err);
     
                 response.writeHead(409, messages.en.ERROR_STORY_ADD);
@@ -250,6 +188,8 @@ function addChild(response, parent_id, types, respond) {
               });
             }
             else {
+              
+              db.close();
           
               respond(err, newChild, response);
             }
@@ -258,45 +198,33 @@ function addChild(response, parent_id, types, respond) {
       });
     });
   }
-
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
-  
-    assert.equal(null, err);
-    assert.ok(db != null);  
     
-    optimistic_loop(response, parent_id, respond, db);
-  });
+  optimistic_loop(response, parent_id, respond, db);
 }
 
-function update_task(response, task_id, post_data, respond) {
+function update_task(db, response, task_id, post_data, respond) {
 
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
+  var data = {
 
-    assert.equal(null, err);
-    assert.ok(db != null);
+    $set: {description: post_data.description, status: post_data.status}, 
+    $inc: {_rev: 1}
+  }
 
-    var data = {
-  
-      $set: {description: post_data.description, status: post_data.status}, 
-      $inc: {_rev: 1}
-    }
+  db.collection("task").findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
 
-    db.collection("task").findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
+    db.close();
 
-      respond(err, result, response);
-    }); 
-  });
+    respond(err, result, response);
+  }); 
 }
 
 function process_request(request, response) {
 
-  console.log(request.method)
-
   var url_parts = url.parse(request.url, true);
   var query = url_parts.query;
   var pathname = url_parts.pathname
-  var view = unescape(pathname.split("/")[1]);
-  var item = unescape(pathname.split("/")[2]);
+  var type = unescape(pathname.split("/")[1]);
+  var id = unescape(pathname.split("/")[2]);
   var html = true;
   var accept = request.headers["accept"];
   if ((accept != null) && (accept.indexOf("application/json") != -1)) {
@@ -304,69 +232,81 @@ function process_request(request, response) {
     html = false;
   }
   
-  switch (view) {
+  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
   
-    case "sprint":
+    assert.equal(null, err);
+    assert.notEqual(null, db);
+  
+    switch (type) {
+  
+      case "sprint":
     
-      if (request.method == "GET") {
+        if (request.method == "GET") {
         
-        assert.equal(true, html, 'json response not supported yet.');
+          assert.equal(true, html, 'json response not supported yet.');
+                
+          showItem(db, response, {parent: 'sprint', child: 'story'}, id, function(parent, children) {
         
-        show_sprint(response, item);
-      }
-      else if (request.method == "POST") {
+            return sprint_template({sprint: parent, stories: children});
+          });
+        }
+        else if (request.method == "POST") {
       
-        assert.notEqual(true, html, 'html response not supported yet.');
+          assert.notEqual(true, html, 'html response not supported yet.');
       
-        update_sprint(response, item, request.body, respond_json);
-      }
-      break;
-    case "story":
+          updateItem(db, response, "sprint", request.body, respond_json);
+        }
+        break;
+      case "story":
     
-      if (request.method == "GET") {
+        if (request.method == "GET") {
               
-        show_story(response, item);
-      }
-      else if (request.method == "POST") {
+          showItem(db, response, {parent: 'story', child: 'task'}, id, function(parent, children) {
+                
+            return story_template({story: parent, tasks: children});
+          });                       
+        }
+        else if (request.method == "POST") {
               
-        assert.notEqual(true, html, 'html response not supported yet.');
+          assert.notEqual(true, html, 'html response not supported yet.');
 
-        update_story(response, item, request.body, respond_json);
-      }      
-      else if (request.method == "PUT") {
+          updateItem(db, response, "story", request.body, respond_json);
+        }      
+        else if (request.method == "PUT") {
       
-        assert.notEqual(true, html, 'html response not supported yet.');
+          assert.notEqual(true, html, 'html response not supported yet.');
       
-        var parent_id = request.headers["parent_id"];
-        assert.notEqual(true, parent_id, 'parent sprint_id missing in header.');
+          var parent_id = request.headers["parent_id"];
+          assert.notEqual(true, parent_id, 'parent sprint_id missing in header.');
         
-        addChild(response, parent_id, {parent: 'sprint', child: 'story'}, respond_json);
-      }
-      else if (request.method == "DELETE") {
+          addItem(db, response, parent_id, {parent: 'sprint', child: 'story'}, respond_json);
+        }
+        else if (request.method == "DELETE") {
       
-        assert.notEqual(null, item, 'request is missing id part in url.');
+          assert.notEqual(null, id, 'request is missing id part in url.');
       
-        removeItem(response, item, {parent: 'story', child: 'task'}, request.body);
-      }
-      break;
-    case "task":
+          removeItem(db, response, id, {parent: 'story', child: 'task'}, request.body);
+        }
+        break;
+      case "task":
 
-      if (request.method == "GET") {
+        if (request.method == "GET") {
               
-        show_task(response, item);
-      }
-      else if (request.method == "POST") {
+          show_task(db, response, id);
+        }
+        else if (request.method == "POST") {
       
-        update_task(response, item, request.body, html ? respond_html : respond_json)
-      }
-      break;
-    default:
+          update_task(db, response, id, request.body, html ? respond_html : respond_json)
+        }
+        break;
+      default:
     
-      console.log("not implemented yet");
-      response.writeHead(404, {"Content-Type": "text/plain"});
-      response.write("not found");
-      response.end();
-  }
+        console.log("not implemented yet");
+        response.writeHead(404, {"Content-Type": "text/plain"});
+        response.write("not found");
+        response.end();
+    }
+  });
 }
 
 var app = connect()
