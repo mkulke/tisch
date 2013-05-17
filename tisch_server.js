@@ -89,13 +89,29 @@ function show_task(db, response, task_id) {
   });
 }
 
-function updateItem(db, response, type, post_data, respond) {
+function updateItem(db, response, type, post_data, fields, respond) {
 
   var data = {
   
-    $set: {description: post_data.description, title: post_data.title}, 
+    $set: {}, 
     $inc: {_rev: 1}
   }
+  
+  fields.forEach(function(field) {
+    
+    var value = post_data[field.name];   
+    switch (field.type) {
+    
+      case "float":
+        value = parseFloat(value);
+        break;
+      case "int":
+        value = parseInt(value);
+        break;
+      default:
+    }
+    data.$set[field.name] = value;
+  });
 
   db.collection(type).findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
 
@@ -254,7 +270,13 @@ function process_request(request, response) {
       
           assert.notEqual(true, html, 'html response not supported yet.');
       
-          updateItem(db, response, "sprint", request.body, respond_json);
+          var fields = [
+          
+            {name: 'title', type: 'string'}, 
+            {name: 'description', type: 'string'}
+          ];
+      
+          updateItem(db, response, "sprint", request.body, fields, respond_json);
         }
         break;
       case "story":
@@ -270,7 +292,14 @@ function process_request(request, response) {
               
           assert.notEqual(true, html, 'html response not supported yet.');
 
-          updateItem(db, response, "story", request.body, respond_json);
+          var fields = [
+          
+            {name: 'title', type: 'string'}, 
+            {name: 'description', type: 'string'},
+            {name: 'priority', type: 'float'}
+          ];
+
+          updateItem(db, response, "story", request.body, fields, respond_json);
         }      
         else if (request.method == "PUT") {
       

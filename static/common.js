@@ -103,12 +103,12 @@ function updateItem(id, type, post_data) {
   });
 }
 
-function invalidateBackCache() {
+/*function invalidateBackCache() {
 
   // necessary for Safari: mobile & desktop
 }
 
-window.addEventListener("unload", invalidateBackCache, false);
+window.addEventListener("unload", invalidateBackCache, false);*/
 
 $(document).ready(function() {
 
@@ -118,7 +118,6 @@ $(document).ready(function() {
     tolerance: 'pointer',
     containment: '#panel-container'
   });
-  //$("#panel-container").disableSelection();
 
   // This prevents firefox from keeping form values after reload.
   $('input,textarea').attr('autocomplete', 'off');
@@ -160,17 +159,7 @@ $(document).ready(function() {
       $('.save-button', item).show();
     }
   });
-    
-  // prevent submit form action when pressing return in textfields
-  $('.panel, .main-panel').on('keypress', 'input', function(event) {
-  
-    if(event.which == 13) {
-    
-      event.preventDefault();
-      return false;
-    }
-  });
-  
+        
   $('#error-panel').on('click', '.ok-button', function(event) {
 
     $('#error-panel').slideUp(100);
@@ -188,40 +177,6 @@ $(document).ready(function() {
     
     var data = string.html();
     textarea.show().focus().val('').val(data);   
-  });
-
-  $('.panel, .main-panel').on('focusout', '.description textarea', function(event) {
-
-    var textarea = $(event.target);
-    textarea.hide();
-    var panel = $(event.delegateTarget);
-    var id = panel.attr('id');
-    var string = $('#' + id + ' .description .string');
-    var data = textarea.val();
-    string.html(data).show();
-  });
-
-  $('.panel, .main-panel').on('click', '.inputfield .string', function(event) {
-
-    var string = $(event.target);
-    string.hide();
-    var panel = $(event.delegateTarget);
-    var id = panel.attr('id');
-    var input = $('#' + id + ' .inputfield input');
-    
-    var data = string.html();
-    input.show().focus().val(data);
-  });
- 
-   $('.panel, .main-panel').on('focusout', '.inputfield input', function(event) {
-
-    var input = $(event.target);
-    input.hide();
-    var panel = $(event.delegateTarget);
-    var id = panel.attr('id');
-    var string = $('#' + id + ' .inputfield .string');
-    var data = input.val();
-    string.html(data).show();
   });
   
   $('#panel-container').on('sortstop', function(event, ui) {

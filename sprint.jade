@@ -2,10 +2,7 @@ mixin panel(id, title, description)
   li(class='panel', id=id)
     form
       .title
-        .inputfield
-          .string
-            =title
-          input(type='text', name='title', value=title)
+        input(type='text', name='title', value=title)
         .icons
           //img(class='open-button', src='/open.png', alt='open')
           img(class='save-button', src='/save.png', alt='save')
@@ -14,8 +11,6 @@ mixin panel(id, title, description)
           img(class='hide-button', src='/hide.png', alt='hide')
         .handle
       .description
-        .string
-          =description
         textarea(name='description')
           =description
 html
@@ -36,16 +31,11 @@ html
     .main-panel(id=sprint._id)
       form
         .title
-          .inputfield
-            .string
-              =sprint.title
-            input(type='text', name='title', value=sprint.title)
+          input(type='text', name='title', value=sprint.title)
           .icons
             img(class='save-button', src='/save.png', alt='save')
           .handle
         .description
-          .string.
-            #{sprint.description}
           textarea(name='description').
             #{sprint.description}
     ul

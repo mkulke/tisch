@@ -9,7 +9,7 @@ body {
 
 .form_field {
 
-    display: block;
+  display: block;
 }
 
 #error-panel {
@@ -84,6 +84,7 @@ body {
 
 .title {
 
+  height: 16px;
   padding: 5px;
   background-color: #389090;
   color: #FFFFFF;
@@ -93,24 +94,6 @@ body {
 
   padding: 5px;
   background-color: #FFFFFF;
-  font-family: "Arial", Sans-serif;
-  font-size: 10pt;
-}
-
-.description .string {
-
-  font-family: "Arial", Sans-serif;
-  font-size: 10pt;
-  overflow : auto;
-  white-space: pre;
-  height: 100px;
-}
-
-.title .inputfield {
-
-  float: left;
-  width: 200px;
-  height: 16px;
 }
 
 .title .icons {
@@ -119,12 +102,6 @@ body {
   width: 58px;
   height: 16px;
   text-align: right;
-}
-
-.title .handle {
-
-  min-width: 522px;
-  height: 16px;
 }
 
 .panel .title .icons .show-button {
@@ -146,6 +123,7 @@ body {
 
 .title input {
 
+  float: left;
   margin: 0px;
   outline: none;
   padding: 0px;
@@ -155,14 +133,6 @@ body {
   width: 200px;
   background-color: #389090;
   color: #FFFFFF;
-  display: none;
-}
-
-.title .string {
-
-  font-family: "Arial", Sans-serif;
-  font-size: 11pt;
-  width: 200px;
 }
 
 .description textarea {
@@ -176,5 +146,10 @@ body {
   font-size: 10pt;
   width: 100%;
   height: 100px;
-  display: none;
+}
+
+.title .handle {
+
+  height: 100%;
+  min-width: 522px;
 }
