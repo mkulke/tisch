@@ -18,36 +18,6 @@ options.filename = 'task.jade';
 var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 var html_headers = {'Content-Type': 'text/html', 'Cache-control': 'no-store'};
 
-
-function respond_json(err, result, response) {
-
-  assert.equal(null, err, "query prodoced an error.");
-      
-  if (result == null) {
-  
-    // TODO: generalize error message.
-  
-    response.writeHead(409, 'The story could not be modified. It might have been accessed by someone else before your changes were submitted. Reloading the page will fetch the current state.');
-  } else {
-  
-    response.writeHead(200, {'Content-Type': 'application/json'});
-    response.write(JSON.stringify(result));            
-  }
-  response.end();
-}
-
-function respond_html(err, result, response) {
-
-  assert.equal(null, err);
-  assert.notEqual(null, result);
- 
-  var html = task_template({task: result});
-
-  response.writeHead(200, html_headers);
-  response.write(html);
-  response.end();
-}
-
 function showItem(db, response, types, parentId, template) {
 
   db.collection(types.parent).findOne({_id: ObjectID(parentId)}, function(err, parent) {
@@ -61,16 +31,16 @@ function showItem(db, response, types, parentId, template) {
 
       assert.equal(null, err);
 
-      db.close();
-
       var html = template(parent, children);
       
+      db.close();
       response.writeHead(200, html_headers);
       response.write(html);
       response.end();
     });   
   });
 }
+
 
 function show_task(db, response, task_id) {
 
@@ -89,7 +59,7 @@ function show_task(db, response, task_id) {
   });
 }
 
-function updateItem(db, response, type, post_data, fields, respond) {
+function updateItem(db, response, type, post_data, fields) {
 
   var data = {
   
@@ -115,9 +85,18 @@ function updateItem(db, response, type, post_data, fields, respond) {
 
   db.collection(type).findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
 
+    assert.equal(null, err);
+
     db.close(); 
 
-    respond(err, result, response); 
+    if (result == null) {
+    
+      response.writeHead(409, messages.en.ERROR_UPDATE);
+      response.end();
+    } else {
+
+      respondWithJson(result, response);
+    } 
   });
 }
 
@@ -130,8 +109,7 @@ function removeItem(db, response, id, types, post_data) {
     if (no <= 0) {
   
       db.close(); 
-  
-      response.writeHead(409, messages.en.ERROR_STORY_REMOVE);
+      response.writeHead(409, messages.en.ERROR_REMOVE);
       response.end();
     } else {
 
@@ -146,13 +124,13 @@ function removeItem(db, response, id, types, post_data) {
         
           assert.equal(null, err);
           
-          db.close(); 
-        
+          db.close();    
           response.writeHead(200);
           response.end();
         });
       } else {
       
+        db.close();
         response.writeHead(200);
         response.end();        
       }
@@ -160,7 +138,43 @@ function removeItem(db, response, id, types, post_data) {
   }); 
 }
 
-function addItem(db, response, types, data, respond) {
+function respondWithJson(result, response) {
+
+  assert.notEqual(null, result, "result is not supposed to be null here");
+      
+  response.writeHead(200, {'Content-Type': 'application/json'});
+  response.write(JSON.stringify(result));            
+  response.end();
+}
+
+function cleanUpOnMissingParent(db, response, types, data) {
+
+  var parentId = data[types.parent + '_id']; 
+    
+  db.collection(types.parent).findOne({_id: parentId}, function(err, result) {
+
+    assert.equal(null, err);
+
+    if (result == null) {
+
+      db.collection(types.child).remove({_id: itemId}, function(err, no) {
+
+        db.close();
+
+        assert.equal(null, err);
+
+        response.writeHead(409, messages.en.ERROR_ADD);
+        response.end();        
+      });
+    } else {
+    
+      db.close();
+      respondWithJson(data, response);
+    }
+  });
+}
+
+function addItem(db, response, types, data) {
 
   function optimistic_loop() {
 
@@ -180,7 +194,7 @@ function addItem(db, response, types, data, respond) {
       var priority = 0;
       if (result.length == 1) {
       
-        var priority = result[0]['max_priority'] + 1;
+        priority = result[0]['max_priority'] + 1;
       }
       var itemId = new ObjectID();
   
@@ -204,38 +218,11 @@ function addItem(db, response, types, data, respond) {
 
           if (types.parent != null) {
           
-            var parentId = data[types.parent + '_id']; 
-    
-            db.collection(types.parent).findOne({_id: parentId}, function(err, result) {
-
-              assert.equal(null, err);
-
-              if (result == null) {
-
-                db.collection(types.child).remove({_id: itemId}, function(err, no) {
-    
-                  db.close();
-    
-                  assert.equal(null, err);
-    
-                  response.writeHead(409, messages.en.ERROR_STORY_ADD);
-                  response.end();
-                  
-                  return;
-                });
-              }
-              else {
-              
-                db.close();
-          
-                respond(err, newChild, response);              
-              }
-            });
+            cleanUpOnMissingParent(db, response, types, data);    
           } else {
          
-            db.close();
-          
-            respond(err, newChild, response);    
+            db.close();    
+            respondWithJson(result, response);
           }
         }
       });
@@ -245,23 +232,7 @@ function addItem(db, response, types, data, respond) {
   optimistic_loop();
 }
 
-function update_task(db, response, task_id, post_data, respond) {
-
-  var data = {
-
-    $set: {description: post_data.description, status: post_data.status}, 
-    $inc: {_rev: 1}
-  }
-
-  db.collection("task").findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
-
-    db.close();
-
-    respond(err, result, response);
-  }); 
-}
-
-function process_request(request, response) {
+function processRequest(request, response) {
 
   var url_parts = url.parse(request.url, true);
   var query = url_parts.query;
@@ -303,7 +274,7 @@ function process_request(request, response) {
             {name: 'description', type: 'string'}
           ];
       
-          updateItem(db, response, "sprint", request.body, fields, respond_json);
+          updateItem(db, response, "sprint", request.body, fields);
         }
         break;
       case "story":
@@ -326,7 +297,7 @@ function process_request(request, response) {
             {name: 'priority', type: 'float'}
           ];
 
-          updateItem(db, response, "story", request.body, fields, respond_json);
+          updateItem(db, response, "story", request.body, fields);
         }      
         else if (request.method == "PUT") {
       
@@ -343,7 +314,7 @@ function process_request(request, response) {
             sprint_id: ObjectID(parent_id)
           };
                 
-          addItem(db, response, {parent: 'sprint', child: 'story'}, data, respond_json);
+          addItem(db, response, {parent: 'sprint', child: 'story'}, data);
         }
         else if (request.method == "DELETE") {
       
@@ -366,8 +337,7 @@ function process_request(request, response) {
             {name: 'description', type: 'string'},
             {name: 'priority', type: 'float'},
           ];
-          updateItem(db, response, "task", request.body, fields, respond_json);
-          //update_task(db, response, id, request.body, html ? respond_html : respond_json)
+          updateItem(db, response, "task", request.body, fields);
         }
         else if (request.method == "PUT") {
       
@@ -384,7 +354,7 @@ function process_request(request, response) {
             story_id: ObjectID(parent_id)
           };
         
-          addItem(db, response, {parent: 'story', child: 'task'}, data, respond_json);
+          addItem(db, response, {parent: 'story', child: 'task'}, data);
         }
         else if (request.method == "DELETE") {
       
@@ -408,6 +378,6 @@ var app = connect()
   .use(connect.favicon())
   .use(connect.static("static"))
   .use(connect.bodyParser())
-  .use(process_request);
+  .use(processRequest);
 
 http.createServer(app).listen(8000);
