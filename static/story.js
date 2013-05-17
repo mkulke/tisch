@@ -1,16 +1,30 @@
 $(document).ready(function() {
- 
+    
   $('.panel').on('click', '.save-button', function(event) {
   
-    var task = $(event.delegateTarget);
-    var id = task.attr('id');
-    var summary = $('input', task).val();
-    var description = $('textarea', task).val();
+    var story = $(event.delegateTarget);
+    var id = story.attr('id');
+    var summary = $('input', story).val();
+    var description = $('textarea', story).val();
 
     var post_data = itemMap[id];
     post_data['summary'] = summary;
     post_data['description'] = description;
     
     updateItem(id, 'task', post_data);
+  });
+  
+  $('.main-panel').on('click', '.save-button', function(event) {
+   
+    var sprint = $(event.delegateTarget);
+    var id = sprint.attr('id');
+    var title = $('input', sprint).val();
+    var description = $('textarea', sprint).val();
+
+    var post_data = itemMap[id];
+    post_data['title'] = title;
+    post_data['description'] = description;
+    
+    updateItem(id, 'story', post_data);
   });
 });

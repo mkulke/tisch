@@ -1,3 +1,19 @@
+mixin panel(id, summary, description)
+  li(class='panel', id=id)
+    form
+      .header
+        input(type='text', name='summary', value=summary)
+        .icons
+          //img(class='open-button', src='/open.png', alt='open')
+          img(class='save-button', src='/save.png', alt='save')
+          img(class='remove-button', src='/remove.png', alt='remove')          
+          img(class='show-button', src='/show.png', alt='show')
+          img(class='hide-button', src='/hide.png', alt='hide')
+        .handle
+      .description
+        textarea(name='description')
+          =description
+
 html
   head
     title Tasks
@@ -8,24 +24,28 @@ html
       var items = !{JSON.stringify(tasks)};
       items.push(!{JSON.stringify(story)});
       populateItemMap(items);
+      var types = {parent: 'story', child: 'task'};
   body
     #error-panel
       #message
       #icons
-        img(class='ok-button', src='/ok.png', alt='ok')   
+        img(class='ok-button', src='/ok.png', alt='ok')
+    .main-panel(id=story._id)
+      form
+        .header
+          input(type='text', name='title', value=story.title)
+          .icons
+            img(class='save-button', src='/save.png', alt='save')
+          .handle
+        .description
+          textarea(name='description').
+            #{story.description}
+    ul
+      mixin panel('panel-template', '', '')
     ul(id='panel-container')
+
       each task, i in tasks
-    
-          li(class='panel', id='#{task._id}')
-            form
-              .title
-                input(type='text', name='summary', value=task.summary)
-                .icons
-                  img(class='save-button', src='/save.png', alt='save')
-                  img(class='show-button', src='/show.png', alt='show')
-                  img(class='hide-button', src='/hide.png', alt='hide')
-                .handle
-              .description
-                textarea(name='description').
-                  #{task.description}
+      
+        mixin panel(task._id, task.summary, task.description)
+    img(id='add-button', src='/add-circle.png', alt='add')
                 

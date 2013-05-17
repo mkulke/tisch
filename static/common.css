@@ -82,7 +82,7 @@ body {
   min-width: 780px;
 }
 
-.title {
+.header {
 
   height: 16px;
   padding: 5px;
@@ -96,7 +96,7 @@ body {
   background-color: #FFFFFF;
 }
 
-.title .icons {
+.header .icons {
 
   float: right;
   width: 58px;
@@ -104,24 +104,24 @@ body {
   text-align: right;
 }
 
-.panel .title .icons .show-button {
+.panel .header .icons .show-button {
 
   margin-left: 5px;
   display: none;  
 }
 
-.panel .title .icons .hide-button {
+.panel .header .icons .hide-button {
 
   margin-left: 5px;
 }
 
-.title .icons .save-button {
+.header .icons .save-button {
    
   margin-right: 5px; 
   display: none;
 }
 
-.title input {
+.header input {
 
   float: left;
   margin: 0px;
@@ -148,7 +148,7 @@ body {
   height: 100px;
 }
 
-.title .handle {
+.header .handle {
 
   height: 100%;
   min-width: 522px;

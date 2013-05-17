@@ -1,7 +1,7 @@
 mixin panel(id, title, description)
   li(class='panel', id=id)
     form
-      .title
+      .header
         input(type='text', name='title', value=title)
         .icons
           //img(class='open-button', src='/open.png', alt='open')
@@ -23,6 +23,7 @@ html
       var items = !{JSON.stringify(stories)};
       items.push(!{JSON.stringify(sprint)});
       populateItemMap(items);
+      var types = {parent: 'sprint', child: 'story'};
   body
     #error-panel
       #message
@@ -30,7 +31,7 @@ html
         img(class='ok-button', src='/ok.png', alt='ok')
     .main-panel(id=sprint._id)
       form
-        .title
+        .header
           input(type='text', name='title', value=sprint.title)
           .icons
             img(class='save-button', src='/save.png', alt='save')

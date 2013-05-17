@@ -164,6 +164,13 @@ $(document).ready(function() {
 
     $('#error-panel').slideUp(100);
   });
+   
+  $('#add-button').on('click', function(event) {
+   
+    var mainPanel = $('.main-panel').first();
+    var id = mainPanel.attr('id');
+    addItem(types.child, id);
+  });
   
   $('.panel, .main-panel').on('click', '.description .string', function(event) {
 
@@ -208,5 +215,22 @@ $(document).ready(function() {
     itemMap[id].priority = priority;
     
     $('.save-button', item).show();
+  });
+  
+  $('.panel').on('click', '.remove-button', function(event) {
+  
+    var story = $(event.delegateTarget);
+    var id = story.attr('id');
+    var post_data = itemMap[id];
+    
+    removeItem(id, types.child, post_data);
+  });
+  
+  $('.panel .handle').on('dblclick', function(event) {
+  
+    var handle = $(event.delegateTarget);
+    var li = handle.parents('li').first();
+    var id = li.attr('id');
+    window.location.href = '/' + types.child + '/' + id;
   });
 });

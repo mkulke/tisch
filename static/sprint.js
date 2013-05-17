@@ -1,13 +1,4 @@
 $(document).ready(function() {
-
-  $('.panel').on('click', '.remove-button', function(event) {
-  
-    var story = $(event.delegateTarget);
-    var id = story.attr('id');
-    var post_data = itemMap[id];
-    
-    removeItem(id, 'story', post_data);
-  });
     
   $('.panel').on('click', '.save-button', function(event) {
   
@@ -42,20 +33,5 @@ $(document).ready(function() {
     var story = $(event.delegateTarget);
     var id = story.attr('id');
     window.location.href = "/story/" + id;
-  });*/
-  
-  $('.panel .handle').on('dblclick', function(event) {
-  
-    var handle = $(event.delegateTarget);
-    var story = handle.parents('li').first();
-    var id = story.attr('id');
-    window.location.href = "/story/" + id;
-  });
-  
-  $('#add-button').on('click', function(event) {
-   
-    var sprint = $('.main-panel').first();
-    var id = sprint.attr('id');
-    addItem('story', id);
-  });   
+  });*/   
 });

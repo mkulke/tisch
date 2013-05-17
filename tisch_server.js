@@ -132,90 +132,117 @@ function removeItem(db, response, id, types, post_data) {
       db.close(); 
   
       response.writeHead(409, messages.en.ERROR_STORY_REMOVE);
+      response.end();
     } else {
 
-      var selector = {};
-      selector[types.parent + "_id"] = ObjectID(post_data._id);
+      // delete children if there are any
+
+      if (types.child) {
+    
+        var selector = {};
+        selector[types.parent + "_id"] = ObjectID(post_data._id);
               
-      db.collection(types.child).remove(selector, function(err, no) {
+        db.collection(types.child).remove(selector, function(err, no) {
         
-        db.close(); 
+          assert.equal(null, err);
+          
+          db.close(); 
         
+          response.writeHead(200);
+          response.end();
+        });
+      } else {
+      
         response.writeHead(200);
-      });
+        response.end();        
+      }
     }
-    response.end(); 
   }); 
 }
 
-function addItem(db, response, parent_id, types, respond) {
+function addItem(db, response, types, data, respond) {
 
-  function optimistic_loop(response, parent_id, respond, db) {
+  function optimistic_loop() {
 
     // get child w/ max priority.
     
-    db.collection(types.child).aggregate({$group: { _id: '$' + types.parent + '_id', max_priority: {$max: '$priority'}}}, function(err, result) {
+    var aggregation = [
+      {$match: {}},
+      {$group: {_id: null, max_priority: {$max: '$priority'}}}
+    ];
+    aggregation[0]['$match'][types.parent + '_id'] = data[types.parent + '_id'];
+    
+    db.collection(types.child).aggregate(aggregation, function(err, result) {
   
       assert.equal(null, err);
-      assert.equal(1, result.length);
+      assert(1 >= result.length, "invalid aggregation response");
     
-      var priority = result[0]['max_priority'] + 1;
-      var objectId = new ObjectID();
+      var priority = 0;
+      if (result.length == 1) {
+      
+        var priority = result[0]['max_priority'] + 1;
+      }
+      var itemId = new ObjectID();
   
-      var object = {
-      
-        _id: objectId, _rev: 0, 
-        description: "", 
-        estimated_time: 0, 
-        priority: priority, 
-        title: 'New Item'
-      };
-      object[types.parent + '_id'] = ObjectID(parent_id);
-      
-      db.collection(types.child).insert(object, function(err, result) {
+      data._id = itemId;
+      data._rev = 0;
+      data.priority = priority;
+        
+      db.collection(types.child).insert(data, function(err, result) {
 
         // if the story is a duplicate increade prio and run again.
   
         if (err && err.code == 11000) {
 
-          optimistic_loop(response, parent_id, respond, db);
+          optimistic_loop();
         } else {
     
           assert.equal(1, result.length);
           var newChild = result[0];
-          //respond(err, result[0], response);
     
           // if the item was deleted meanwhile remove the inserted child, too.        
 
-          db.collection(types.parent).findOne({_id: ObjectID(parent_id)}, function(err, result) {
-
-            assert.equal(null, err);
-
-            if (result == null) {
-
-              db.collection(types.child).remove({_id: objectId}, function(err, no) {
-    
-                db.close();
-    
-                assert.equal(null, err);
-    
-                response.writeHead(409, messages.en.ERROR_STORY_ADD);
-                response.end();
-              });
-            }
-            else {
-              
-              db.close();
+          if (types.parent != null) {
           
-              respond(err, newChild, response);
-            }
-          });
+            var parentId = data[types.parent + '_id']; 
+    
+            db.collection(types.parent).findOne({_id: parentId}, function(err, result) {
+
+              assert.equal(null, err);
+
+              if (result == null) {
+
+                db.collection(types.child).remove({_id: itemId}, function(err, no) {
+    
+                  db.close();
+    
+                  assert.equal(null, err);
+    
+                  response.writeHead(409, messages.en.ERROR_STORY_ADD);
+                  response.end();
+                  
+                  return;
+                });
+              }
+              else {
+              
+                db.close();
+          
+                respond(err, newChild, response);              
+              }
+            });
+          } else {
+         
+            db.close();
+          
+            respond(err, newChild, response);    
+          }
         }
       });
     });
   }
     
-  optimistic_loop(response, parent_id, respond, db);
+  optimistic_loop();
 }
 
 function update_task(db, response, task_id, post_data, respond) {
@@ -308,7 +335,15 @@ function process_request(request, response) {
           var parent_id = request.headers["parent_id"];
           assert.notEqual(true, parent_id, 'parent sprint_id missing in header.');
         
-          addItem(db, response, parent_id, {parent: 'sprint', child: 'story'}, respond_json);
+          var data = {
+      
+            description: "", 
+            estimated_time: 0, 
+            title: 'New Story',
+            sprint_id: ObjectID(parent_id)
+          };
+                
+          addItem(db, response, {parent: 'sprint', child: 'story'}, data, respond_json);
         }
         else if (request.method == "DELETE") {
       
@@ -325,7 +360,37 @@ function process_request(request, response) {
         }
         else if (request.method == "POST") {
       
-          update_task(db, response, id, request.body, html ? respond_html : respond_json)
+          var fields = [
+          
+            {name: 'summary', type: 'string'},
+            {name: 'description', type: 'string'},
+            {name: 'priority', type: 'float'},
+          ];
+          updateItem(db, response, "task", request.body, fields, respond_json);
+          //update_task(db, response, id, request.body, html ? respond_html : respond_json)
+        }
+        else if (request.method == "PUT") {
+      
+          assert.notEqual(true, html, 'html response not supported yet.');
+      
+          var parent_id = request.headers["parent_id"];
+          assert.notEqual(true, parent_id, 'parent sprint_id missing in header.');
+        
+          var data = {
+      
+            description: "", 
+            estimated_time: 0, 
+            summary: 'New Task',
+            story_id: ObjectID(parent_id)
+          };
+        
+          addItem(db, response, {parent: 'story', child: 'task'}, data, respond_json);
+        }
+        else if (request.method == "DELETE") {
+      
+          assert.notEqual(null, id, 'request is missing id part in url.');
+      
+          removeItem(db, response, id, {parent: 'task'}, request.body);
         }
         break;
       default:
