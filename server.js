@@ -1,5 +1,5 @@
-var jade = require('jade');
 var http = require('http');
+var jade = require('jade');
 var connect = require('connect');
 var fs = require('fs');
 var assert = require('assert');
@@ -374,10 +374,17 @@ function processRequest(request, response) {
 }
 
 var app = connect()
-  .use(connect.logger("dev"))
+//  .use(connect.logger("dev"))
   .use(connect.favicon())
   .use(connect.static("static"))
   .use(connect.bodyParser())
   .use(processRequest);
 
-http.createServer(app).listen(8000);
+module.exports = app;
+if (!module.parent) {
+
+  http.createServer(app).listen(8000, function() {
+  
+    console.log('Server listening on port 8000');  
+  });
+}

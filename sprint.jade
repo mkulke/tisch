@@ -29,7 +29,7 @@ html
       #message
       #icons
         img(class='ok-button', src='/ok.png', alt='ok')
-    .main-panel(id=sprint._id)
+    .main-panel(id='uuid-' + sprint._id)
       form
         .header
           input(type='text', name='title', value=sprint.title)
@@ -45,5 +45,5 @@ html
 
       each story, i in stories
       
-        mixin panel(story._id, story.title, story.description)
+        mixin panel('uuid-' + story._id, story.title, story.description)
     img(id='add-button', src='/add-circle.png', alt='add')  

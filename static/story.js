@@ -3,7 +3,7 @@ $(document).ready(function() {
   $('.panel').on('click', '.save-button', function(event) {
   
     var story = $(event.delegateTarget);
-    var id = story.attr('id');
+    var id = unPrefix(story.attr('id'));
     var summary = $('input', story).val();
     var description = $('textarea', story).val();
 
@@ -17,7 +17,7 @@ $(document).ready(function() {
   $('.main-panel').on('click', '.save-button', function(event) {
    
     var sprint = $(event.delegateTarget);
-    var id = sprint.attr('id');
+    var id = unPrefix(sprint.attr('id'));
     var title = $('input', sprint).val();
     var description = $('textarea', sprint).val();
 

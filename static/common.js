@@ -1,6 +1,16 @@
 var itemMap = {};
 
-function populateItemMap() {
+function prefix(id) {
+
+  return 'uuid-' + id;
+}
+
+function unPrefix(prefixedId) {
+
+  return prefixedId.substr('uuid-'.length);
+}
+
+function populateItemMap(items) {
 
   $.each(items, function(i, item) {
   
@@ -41,23 +51,26 @@ function addItem(type, parent_id) {
       itemMap[data._id] = data;
     
       var newPanel = $('#panel-template').clone(true)
-      newPanel.attr('id', data._id);     
+      newPanel.attr('id', prefix(data._id));     
     
       // re-sort panels, the new item might not alway be of the lowest prio.
       var panels = $('#panel-container li').detach();
       panels = panels.add(newPanel);
       panels.sort(function(a, b) {
       
-        return itemMap[a.id].priority - itemMap[b.id].priority;
+        return itemMap[unPrefix(a.id)].priority - itemMap[unPrefix(b.id)].priority;
       });
       
       $('#panel-container').append(panels);
-            
-      var attribute = $('#' + data._id + " input").attr('name');
-      $('#' + data._id + ' input').val(data[attribute]);
+          
+      var id = prefix(data._id);
+      var input = $('#' + id + " input");
+      var attribute = input.attr('name');
+      input.val(data[attribute]);
     
-      attribute = $('#' + data._id + " textarea").attr('name');
-      $('#' + data._id + ' textarea').val(data[attribute]);
+      var textarea = $('#' + id + " textarea");
+      attribute = textarea.attr('name');
+      textarea.val(data[attribute]);
       
       $("html, body").animate({ scrollTop: $(document).height() }, "slow");
     },
@@ -77,9 +90,9 @@ function removeItem(id, type, post_data) {
     success: function(data, textStatus, jqXHR) {
     
       delete itemMap[id];
-      $('#' + id).slideUp(100, function() {      
+      $('#' + prefix(id)).slideUp(100, function() {      
       
-        $('#' + id).remove();
+        $('#' + prefix(id)).remove();
       });
     },
     error: showErrorPanel
@@ -97,7 +110,7 @@ function updateItem(id, type, post_data) {
     success: function(data, textStatus, jqXHR) {
   
       itemMap[id] = data;
-      $('#' + id + ' .save-button').hide();
+      $('#' + prefix(id) + ' .save-button').hide();
     },
     error: showErrorPanel
   });
@@ -132,6 +145,13 @@ $(document).ready(function() {
     });
   });
   
+  $('#add-button').on('click', function(event) {
+   
+    var mainPanel = $('.main-panel').first();
+    var id = unPrefix(mainPanel.attr('id'));
+    addItem(types.child, id);
+  });
+  
   $('.panel').on('click', '.show-button', function(event) {
 
     var item = $(event.delegateTarget);
@@ -152,7 +172,7 @@ $(document).ready(function() {
     var field = $(event.target);
     var attribute = field.attr('name');
     var item = $(event.delegateTarget);
-    var id = item.attr('id');
+    var id = unPrefix(item.attr('id'));
     
     if (itemMap[id][attribute] != field.val()) {
     
@@ -164,21 +184,13 @@ $(document).ready(function() {
 
     $('#error-panel').slideUp(100);
   });
-   
-  $('#add-button').on('click', function(event) {
-   
-    var mainPanel = $('.main-panel').first();
-    var id = mainPanel.attr('id');
-    addItem(types.child, id);
-  });
   
   $('.panel, .main-panel').on('click', '.description .string', function(event) {
 
     var string = $(event.target);
     string.hide();
     var panel = $(event.delegateTarget);
-    var id = panel.attr('id');
-    var textarea = $('#' + id + ' .description textarea');
+    var textarea = $('#' + panel.attr('id') + ' .description textarea');
     
     // hack to put cursor to end.
     
@@ -195,7 +207,7 @@ $(document).ready(function() {
     
     if (item.index() > 0) {
     
-      var previousId = ui.item.prev().attr('id');
+      var previousId = unPrefix(ui.item.prev().attr('id'));
       previousPriority = itemMap[previousId].priority;
     }
     
@@ -206,12 +218,12 @@ $(document).ready(function() {
     }
     else {
     
-      var nextId = ui.item.next().attr('id');
+      var nextId = unPrefix(ui.item.next().attr('id'));
       nextPriority = itemMap[nextId].priority;
       priority = (nextPriority - previousPriority) / 2 + previousPriority;
     }
     
-    var id = ui.item.attr('id');
+    var id = unPrefix(ui.item.attr('id'));
     itemMap[id].priority = priority;
     
     $('.save-button', item).show();
@@ -220,7 +232,7 @@ $(document).ready(function() {
   $('.panel').on('click', '.remove-button', function(event) {
   
     var story = $(event.delegateTarget);
-    var id = story.attr('id');
+    var id = unPrefix(story.attr('id'));
     var post_data = itemMap[id];
     
     removeItem(id, types.child, post_data);
@@ -230,7 +242,7 @@ $(document).ready(function() {
   
     var handle = $(event.delegateTarget);
     var li = handle.parents('li').first();
-    var id = li.attr('id');
+    var id = unPrefix(li.attr('id'));
     window.location.href = '/' + types.child + '/' + id;
   });
 });

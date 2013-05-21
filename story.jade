@@ -30,7 +30,7 @@ html
       #message
       #icons
         img(class='ok-button', src='/ok.png', alt='ok')
-    .main-panel(id=story._id)
+    .main-panel(id='uuid-' + story._id)
       form
         .header
           input(type='text', name='title', value=story.title)
@@ -46,6 +46,6 @@ html
 
       each task, i in tasks
       
-        mixin panel(task._id, task.summary, task.description)
+        mixin panel('uuid-' + task._id, task.summary, task.description)
     img(id='add-button', src='/add-circle.png', alt='add')
                 
