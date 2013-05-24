@@ -191,7 +191,7 @@ function addItem(db, response, types, data) {
       assert.equal(null, err);
       assert(1 >= result.length, "invalid aggregation response");
     
-      var priority = 0;
+      var priority = 1;
       if (result.length == 1) {
       
         priority = result[0]['max_priority'] + 1;
