@@ -116,12 +116,68 @@ function updateItem(id, type, post_data) {
   });
 }
 
-/*function invalidateBackCache() {
+function updatePriority(li, previousLi, nextLi) {
 
-  // necessary for Safari: mobile & desktop
+  var previousPriority = 0;
+  var nextPriority = 0;
+  var priority = 0;
+  
+  // not the first item
+  if (li.index() > 0) {
+  
+    var previousId = unPrefix(previousLi.attr('id'));
+    previousPriority = itemMap[previousId].priority;
+  }
+  
+  // last item
+  if(li.index() + 1 == $('#panel-container li').size()) {
+  
+    priority = previousPriority + 1;
+  }
+  else {
+  
+    var nextId = unPrefix(nextLi.attr('id'));
+    nextPriority = itemMap[nextId].priority;
+    priority = (nextPriority - previousPriority) / 2 + previousPriority;
+  }
+  
+  var id = unPrefix(li.attr('id'));
+  itemMap[id].priority = priority;
+  
+  $('.save-button', li).show();
 }
 
-window.addEventListener("unload", invalidateBackCache, false);*/
+/* This is required for testing. A headless browser cannot drag and drop. */
+
+var moveItemUp = function(liId) {
+
+  var li = $('#' + liId);
+  var previousLi = li.prev();
+  if ($.isEmptyObject(li) || $.isEmptyObject(previousLi)) {
+    
+    return;
+  }
+  
+  previousLi.detach();
+  li.after(previousLi);
+  
+  updatePriority(li, null, previousLi);
+}
+
+var moveItemDown = function(liId) {
+
+  var li = $('#' + liId);
+  var nextLi = li.next();
+  if ($.isEmptyObject(li) || $.isEmptyObject(nextLi)) {
+    
+    return;
+  }
+  
+  li.detach();
+  nextLi.after(li);
+  
+  updatePriority(li, nextLi, null);
+}
 
 $(document).ready(function() {
 
@@ -200,33 +256,11 @@ $(document).ready(function() {
   
   $('#panel-container').on('sortstop', function(event, ui) {
   
-    var item = ui.item;
-    var previousPriority = 0;
-    var nextPriority = 0;
-    var priority = 0;
-    
-    if (item.index() > 0) {
-    
-      var previousId = unPrefix(ui.item.prev().attr('id'));
-      previousPriority = itemMap[previousId].priority;
-    }
-    
-    // last item
-    if(item.index() + 1 == $('#panel-container li').size()) {
-    
-      priority = previousPriority + 1;
-    }
-    else {
-    
-      var nextId = unPrefix(ui.item.next().attr('id'));
-      nextPriority = itemMap[nextId].priority;
-      priority = (nextPriority - previousPriority) / 2 + previousPriority;
-    }
-    
-    var id = unPrefix(ui.item.attr('id'));
-    itemMap[id].priority = priority;
-    
-    $('.save-button', item).show();
+    var li = ui.item;
+    var previousLi = ui.item.prev();
+    var nextLi = ui.item.next();
+  
+    updatePriority(li, previousLi, nextLi);
   });
   
   $('.panel').on('click', '.remove-button', function(event) {
