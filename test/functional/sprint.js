@@ -36,6 +36,11 @@ function clickSaveButton() {
   return this.browser.fire('#' + this.id + ' .save-button', 'click');
 }
 
+function dblcklickHandle() {
+
+  return this.browser.fire('#' + this.id + ' .handle', 'dblclick');
+}
+
 function connectToDb() {
 
   var deferred = Q.defer(); 
@@ -160,8 +165,8 @@ describe('sprint view', function() {
   
     assert.equal(panels.length, 3);
   
-    var title = "test title";
-    var description = "test description";
+    var title = "new story title";
+    var description = "new story description";
     
     var id = panels[1].getAttribute('id');
     var browser = this.browser;
@@ -177,6 +182,23 @@ describe('sprint view', function() {
       assert.equal(browser.text('#' + id + ' .description textarea'), description);
     })
     .then(done, done);      
+  });
+  it('should be possible to open a story', function(done) {
+    
+    var id = panels[1].getAttribute('id');
+    var browser = this.browser;
+    var title = "new story title";
+
+    dblcklickHandle.bind({browser: browser, id: id})()
+    .then(function() {
+    
+      browser.wait();
+    })
+    .then(function() {
+    
+      assert.equal(browser.query('.main-panel .header input').getAttribute('value'), title); 
+    })
+    .then(done, done);
   });
   it('should allow changing the priority of stories', function(done) {
 
