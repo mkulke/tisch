@@ -27,35 +27,29 @@ function showItem(db, response, types, parentId, template) {
     
     var selector = {};
     selector[types.parent + "_id"] = ObjectID(parentId);
-    db.collection(types.child).find(selector).sort({priority: 1}).toArray(function(err, children) {
+    
+    if (types.child) {
+    
+      db.collection(types.child).find(selector).sort({priority: 1}).toArray(function(err, children) {
 
-      assert.equal(null, err);
+        assert.equal(null, err);
 
-      var html = template(parent, children);
+        var html = template(parent, children);
+      
+        db.close();
+        response.writeHead(200, html_headers);
+        response.write(html);
+        response.end();
+      });   
+    } else {
+    
+      var html = template(parent);
       
       db.close();
       response.writeHead(200, html_headers);
       response.write(html);
-      response.end();
-    });   
-  });
-}
-
-
-function show_task(db, response, task_id) {
-
-  db.collection("task").findOne({_id: ObjectID(task_id)}, function(err, result) {
-
-    assert.equal(null, err);
-    assert.notEqual(null, result);
-  
-    var html = task_template({task: result});
-
-    response.writeHead(200, html_headers);
-    response.write(html);
-    response.end(); 
-    
-    db.close();      
+      response.end();  
+    }
   });
 }
 
@@ -67,21 +61,37 @@ function updateItem(db, response, type, post_data, fields) {
     $inc: {_rev: 1}
   }
   
-  fields.forEach(function(field) {
+  try {
+  
+    fields.forEach(function(field) {
     
-    var value = post_data[field.name];   
-    switch (field.type) {
+      var value = post_data[field.name];   
+      switch (field.type) {
     
-      case "float":
-        value = parseFloat(value);
-        break;
-      case "int":
-        value = parseInt(value);
-        break;
-      default:
-    }
-    data.$set[field.name] = value;
-  });
+        case "float":
+          value = parseFloat(value);
+          if (isNaN(value)) {
+            
+            throw messages.en.ERROR_UPDATE_INVALID_INPUT;
+          }
+          break;
+        case "int":
+          value = parseInt(value);
+          if (isNaN(value)) {
+            
+            throw messages.en.ERROR_UPDATE_INVALID_INPUT;
+          }
+          break;
+        default:
+      }
+      data.$set[field.name] = value;
+    });
+  } catch (e) {
+  
+    response.writeHead(422, e);
+    response.end();
+    return;
+  }
 
   db.collection(type).findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
 
@@ -91,7 +101,7 @@ function updateItem(db, response, type, post_data, fields) {
 
     if (result == null) {
     
-      response.writeHead(409, messages.en.ERROR_UPDATE);
+      response.writeHead(409, messages.en.ERROR_UPDATE_NOT_FOUND);
       response.end();
     } else {
 
@@ -326,8 +336,11 @@ function processRequest(request, response) {
       case "task":
 
         if (request.method == "GET") {
-              
-          show_task(db, response, id);
+        
+          showItem(db, response, {parent: 'task'}, id, function(parent, children) {
+                
+            return task_template({task: parent});
+          });             
         }
         else if (request.method == "POST") {
       
@@ -336,6 +349,9 @@ function processRequest(request, response) {
             {name: 'summary', type: 'string'},
             {name: 'description', type: 'string'},
             {name: 'priority', type: 'float'},
+            {name: 'initial_estimation', type: 'float'},
+            {name: 'remaining_time', type: 'float'},
+            {name: 'time_spent', type: 'float'}
           ];
           updateItem(db, response, "task", request.body, fields);
         }
@@ -349,7 +365,9 @@ function processRequest(request, response) {
           var data = {
       
             description: "", 
-            estimated_time: 0, 
+            initial_estimation: 2,
+            remaining_time: 1,
+            time_spent: 1, 
             summary: 'New Task',
             story_id: ObjectID(parent_id)
           };
