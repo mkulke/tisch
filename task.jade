@@ -1,21 +1,37 @@
 html
-    head
-        title Task details
-        include common
-    body
-        form(action='/task/' + task._id, method='post')
-            input(name='_id', type='hidden', value=task._id)
-            input(name='_rev', type='hidden', value=task._rev)
-            .form_field 
-                label(for='summary') Summary:
-                input(name='summary', type='text', value=task.summary)
-            .form_field
-                label(for='description') Description:
-                input(name='description', type='text', value=task.description)
-            .form_field
-                label(for='status') Status:
-                input(name='status', type='text', value=task.status) 
-            .form_field
-                input(type='submit', value='Update')
-        
-        
+  head
+    title Task details
+    include common
+    script(type='text/javascript', src='/task.js')
+    script(type='text/javascript')
+    
+      var items = [];
+      items.push(!{JSON.stringify(task)});
+      populateItemMap(items);
+      var types = {parent: 'task'};
+  body
+    #error-panel
+      .message
+      .icons
+        img(class='ok-button', src='/ok.png', alt='ok')
+    .main-panel(id='uuid-' + task._id)
+      form
+        .header
+          input(type='text', name='summary', value=task.summary)
+          .icons
+            img(class='save-button', src='/save.png', alt='save')
+          .handle
+        .description
+          textarea(name='description').
+            #{task.description}
+        hr
+        .stats
+          | Initial estimation:
+          input(type='text', name='initial_estimation', value=task.initial_estimation, size='5', maxlength='5')
+          | Remaining time:
+          input(type='text', name='remaining_time', value=task.remaining_time, size='5', maxlength='5')
+          | Time spent:
+          input(type='text', name='time_spent', value=task.time_spent, size='5', maxlength='5')
+          
+          
+                
