@@ -18,24 +18,31 @@ function populateItemMap(items) {
   });
 }
 
-function showErrorPanel(qHXR, textStatus, errorThrown) {
+function showErrorPanel(message) {
 
+  $('#error-panel .message').text(message);
+  $('#error-panel').slideDown(100);
+}
+
+function handleServerError(qHXR, textStatus, errorThrown) {
+
+  var errorMessage;
   switch(textStatus) {
 
     case 'timeout':
     
-      var errorMessage = 'Operation timed out. Possible reasons include network and server issues.';
+      errorMessage = 'Operation timed out. Possible reasons include network and server issues.';
       break;
     case 'error':
     
-      var errorMessage = 'Operation failed. ' + errorThrown;
+      errorMessage = 'Operation failed. ' + errorThrown;
       break;
     default:
     
-      var errorMessage = 'Operation failed for unknown reasons. Check server logs.';
+      errorMessage = 'Operation failed for unknown reasons. Check server logs.';
   }
-  $('#error-panel #message').text(errorMessage);
-  $('#error-panel').slideDown(100);
+
+  showErrorPanel(errorMessage);
 }
 
 function addItem(type, parent_id) {
@@ -74,7 +81,7 @@ function addItem(type, parent_id) {
       
       $("html, body").animate({ scrollTop: $(document).height() }, "slow");
     },
-    error: showErrorPanel
+    error: handleServerError
   });
 }
 
@@ -95,7 +102,7 @@ function removeItem(id, type, post_data) {
         $('#' + prefix(id)).remove();
       });
     },
-    error: showErrorPanel
+    error: handleServerError
   });
 }
 
@@ -112,7 +119,7 @@ function updateItem(id, type, post_data) {
       itemMap[id] = data;
       $('#' + prefix(id) + ' .save-button').hide();
     },
-    error: showErrorPanel
+    error: handleServerError
   });
 }
 
