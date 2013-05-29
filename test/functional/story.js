@@ -10,13 +10,11 @@ var storyData = {
 
  _rev : 0,
  description: 'initial description',
- estimated_time: 0,
  priority: 1,
  sprint_id: ObjectID(),
  title: 'initial title' 
 }
 
-var storyId;
 var storyId;
 var panels;
 
@@ -25,6 +23,11 @@ process.env.NODE_ENV = 'test';
 function clickAddButton() {
 
   return this.fire('#add-button', 'click');
+}
+
+function dblcklickHandle() {
+
+  return this.browser.fire('#' + this.id + ' .handle', 'dblclick');
 }
 
 function clickRemoveButton() {
@@ -157,27 +160,44 @@ describe('story view', function() {
     })
     .then(done, done);
   });
-  it('should allow editing a tasks\'s title and description', function(done) {
+  it('should allow editing a task\'s title and description', function(done) {
   
     assert.equal(panels.length, 3);
   
-    var title = "test title";
-    var description = "test description";
+    var summary = "new summary";
+    var description = "new description";
     
     var id = panels[1].getAttribute('id');
     var browser = this.browser;
     
-    browser.fill('#' + id + ' .header input', title);
+    browser.fill('#' + id + ' .header input[name="summary"]', summary);
     browser.fill('#' + id + ' .description textarea', description);
 
     clickSaveButton.bind({browser: browser, id: id})()
     .then(browser.reload())
     .then(function() {
       
-      assert.equal(browser.query('#' + id + ' .header input').getAttribute('value'), title);
+      assert.equal(browser.query('#' + id + ' input[name="summary"]').getAttribute('value'), summary);
       assert.equal(browser.text('#' + id + ' .description textarea'), description);
     })
     .then(done, done);      
+  });
+  it('should be possible to open a task', function(done) {
+    
+    var id = panels[1].getAttribute('id');
+    var browser = this.browser;
+    var summary = "new summary";
+
+    dblcklickHandle.bind({browser: browser, id: id})()
+    .then(function() {
+    
+      browser.wait();
+    })
+    .then(function() {
+    
+      assert.equal(browser.query('.main-panel input[name="summary"]').getAttribute('value'), summary); 
+    })
+    .then(done, done);
   });
   it('should allow changing the priority of tasks', function(done) {
 
