@@ -25,7 +25,7 @@ body {
   -moz-box-shadow: 5px 5px 15px #999;
 }
 
-#error-panel #icons {
+#error-panel .icons {
 
   /*margin-right: 5px;*/
   text-align: right;
@@ -47,10 +47,42 @@ body {
   -moz-box-shadow: 5px 5px 15px #999;
 }
 
-.main-panel .body {
+.main-panel {
+
+  background-color: #FFFFFF;
+}
+
+.main-panel hr {
+
+  height: 1px;
+  border: none;
+  background-color: black;
+  margin-top: 0px;
+  margin-bottom : 0px;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.main-panel .stats {
 
   padding: 5px;
-  background-color: #FFFFFF;
+}
+
+.main-panel .stats input {
+
+  margin-top: 0px;
+  margin-bottom: 0px;
+  margin-left: 5px;
+  margin-right: 5px;
+  outline: none;
+  padding: 0px;
+  font-family: "Arial", Sans-serif;
+  font-size: 9pt;
+  border: 0px;
+  /*width: 10px;*/
+  border-bottom: 1px black solid;
+  width: 40px;
+  /*text-align: center;*/
 }
 
 .panel {
@@ -121,9 +153,14 @@ body {
   margin-left: 5px;
 }
 
+.panel .header .icons .remove-button {
+
+  margin-left: 5px;
+}
+
 .header .icons .save-button {
    
-  margin-right: 5px; 
+  /*margin-right: 5px;*/
   display: none;
 }
 
@@ -136,9 +173,19 @@ body {
   font-family: "Arial", Sans-serif;
   font-size: 11pt;
   border: 0px;
-  width: 200px;
+  /*width: 10px;*/
   background-color: #389090;
   color: #FFFFFF;
+}
+
+.header .stats {
+
+  float: left;
+  font-family: "Arial", Sans-serif;
+  font-size: 11pt;
+  border: 0px;
+  color: #FFFFFF;
+  /*margin-left: 5px;*/
 }
 
 .description textarea {
