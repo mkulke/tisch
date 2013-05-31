@@ -249,7 +249,29 @@ $(document).ready(function() {
   // This prevents firefox from keeping form values after reload.
   $('input,textarea').attr('autocomplete', 'off');
 
+  $('#add-button').on('click', function(event) {
+   
+    event.preventDefault();
+   
+    var mainPanel = $('.main-panel').first();
+    var id = unPrefix(mainPanel.attr('id'));
+    addItem(types.child, id);
+  });
+
+  $('.panel').on('click', '.remove-button', function(event) {
+  
+    event.preventDefault();
+  
+    var story = $(event.delegateTarget);
+    var id = unPrefix(story.attr('id'));
+    var post_data = itemMap[id];
+    
+    removeItem(id, types.child, post_data);
+  });
+
   $('.panel').on('click', '.hide-button', function(event) {
+
+    event.preventDefault();
 
     var story = $(event.delegateTarget);
     $('.description', story).slideUp(100, function() {
@@ -258,15 +280,10 @@ $(document).ready(function() {
       $('.show-button', story).show();
     });
   });
-  
-  $('#add-button').on('click', function(event) {
-   
-    var mainPanel = $('.main-panel').first();
-    var id = unPrefix(mainPanel.attr('id'));
-    addItem(types.child, id);
-  });
-  
+    
   $('.panel').on('click', '.show-button', function(event) {
+
+    event.preventDefault();
 
     var item = $(event.delegateTarget);
     $('.description', item).slideDown(100, function() {
@@ -320,16 +337,7 @@ $(document).ready(function() {
   
     updatePriority(li, previousLi, nextLi);
   });
-  
-  $('.panel').on('click', '.remove-button', function(event) {
-  
-    var story = $(event.delegateTarget);
-    var id = unPrefix(story.attr('id'));
-    var post_data = itemMap[id];
-    
-    removeItem(id, types.child, post_data);
-  });
-  
+
   $('.panel .handle').on('dblclick', function(event) {
   
     var handle = $(event.delegateTarget);

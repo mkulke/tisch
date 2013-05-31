@@ -5,10 +5,14 @@ mixin panel(id, title, description)
         input(type='text', name='title', value=title)
         .icons
           //img(class='open-button', src='/open.png', alt='open')
-          img(class='save-button', src='/save.png', alt='save')
-          img(class='remove-button', src='/remove.png', alt='remove')          
-          img(class='show-button', src='/show.png', alt='show')
-          img(class='hide-button', src='/hide.png', alt='hide')
+          a(href='#')
+            img(class='save-button', src='/save.png', alt='save')
+          a(href='#')
+            img(class='remove-button', src='/remove.png', alt='remove')         
+          a(href='#')
+            img(class='show-button', src='/show.png', alt='show')
+          a(href='#')
+            img(class='hide-button', src='/hide.png', alt='hide')
         .handle
       .description
         textarea(name='description')
@@ -28,13 +32,15 @@ html
     #error-panel
       .message
       .icons
-        img(class='ok-button', src='/ok.png', alt='ok')
+        a(href='#')
+          img(class='ok-button', src='/ok.png', alt='ok')
     .main-panel(id='uuid-' + sprint._id)
       form
         .header
           input(type='text', name='title', value=sprint.title)
           .icons
-            img(class='save-button', src='/save.png', alt='save')
+            a(href='#')
+              img(class='save-button', src='/save.png', alt='save')
           .handle
         .description
           textarea(name='description').
@@ -46,4 +52,5 @@ html
       each story, i in stories
       
         mixin panel('uuid-' + story._id, story.title, story.description)
-    img(id='add-button', src='/add-circle.png', alt='add')  
+    a(href='#')
+      img(id='add-button', src='/add-circle.png', alt='add')  

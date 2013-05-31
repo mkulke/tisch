@@ -12,8 +12,6 @@ html
   head
     title Task details
     include common
-    script(type='text/javascript', charset='utf-8', src='/popbox.js')
-    link(rel='stylesheet', href='/popbox.css', type='text/css')
     script(type='text/javascript', src='/task.js')
     script(type='text/javascript')
     
@@ -25,13 +23,15 @@ html
     #error-panel
       .message
       .icons
-        img(class='ok-button', src='/ok.png', alt='ok')
+        a(href='#')
+          img(class='ok-button', src='/ok.png', alt='ok')
     .main-panel(id='uuid-' + task._id)
       form
         .header
           input(type='text', name='summary', value=task.summary)
           .icons
-            img(class='save-button', src='/save.png', alt='save')
+            a(href='#')
+              img(class='save-button', src='/save.png', alt='save')
           .handle
         .description
           textarea(name='description').

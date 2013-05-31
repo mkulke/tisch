@@ -97,7 +97,7 @@ describe('task view', function() {
   });
   
   beforeEach(function(done) {
-  
+    
     var browser = this.browser;
     browser.visit('/task/' + taskId)
     .then(function() {
