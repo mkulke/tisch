@@ -342,7 +342,7 @@ function processRequest(request, response) {
         }
         else if (request.method == "DELETE") {
       
-          assertNotEqual(null, id, 'request is missing id part in url.');
+          assert.notEqual(null, id, 'request is missing id part in url.');
       
           removeItem(db, response, id, {parent: 'story', child: 'task'}, request.body);
         }
