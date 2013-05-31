@@ -18,6 +18,57 @@ function populateItemMap(items) {
   });
 }
 
+function initPopupSelector(selector, updatePopup) {
+  
+  //var selector = $(this);
+  var id = selector.attr('id');
+    
+  // position popup, TODO: adjust the arrow pointing according to css
+  var left = $('.open', selector).offset().left - 17;
+  var offset = $('a > .content', selector).offset();
+  offset.left = left;
+  $('a > .content', selector).offset(offset);
+        
+  var closeHandler = function(event) {
+
+    if (!$(event.target).parents('#' + id + '.popup-selector').length) {    
+  
+      $('.content', selector).css("visibility", "hidden");
+      $(document).unbind('click', closeHandler);
+    }
+  };  
+           
+  $('a.open span', selector).bind('click', function(event) {
+
+    event.preventDefault();
+    
+    updatePopup(function(data) {
+    
+      $('.content', selector).children().remove();
+      
+      data.forEach(function(item) {
+      
+        var newItem = $('.template', selector).children().clone(true);
+        newItem.text(item.label);
+        newItem.attr('id', item.id);
+        $('.content', selector).append(newItem);
+        newItem.bind('click', function(event) {
+        
+          event.preventDefault();
+        
+          $('.open span', selector).text(item.label);
+          $('.content', selector).css("visibility", "hidden");
+          $(document).unbind('click', closeHandler);
+        });
+      });
+      
+      $(document).bind('click', closeHandler);
+  
+      $('.content', selector).css("visibility", "visible");
+    });
+  });  
+};
+
 function showErrorPanel(message) {
 
   $('#error-panel .message').text(message);

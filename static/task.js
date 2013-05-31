@@ -1,5 +1,19 @@
 $(document).ready(function() {
-      
+  
+  initPopupSelector($('#story-selector'), function(fillIn) {
+    
+    $.ajax({
+
+      url: '/story',
+      type: 'GET',
+      success: function(data, textStatus, jqXHR) {
+
+        fillIn(data);
+      },
+      error: handleServerError
+    });
+  });    
+           
   $('.main-panel').on('click', '.save-button', function(event) {
    
     var task = $(event.delegateTarget);
@@ -21,7 +35,7 @@ $(document).ready(function() {
         }
       }
      
-      isValidNumber(initialEstimation, "Initial Estimation");    
+      isValidNumber(initialEstimation, "Initial estimation");    
       isValidNumber(remainingTime, "Remaining time");
       isValidNumber(timeSpent, "Time spent");
       

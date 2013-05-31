@@ -246,9 +246,10 @@ function processRequest(request, response) {
 
   var url_parts = url.parse(request.url, true);
   var query = url_parts.query;
-  var pathname = url_parts.pathname
-  var type = unescape(pathname.split("/")[1]);
-  var id = unescape(pathname.split("/")[2]);
+  var pathname = url_parts.pathname;
+  var pathParts = pathname.split("/");
+  var type = pathParts.length > 1 ? unescape(pathParts[1]) : null;
+  var id = pathParts.length > 2 ? unescape(pathParts[2]) : null;
   var html = true;
   var accept = request.headers["accept"];
   if ((accept != null) && (accept.indexOf("application/json") != -1)) {
@@ -290,11 +291,24 @@ function processRequest(request, response) {
       case "story":
     
         if (request.method == "GET") {
-              
-          showItem(db, response, {parent: 'story', child: 'task'}, id, function(parent, children) {
+          
+          if (!id) {
+          
+            response.writeHead(200, {'Content-Type': 'application/json'});
+            response.write(JSON.stringify([
+            
+              {id: "id1", label: "Story 1"},
+              {id: "id2", label: "Story ABCDEF"},
+              {id: "id3", label: "Hui Bui"}
+            ]));
+            response.end();
+          } else {
+          
+            showItem(db, response, {parent: 'story', child: 'task'}, id, function(parent, children) {
                 
-            return story_template({story: parent, tasks: children});
-          });                       
+              return story_template({story: parent, tasks: children});
+            });
+          }                       
         }
         else if (request.method == "POST") {
               
@@ -314,7 +328,7 @@ function processRequest(request, response) {
           assert.notEqual(true, html, 'html response not supported yet.');
       
           var parent_id = request.headers["parent_id"];
-          assert.notEqual(true, parent_id, 'parent sprint_id missing in header.');
+          assert.notEqual(null, parent_id, 'parent sprint_id missing in header.');
         
           var data = {
       
@@ -328,7 +342,7 @@ function processRequest(request, response) {
         }
         else if (request.method == "DELETE") {
       
-          assert.notEqual(null, id, 'request is missing id part in url.');
+          assertNotEqual(null, id, 'request is missing id part in url.');
       
           removeItem(db, response, id, {parent: 'story', child: 'task'}, request.body);
         }
