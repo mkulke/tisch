@@ -67,7 +67,7 @@ function initPopupSelector(selector, updatePopup) {
       $('.content', selector).css("visibility", "visible");
     });
   });  
-};
+}
 
 function showErrorPanel(message) {
 
@@ -108,7 +108,7 @@ function addItem(type, parent_id) {
     
       itemMap[data._id] = data;
     
-      var newPanel = $('#panel-template').clone(true)
+      var newPanel = $('#panel-template').clone(true);
       newPanel.attr('id', prefix(data._id));     
     
       // re-sort panels, the new item might not alway be of the lowest prio.
@@ -138,7 +138,7 @@ function addItem(type, parent_id) {
 
 function removeItem(id, type, post_data) {
 
-  if (confirm('Do you want to remove the item and its assigned objects?') == false) return;
+  if (!confirm('Do you want to remove the item and its assigned objects?')) return;
 
   $.ajax({
   
@@ -220,7 +220,7 @@ var moveItemUp = function(liId) {
   li.after(previousLi);
   
   updatePriority(li, null, previousLi);
-}
+};
 
 var moveItemDown = function(liId) {
 
@@ -235,7 +235,7 @@ var moveItemDown = function(liId) {
   nextLi.after(li);
   
   updatePriority(li, nextLi, null);
-}
+};
 
 $(document).ready(function() {
 

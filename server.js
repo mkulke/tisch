@@ -59,7 +59,7 @@ function updateItem(db, response, type, post_data, fields) {
   
     $set: {}, 
     $inc: {_rev: 1}
-  }
+  };
   
   try {
   
@@ -76,7 +76,7 @@ function updateItem(db, response, type, post_data, fields) {
           }
           break;
         case "int":
-          value = parseInt(value);
+          value = parseInt(value, 10);
           if (isNaN(value)) {
             
             throw messages.en.ERROR_UPDATE_INVALID_INPUT;
@@ -93,13 +93,13 @@ function updateItem(db, response, type, post_data, fields) {
     return;
   }
 
-  db.collection(type).findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, [], data, {new: true}, function(err, result) {
+  db.collection(type).findAndModify({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev, 10)}, [], data, {new: true}, function(err, result) {
 
     assert.equal(null, err);
 
     db.close(); 
 
-    if (result == null) {
+    if (!result) {
     
       response.writeHead(409, messages.en.ERROR_UPDATE_NOT_FOUND);
       response.end();
@@ -112,7 +112,7 @@ function updateItem(db, response, type, post_data, fields) {
 
 function removeItem(db, response, id, types, post_data) {
 
-  db.collection(types.parent).remove({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev)}, function(err, no) {
+  db.collection(types.parent).remove({_id: ObjectID(post_data._id), _rev: parseInt(post_data._rev, 10)}, function(err, no) {
 
     assert.equal(null, err);
           
@@ -165,7 +165,7 @@ function cleanUpOnMissingParent(db, response, types, data) {
 
     assert.equal(null, err);
 
-    if (result == null) {
+    if (!result) {
 
       db.collection(types.child).remove({_id: itemId}, function(err, no) {
 
@@ -194,7 +194,7 @@ function addItem(db, response, types, data) {
       {$match: {}},
       {$group: {_id: null, max_priority: {$max: '$priority'}}}
     ];
-    aggregation[0]['$match'][types.parent + '_id'] = data[types.parent + '_id'];
+    aggregation[0].$match[types.parent + '_id'] = data[types.parent + '_id'];
     
     db.collection(types.child).aggregate(aggregation, function(err, result) {
   
@@ -204,7 +204,7 @@ function addItem(db, response, types, data) {
       var priority = 1;
       if (result.length == 1) {
       
-        priority = result[0]['max_priority'] + 1;
+        priority = result[0].max_priority + 1;
       }
       var itemId = new ObjectID();
   
@@ -226,13 +226,13 @@ function addItem(db, response, types, data) {
     
           // if the item was deleted meanwhile remove the inserted child, too.        
 
-          if (types.parent != null) {
-          
-            cleanUpOnMissingParent(db, response, types, data);    
-          } else {
-         
+          if (!types.parent) {
+            
             db.close();    
-            respondWithJson(result, response);
+            respondWithJson(result, response);          
+          } else {
+            
+            cleanUpOnMissingParent(db, response, types, data);    
           }
         }
       });
@@ -251,8 +251,8 @@ function processRequest(request, response) {
   var type = pathParts.length > 1 ? unescape(pathParts[1]) : null;
   var id = pathParts.length > 2 ? unescape(pathParts[2]) : null;
   var html = true;
-  var accept = request.headers["accept"];
-  if ((accept != null) && (accept.indexOf("application/json") != -1)) {
+  var accept = (typeof request.headers.accept != 'undefined') ? request.headers.accept : null;
+  if (accept && (accept.indexOf("application/json") != -1)) {
   
     html = false;
   }
@@ -279,13 +279,13 @@ function processRequest(request, response) {
       
           assert.notEqual(true, html, 'html response not supported yet.');
       
-          var fields = [
+          var sprintFields = [
           
             {name: 'title', type: 'string'}, 
             {name: 'description', type: 'string'}
           ];
       
-          updateItem(db, response, "sprint", request.body, fields);
+          updateItem(db, response, "sprint", request.body, sprintFields);
         }
         break;
       case "story":
@@ -314,31 +314,31 @@ function processRequest(request, response) {
               
           assert.notEqual(true, html, 'html response not supported yet.');
 
-          var fields = [
+          var storyFields = [
           
             {name: 'title', type: 'string'}, 
             {name: 'description', type: 'string'},
             {name: 'priority', type: 'float'}
           ];
 
-          updateItem(db, response, "story", request.body, fields);
+          updateItem(db, response, "story", request.body, storyFields);
         }      
         else if (request.method == "PUT") {
       
           assert.notEqual(true, html, 'html response not supported yet.');
       
-          var parent_id = request.headers["parent_id"];
-          assert.notEqual(null, parent_id, 'parent sprint_id missing in header.');
+          storyId = (typeof request.headers.parent_id != 'undefined') ? request.headers.parent_id : null;
+          assert.notEqual(null, storyId, 'parent sprint_id missing in header.');
         
-          var data = {
+          var storyData = {
       
             description: "", 
             estimated_time: 0, 
             title: 'New Story',
-            sprint_id: ObjectID(parent_id)
+            sprint_id: ObjectID(storyId)
           };
                 
-          addItem(db, response, {parent: 'sprint', child: 'story'}, data);
+          addItem(db, response, {parent: 'sprint', child: 'story'}, storyData);
         }
         else if (request.method == "DELETE") {
       
@@ -373,20 +373,20 @@ function processRequest(request, response) {
       
           assert.notEqual(true, html, 'html response not supported yet.');
       
-          var parent_id = request.headers["parent_id"];
-          assert.notEqual(true, parent_id, 'parent sprint_id missing in header.');
+          var taskId = (typeof request.headers.parent_id != "undefined") ? request.headers.parent_id : null;
+          assert.notEqual(null, taskId, 'parent sprint_id missing in header.');
         
-          var data = {
+          var taskData = {
       
             description: "", 
             initial_estimation: 2,
             remaining_time: 1,
             time_spent: 1, 
             summary: 'New Task',
-            story_id: ObjectID(parent_id)
+            story_id: ObjectID(taskId)
           };
         
-          addItem(db, response, {parent: 'story', child: 'task'}, data);
+          addItem(db, response, {parent: 'story', child: 'task'}, taskData);
         }
         else if (request.method == "DELETE") {
       

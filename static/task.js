@@ -29,7 +29,7 @@ $(document).ready(function() {
       function isValidNumber(value, name) {
       
         var result = value.match(/^\d{1,2}(\.\d{1,2}){0,1}$/);
-        if (result == null) {
+        if (!result) {
     
           throw name + ' must be specified as a positive number < 100 with not more than two precision digits (e.g. "1" or "99.25").';
         }
@@ -40,13 +40,13 @@ $(document).ready(function() {
       isValidNumber(timeSpent, "Time spent");
       
       post_data = itemMap[id];
-      post_data['initial_estimation'] = initialEstimation;
-      post_data['remaining_time'] = remainingTime;
-      post_data['time_spent'] = timeSpent;
-      post_data['summary'] = summary;
-      post_data['description'] = description;
+      post_data.initial_estimation = initialEstimation;
+      post_data.remaining_time = remainingTime;
+      post_data.time_spent = timeSpent;
+      post_data.summary = summary;
+      post_data.description = description;
     
-      updateItem(id, 'task', post_data)
+      updateItem(id, 'task', post_data);
     } catch (e) {
     
       showErrorPanel(e);

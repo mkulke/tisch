@@ -8,8 +8,8 @@ $(document).ready(function() {
     var description = $('textarea', story).val();
 
     var post_data = itemMap[id];
-    post_data['summary'] = summary;
-    post_data['description'] = description;
+    post_data.summary = summary;
+    post_data.description = description;
     
     updateItem(id, 'task', post_data);
   });
@@ -22,8 +22,8 @@ $(document).ready(function() {
     var description = $('textarea', sprint).val();
 
     var post_data = itemMap[id];
-    post_data['title'] = title;
-    post_data['description'] = description;
+    post_data.title = title;
+    post_data.description = description;
     
     updateItem(id, 'story', post_data);
   });
