@@ -196,6 +196,7 @@ function cleanUpOnMissingParent(db, response, types, data) {
   });
 }
 
+
 function addItem(db, response, types, data) {
 
   function optimistic_loop() {
@@ -226,7 +227,7 @@ function addItem(db, response, types, data) {
         
       db.collection(types.child).insert(data, function(err, result) {
 
-        // if the story is a duplicate increade prio and run again.
+        // if the story is a duplicate increase prio and run again.
   
         if (err && err.code == 11000) {
 
@@ -267,6 +268,97 @@ var connectToDb = function() {
   });
 };
 
+var insert = function(type, parentType, data) {
+
+  // TODO: not exactly atomic, do we need to clean up
+  // orphaned items maybe?
+
+  var optimisticLoop = function () {
+
+    var deferred = Q.defer();
+
+    // get item w/ max priority.
+
+    var aggregation = [
+      {$match: {}},
+      {$group: {_id: null, max_priority: {$max: '$priority'}}}
+    ];
+    aggregation[0].$match[parentType + '_id'] = data[parentType + '_id'];
+
+    db.collection(type).aggregate(aggregation, function(err, result) {
+
+      if (err) {
+
+        deferred.reject(new Error(err));
+      }
+      else if (result.length < 1) {
+
+        deferred.reject(new Error('invalid aggregation response'));
+      }
+
+      var priority = 1;
+      if (result.length == 1) {
+      
+        priority = result[0].max_priority + 1;
+      }
+      var itemId = new ObjectID();
+
+      data._id = itemId;
+      data._rev = 0;
+      data.priority = priority;
+
+      deferred.resolve(data);
+    });
+
+    return deferred.promise;
+  };
+
+  var tryInsert = function() {
+
+    var deferred = Q.defer();
+    db.collection(type).insert(data, function(err, result) {
+
+      // Run again if the story is a duplicate.
+
+      if (err && err.code == 11000) {
+
+        return optimisticLoop();
+      }
+      else if (err) {
+
+        deferred.reject(new Error(err));
+      }
+      else {
+
+        assert.equal(1, result.length);
+        var item = result[0];
+        deferred.resolve(item);
+      }
+    });
+    return deferred.promise;
+  };
+
+  return optimisticLoop(type, parentType, data)
+  .then(tryInsert);
+};
+
+
+var find = function(type, filter) {
+
+  var deferred = Q.defer();  
+  db.collection(type).find(filter).sort({priority: 1}).toArray(function(err, result) {
+
+    if (err) {
+
+      deferred.reject(new Error(err));
+    } else {
+    
+      deferred.resolve(result);
+    }
+  });
+  return deferred.promise;
+};
+
 var findOne = function(type, id) {
 
   var deferred = Q.defer();
@@ -279,8 +371,7 @@ var findOne = function(type, id) {
     else if (!result) {
 
       deferred.reject(new Error("Query returned no result."));
-    }
-    else {
+    } else {
     
       deferred.resolve(result);
     }
@@ -337,7 +428,7 @@ var findAndModify = function(type, id, postData, fields) {
       deferred.resolve(result);
     }
   });
-  return deferred.promise; 
+  return deferred.promise;
 };
 
 var query;
@@ -369,74 +460,143 @@ function processRequest(request, response) {
   var id = pathParts.length > 2 ? unescape(pathParts[2]) : null;
   var html = true;
   var accept = (typeof request.headers.accept != 'undefined') ? request.headers.accept : null;
-  if (accept && (accept.indexOf("application/json") != -1)) {
+  
+  /*if (accept && (accept.indexOf("application/json") != -1)) {
   
     html = false;
-  }
+  }*/
     
-  if (type == 'task') {
+  if ((type == 'task') && (request.method == 'GET')) {
 
-    if (request.method == 'GET') {
+    query = function() {
 
-      query = function() {
+      var task;
 
-        var task, story;
+      return findOne('task', id)
+      .then(function (result) {
 
-        return findOne('task', id)
-        .then(function (result) {
+        task = result;
+        return findOne('story', task.story_id.toString());
+      })
+      .then(function (result) {
 
-          task = result;
-          return findOne('story', task.story_id.toString());
-        })
-        .then(function (result) {
+        var story = result;
+        return {task: task, story: story};
+      });
+    };
 
-          story = result;
-        })
-        .then(function() {
+    answer = function(result) {
 
-          return {task: task, story: story}; 
-        });
-      };
+      return Q.fcall(function() {
 
-      answer = function(result) {
+        var html = task_template({task: result.task, story: result.story});
+        respondWithHtml(html, response);
+      });
+    };
+  } else if ((type == 'task') && (request.method == 'POST')) {
 
-        return Q.fcall(function() {
+    query = function() {
 
-          var html = task_template({task: result.task, story: result.story});
-          respondWithHtml(html, response);
-        });
-      };
-    } else if (request.method == 'POST') {
-
-      query = function() {
-
-        var fields = [
+      var fields = [
         
-          {name: 'summary', type: 'string'},
-          {name: 'description', type: 'string'},
-          {name: 'priority', type: 'float'},
-          {name: 'initial_estimation', type: 'float'},
-          {name: 'remaining_time', type: 'float'},
-          {name: 'time_spent', type: 'float'}
-        ];
+        {name: 'summary', type: 'string'},
+        {name: 'description', type: 'string'},
+        {name: 'priority', type: 'float'},
+        {name: 'initial_estimation', type: 'float'},
+        {name: 'remaining_time', type: 'float'},
+        {name: 'time_spent', type: 'float'}
+      ];
 
-        return findAndModify('task', id, request.body, fields);
+      return findAndModify('task', id, request.body, fields);
+    };
+
+    answer = function(result) {
+
+      return Q.fcall(function() {
+
+        respondWithJson(result, response);
+      });
+    };
+  } else if ((type == 'task') && (request.method == 'PUT')) {
+
+    query = function() {
+
+      if (typeof request.headers.parent_id == 'undefined') {
+
+        throw "sprint_id missing in http header.";
+      }
+
+      var data = {
+  
+        description: "", 
+        initial_estimation: 2,
+        remaining_time: 1,
+        time_spent: 1, 
+        summary: 'New Task',
+        story_id: ObjectID(request.headers.parent_id)
       };
 
-      answer = function(result) {
+      return insert('task', 'story', data);
+    };
+      
+    answer = function(result) {
 
-        return Q.fcall(function() {
+      respondWithJson(result, response);
+    };
+  } else if ((type == 'story') && (request.method == 'GET')) {
 
-          respondWithJson(result, response);
-        });
-      };
-    } else {
+    query = function() {
 
-      // TODO
-    }
+      var story;
+
+      return findOne('story', id)
+      .then(function (result) {
+
+        story = result;
+        return find('task', {story_id: story._id});
+      })
+      .then(function(result) {
+
+        var tasks = result;
+        return {story: story, tasks: tasks}; 
+      });
+    };
+
+    answer = function(result) {
+
+      return Q.fcall(function() {
+
+        var html = story_template({story: result.story, tasks: result.tasks});
+        respondWithHtml(html, response);
+      });
+    };
+   } else if ((type == 'story') && (request.method == 'POST')) {
+
+    query = function() {
+    
+      var fields = [
+      
+        {name: 'title', type: 'string'}, 
+        {name: 'description', type: 'string'},
+        {name: 'priority', type: 'float'}
+      ];
+
+      return findAndModify('story', id, request.body, fields);
+    };
+
+    answer = function(result) {
+
+      respondWithJson(result, response);
+    };
   } else {
 
     // TODO
+
+    query = function() {
+
+      throw 'not implemented yet';
+    };
+    answer = function() {};
   }
 
   connectToDb()
