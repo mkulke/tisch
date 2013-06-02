@@ -1,9 +1,9 @@
-mixin popup-selector(label, value, id)
+mixin popup-selector(label, story, id)
   =label + ': '
   span(class='popup-selector', id=id)
     a(class='open', href='#')
-      span(id='blafasel')
-        =value
+      span(id=story._id)
+        =story.title
       .template
         .line
       .content
@@ -45,6 +45,6 @@ html
           | Time spent:
           input(type='text', name='time_spent', value=task.time_spent, size='5', maxlength='5')
         .stats
-          mixin popup-selector('Story', 'My Story', 'story-selector')
+          mixin popup-selector('Story', story, 'story-selector')
         .stats
-          mixin popup-selector('Color setting', 'Some Color', 'color-selector')
+          mixin popup-selector('Color setting', {title: 'Some Color', _id: 'some id'}, 'color-selector')

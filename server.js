@@ -6,8 +6,8 @@ var assert = require('assert');
 var url = require('url');
 var MongoClient = require('mongodb').MongoClient;
 var ObjectID = require('mongodb').ObjectID;
-
 var messages = require('./messages.json');
+var Q = require('q');
 
 var cwd = process.cwd();
 var options = { pretty: false, filename: 'sprint.jade' };
@@ -16,7 +16,6 @@ options.filename = 'story.jade';
 var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'task.jade';
 var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
-var html_headers = {'Content-Type': 'text/html', 'Cache-control': 'no-store'};
 
 function showItem(db, response, types, parentId, template) {
 
@@ -148,12 +147,25 @@ function removeItem(db, response, id, types, post_data) {
   }); 
 }
 
-function respondWithJson(result, response) {
+function respondWithHtml(html, response) {
 
-  assert.notEqual(null, result, "result is not supposed to be null here");
+  assert(html);
+
+  var headers = {'Content-Type': 'text/html', 'Cache-control': 'no-store'};
+
+  response.writeHead(200, headers);
+  response.write(html);
+  response.end();
+}
+
+function respondWithJson(json, response) {
+
+  assert(json);
       
-  response.writeHead(200, {'Content-Type': 'application/json'});
-  response.write(JSON.stringify(result));            
+  var headers = {'Content-Type': 'application/json'};
+
+  response.writeHead(200, headers);
+  response.write(JSON.stringify(json));            
   response.end();
 }
 
@@ -242,7 +254,112 @@ function addItem(db, response, types, data) {
   optimistic_loop();
 }
 
+// refactored
+
+var db;
+var connectToDb = function() {
+
+  var connect = Q.nfbind(MongoClient.connect);
+  return connect('mongodb://localhost:27017/test')
+  .then(function(dbLocal) {
+
+    db = dbLocal;
+  });
+};
+
+var findOne = function(type, id) {
+
+  var deferred = Q.defer();
+  db.collection(type).findOne({_id: ObjectID(id)}, function(err, result) {
+  
+    if (err) {
+    
+      deferred.reject(new Error(err));
+    }
+    else if (!result) {
+
+      deferred.reject(new Error("Query returned no result."));
+    }
+    else {
+    
+      deferred.resolve(result);
+    }
+  });
+  return deferred.promise; 
+};
+
+var findAndModify = function(type, id, postData, fields) {
+
+  var deferred = Q.defer();
+
+  var data = {
+  
+    $set: {}, 
+    $inc: {_rev: 1}
+  };
+  
+  fields.forEach(function(field) {
+  
+    var value = postData[field.name];   
+    switch (field.type) {
+  
+      case "float":
+        value = parseFloat(value);
+        if (isNaN(value)) {
+          
+          deferred.reject(new Error(messages.en.ERROR_UPDATE_INVALID_INPUT));
+        }
+        break;
+      case "int":
+        value = parseInt(value, 10);
+        if (isNaN(value)) {
+          
+          deferred.reject(new Error(messages.en.ERROR_UPDATE_INVALID_INPUT));
+        }
+        break;
+      default:
+    }
+    data.$set[field.name] = value;
+  });
+
+  db.collection(type).findAndModify({_id: ObjectID(id), _rev: parseInt(postData._rev, 10)}, [], data, {new: true}, function(err, result) {
+
+    if (err) {
+      
+      deferred.reject(new Error(err));
+    }
+    else if (!result) {
+
+      deferred.reject(new Error(messages.en.ERROR_UPDATE_NOT_FOUND));
+    }
+    else {
+
+      deferred.resolve(result);
+    }
+  });
+  return deferred.promise; 
+};
+
+var query;
+
+var answer;
+
+var cleanup = function() {
+
+  if (db) {
+
+    db.close(); 
+  }
+}; 
+
 function processRequest(request, response) {
+
+  var complain = function(err) {
+
+    response.writeHead(500, {"Content-Type": "text/plain"});
+    response.write(err.toString());
+    response.end();  
+  };
 
   var url_parts = url.parse(request.url, true);
   var query = url_parts.query;
@@ -256,8 +373,80 @@ function processRequest(request, response) {
   
     html = false;
   }
-  
-  MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
+    
+  if (type == 'task') {
+
+    if (request.method == 'GET') {
+
+      query = function() {
+
+        var task, story;
+
+        return findOne('task', id)
+        .then(function (result) {
+
+          task = result;
+          return findOne('story', task.story_id.toString());
+        })
+        .then(function (result) {
+
+          story = result;
+        })
+        .then(function() {
+
+          return {task: task, story: story}; 
+        });
+      };
+
+      answer = function(result) {
+
+        return Q.fcall(function() {
+
+          var html = task_template({task: result.task, story: result.story});
+          respondWithHtml(html, response);
+        });
+      };
+    } else if (request.method == 'POST') {
+
+      query = function() {
+
+        var fields = [
+        
+          {name: 'summary', type: 'string'},
+          {name: 'description', type: 'string'},
+          {name: 'priority', type: 'float'},
+          {name: 'initial_estimation', type: 'float'},
+          {name: 'remaining_time', type: 'float'},
+          {name: 'time_spent', type: 'float'}
+        ];
+
+        return findAndModify('task', id, request.body, fields);
+      };
+
+      answer = function(result) {
+
+        return Q.fcall(function() {
+
+          respondWithJson(result, response);
+        });
+      };
+    } else {
+
+      // TODO
+    }
+  } else {
+
+    // TODO
+  }
+
+  connectToDb()
+  .then(query)
+  .then(answer)
+  .fail(complain)
+  .fin(cleanup)
+  .done();
+
+  /*MongoClient.connect("mongodb://localhost:27017/test", function(err, db) {
   
     assert.equal(null, err);
     assert.notEqual(null, db);
@@ -402,7 +591,7 @@ function processRequest(request, response) {
         response.write("not found");
         response.end();
     }
-  });
+  });*/
 }
 
 var app = connect()
