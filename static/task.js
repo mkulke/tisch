@@ -16,6 +16,8 @@ $(document).ready(function() {
            
   $('.main-panel').on('click', '.save-button', function(event) {
    
+    event.preventDefault();
+
     var task = $(event.delegateTarget);
     var id = unPrefix(task.attr('id'));
     var summary = $('input[name="summary"]', task).val();

@@ -313,6 +313,8 @@ $(document).ready(function() {
         
   $('#error-panel').on('click', '.ok-button', function(event) {
 
+    event.preventDefault();
+
     $('#error-panel').slideUp(100);
   });
   
