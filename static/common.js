@@ -124,7 +124,9 @@ function addItem(type, parent_id) {
       var id = prefix(data._id);
       var input = $('#' + id + " input");
       var attribute = input.attr('name');
-      input.val(data[attribute]);
+      var value = data[attribute];
+      input.val(value);
+      input.attr('value', value);
     
       var textarea = $('#' + id + " textarea");
       attribute = textarea.attr('name');
