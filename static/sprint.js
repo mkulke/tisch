@@ -1,6 +1,8 @@
 $(document).ready(function() {
     
   $('.panel').on('click', '.save-button', function(event) {
+
+    event.preventDefault();
   
     var story = $(event.delegateTarget);
     var id = unPrefix(story.attr('id'));
@@ -16,6 +18,8 @@ $(document).ready(function() {
   
   $('.main-panel').on('click', '.save-button', function(event) {
    
+    event.preventDefault();
+
     var sprint = $(event.delegateTarget);
     var id = unPrefix(sprint.attr('id'));
     var title = $('input', sprint).val();
