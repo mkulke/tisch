@@ -265,6 +265,9 @@ $(document).ready(function() {
     var story = $(event.delegateTarget);
     var id = unPrefix(story.attr('id'));
     var post_data = itemMap[id];
+    var item = $(event.delegateTarget);
+    var id = unPrefix(item.attr('id'));
+    var rev = itemMap[id]._rev;
     
     removeItem(id, types.child, post_data);
   });
