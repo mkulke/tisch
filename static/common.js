@@ -145,6 +145,7 @@ function removeItem(id, type, rev) {
     url: '/' + type + '/' + id,
     type: 'DELETE',
     headers: {rev: rev},
+    dataType: 'json',
     success: function(data, textStatus, jqXHR) {
     
       delete itemMap[id];

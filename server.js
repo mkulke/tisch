@@ -223,14 +223,20 @@ var findAndModify = function(db, type, id, postData, fields) {
   return deferred.promise;
 };
 
+var complainWithPlain = function(err) {
+
+  this.writeHead(500, "Error", {"Content-Type": "text/plain"});
+  this.write(err.toString());
+  this.end();  
+};
+
+var complainWithJson = function(err) {
+
+  this.writeHead(500, err.toString());
+  this.end();  
+};
+
 function processRequest(request, response) {
-
-  var complain = function(err) {
-
-    response.writeHead(500, {"Content-Type": "text/plain"});
-    response.write(err.toString());
-    response.end();  
-  };
 
   var db = null;
   var connectToDb = function() {
@@ -259,7 +265,7 @@ function processRequest(request, response) {
   }; 
 
   var url_parts = url.parse(request.url, true);
-  var query = url_parts.query;
+  //var query = url_parts.query;
   var pathname = url_parts.pathname;
   var pathParts = pathname.split("/");
   var type = pathParts.length > 1 ? unescape(pathParts[1]) : null;
@@ -353,10 +359,8 @@ function processRequest(request, response) {
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
   
-    if (typeof request.headers.rev == 'undefined') {
-
-      throw "rev missing in http header.";
-    }
+    assert.notEqual(true, html);
+    assert.ok(request.headers.rev);
 
     query = function() {
 
@@ -367,7 +371,7 @@ function processRequest(request, response) {
       
     answer = function() {
 
-      respondOk(response);
+      respondWithJson({}, response);
     };
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
@@ -419,10 +423,7 @@ function processRequest(request, response) {
 
     query = function() {
 
-      if (typeof request.headers.parent_id == 'undefined') {
-
-        throw "parent_id missing in http header.";
-      }
+      assert.ok(request.headers.parent_id, 'parent_id missing in http header.');
 
       var data = {
       
@@ -442,10 +443,8 @@ function processRequest(request, response) {
   } 
   else if ((type == 'story') && (request.method == 'DELETE')) {
   
-    if (typeof request.headers.rev == 'undefined') {
-
-      throw "rev missing in http header.";
-    }
+    assert.notEqual(true, html);
+    assert.ok(request.headers.rev);
 
     query = function() {
 
@@ -462,7 +461,7 @@ function processRequest(request, response) {
       
     answer = function() {
 
-      respondOk(response);
+      respondWithJson({}, response);
     };
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
@@ -524,7 +523,7 @@ function processRequest(request, response) {
   connectToDb()
   .then(query)
   .then(answer)
-  .fail(complain)
+  .fail(html ? complainWithPlain.bind(response) : complainWithJson.bind(response))
   .fin(cleanup)
   .done();
 }
