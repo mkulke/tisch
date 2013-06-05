@@ -81,6 +81,7 @@ function showErrorPanel(message) {
 
   $('#error-panel .message').text(message);
   $('#error-panel').slideDown(100);
+  $("html, body").animate({scrollTop: $('#error-panel').offset().top}, "fast");
 }
 
 function handleServerError(qHXR, textStatus, errorThrown) {
