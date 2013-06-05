@@ -376,31 +376,60 @@ function processRequest(request, response) {
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
 
-    query = function() {
+    assert.equal(true, html, 'Story GET available only as html, yet.');
 
-      var story;
+    if (id) {
 
-      return findOne(db, 'story', id)
-      .then(function (result) {
+      query = function() {
 
-        story = result;
-        return find(db, 'task', {story_id: story._id});
-      })
-      .then(function(result) {
+        var story;
 
-        var tasks = result;
-        return {story: story, tasks: tasks}; 
-      });
-    };
+        return findOne(db, 'story', id)
+        .then(function (result) {
 
-    answer = function(result) {
+          story = result;
+          return find(db, 'task', {story_id: story._id});
+        })
+        .then(function(result) {
 
-      return Q.fcall(function() {
+          var tasks = result;
+          return {story: story, tasks: tasks}; 
+        });
+      };
 
-        var html = story_template({story: result.story, tasks: result.tasks});
-        respondWithHtml(html, response);
-      });
-    };
+      answer = function(result) {
+
+        return Q.fcall(function() {
+
+          var html = story_template({story: result.story, tasks: result.tasks});
+          respondWithHtml(html, response);
+        });
+      };
+    }
+    else {
+
+      assert.notEqual(true, html, 'Generic story GET available only as json.');
+
+      query = function(result) {
+
+        return find(db, 'story', {});
+      };
+
+      answer = function(result) {
+
+        var json = [];
+
+        result.forEach(function(story) {
+
+          json.push({id: story._id, label: story.title});
+        });
+
+        return Q.fcall(function() {
+
+          respondWithJson(json, response);
+        });  
+      };
+    }
    } else if ((type == 'story') && (request.method == 'POST')) {
 
     query = function() {

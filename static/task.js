@@ -6,6 +6,7 @@ $(document).ready(function() {
 
       url: '/story',
       type: 'GET',
+      dataType: 'json',
       success: function(data, textStatus, jqXHR) {
 
         fillIn(data);
