@@ -1,6 +1,6 @@
 $(document).ready(function() {
   
-  initPopupSelector($('#story-selector'), function(fillIn) {
+  initPopupSelector($('#story-selector'), 'story_id', function(fillIn) {
     
     $.ajax({
 

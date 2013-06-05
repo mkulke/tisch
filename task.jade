@@ -1,8 +1,9 @@
 mixin popup-selector(label, story, id)
+
   =label + ': '
   span(class='popup-selector', id=id)
     a(class='open', href='#')
-      span(id=story._id)
+      span(id='uuid-' + story._id)
         =story.title
       .template
         .line

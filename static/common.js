@@ -18,7 +18,7 @@ function populateItemMap(items) {
   });
 }
 
-function initPopupSelector(selector, updatePopup) {
+function initPopupSelector(selector, name, updatePopup) {
   
   //var selector = $(this);
   var id = selector.attr('id');
@@ -57,6 +57,14 @@ function initPopupSelector(selector, updatePopup) {
           event.preventDefault();
         
           $('.open span', selector).text(item.label);
+          $('.open span', selector).attr('id', prefix(item.id));
+
+          var mainId = unPrefix($('.main-panel').attr('id'));
+          if (itemMap[mainId][name] != item.id) {
+
+            $('.main-panel .save-button').show();
+          };
+
           $('.content', selector).css("visibility", "hidden");
           $(document).unbind('click', closeHandler);
         });
