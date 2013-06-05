@@ -376,9 +376,9 @@ function processRequest(request, response) {
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
 
-    assert.equal(true, html, 'Story GET available only as html, yet.');
-
     if (id) {
+
+      assert.equal(true, html, 'Story GET available only as html, yet.');
 
       query = function() {
 
@@ -400,7 +400,7 @@ function processRequest(request, response) {
       answer = function(result) {
 
         return Q.fcall(function() {
-
+ 
           var html = story_template({story: result.story, tasks: result.tasks});
           respondWithHtml(html, response);
         });
