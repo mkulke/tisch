@@ -54,15 +54,15 @@ casper.then(function() {
 
 	casper.test.info("Save modifications on 2nd story and reload:");
 
-	this.click('#' + secondId + ' .save-button');
-})
+	this.click('#' + secondId + ' .save-button', function() {
 
-casper.waitForResource(url, function () {
-
-	this.test.assertNotVisible('#' + secondId + ' .save-button', "No save button on 2nd story.");
+		casper.waitForResource(url);
+	});
 });
 
 casper.then(function() {
+
+	this.test.assertNotVisible('#' + secondId + ' .save-button', "No save button on 2nd story.");
 
 	casper.reload(function() {
 
@@ -70,7 +70,7 @@ casper.then(function() {
 		var description = this.getHTML('#' + secondId + ' textarea[name="description"]');
 		this.test.assert((title == "New Story II") && (description == "Test description"), "Story attributes are kept after reload."); 
 	});
-})
+});
 
 casper.then(function() {
 
@@ -91,10 +91,13 @@ casper.then(function() {
 	casper.test.info("Save 2nd story and reload:");
 
 	this.test.assertVisible('#' + secondId + ' .save-button', "Save button on 2nd story is visible.");
-	this.click('#' + secondId + ' .save-button');
+	this.click('#' + secondId + ' .save-button', function() {
+
+		casper.waitForResource(url);
+	});
 });
 
-casper.waitForResource(url, function () {
+casper.then(function () {
 
 	this.reload(function() {
 
@@ -104,10 +107,36 @@ casper.waitForResource(url, function () {
 
 casper.then(function() {
 
+	casper.test.info("Doubleclick on the header & go back:");
+
+	this.mouseEvent('dblclick', '#' + secondId + ' .handle');
+});
+
+casper.then(function() {
+
+	casper.waitForResource('http://localhost:8000/story/' + secondId.substr('uuid-'.length), function () {
+
+		casper.capture('test.png');
+	});
+});
+
+casper.then(function() {
+
+	var title = this.getElementAttribute('#' + secondId + ' input[name="title"]', 'value');
+	var description = this.getHTML('#' + secondId + ' textarea[name="description"]');
+	this.test.assert((title == "New Story II") && (description == "Test description"), "Story attributes are correct."); 
+	this.test.assertDoesntExist('ul#panel-container .panel', 'No task visible.');
+	
+	casper.back();
+});
+
+
+casper.then(function() {
+
 	casper.test.info("Click remove button on 2nd story:");
 
 	this.click('#' + secondId + ' .remove-button');
-})
+});
 
 casper.waitForResource(url, function() {
 
@@ -119,7 +148,7 @@ casper.then(function() {
 	casper.test.info("Click remove button on remaining story:");
 
 	this.click('#' + firstId + ' .remove-button');
-})
+});
 
 casper.waitForResource(url, function() {
 
@@ -128,6 +157,6 @@ casper.waitForResource(url, function() {
 
 casper.run(function() {
 
-	this.test.done(12);
+	this.test.done(14);
   this.test.renderResults(true);
 });
