@@ -24,11 +24,15 @@ html
     include common
     script(type='text/javascript', src='/story.js')
     script(type='text/javascript')
-    
-      var items = !{JSON.stringify(tasks)};
-      items.push(!{JSON.stringify(story)});
-      populateItemMap(items);
-      var types = {parent: 'story', child: 'task'};
+
+      var items = {};
+      items.task = !{JSON.stringify(tasks)};
+      items.story = [!{JSON.stringify(story)}];
+
+      $(document).ready(function() {
+
+        attachAttributesToItems(items);
+      });
   body
     #error-panel
       .message

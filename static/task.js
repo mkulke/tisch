@@ -20,7 +20,9 @@ $(document).ready(function() {
     event.preventDefault();
 
     var task = $(event.delegateTarget);
-    var id = unPrefix(task.attr('id'));
+    var dbAttributes = task.data('attributes');
+    var id = dbAttributes._id;
+
     var summary = $('input[name="summary"]', task).val();
     var description = $('textarea', task).val();
     var initialEstimation = $('input[name="initial_estimation"]', task).val();
@@ -42,14 +44,19 @@ $(document).ready(function() {
       isValidNumber(remainingTime, "Remaining time");
       isValidNumber(timeSpent, "Time spent");
       
-      post_data = itemMap[id];
-      post_data.initial_estimation = initialEstimation;
-      post_data.remaining_time = remainingTime;
-      post_data.time_spent = timeSpent;
-      post_data.summary = summary;
-      post_data.description = description;
+      var webAttributes = {
+
+        summary: summary,
+        description: description,
+        initial_estimation: parseFloat(initialEstimation, 10),
+        remaining_time: parseFloat(remainingTime, 10),
+        time_spent: parseFloat(timeSpent, 10)
+      };
+
+      var delta = buildPostDelta(webAttributes, dbAttributes);
     
-      updateItem(id, 'task', post_data);
+      var rev = dbAttributes._rev;
+      updateItem(id, rev, 'task', delta);
     } catch (e) {
     
       showErrorPanel(e);

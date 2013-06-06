@@ -16,10 +16,13 @@ html
     script(type='text/javascript', src='/task.js')
     script(type='text/javascript')
     
-      var items = [];
-      items.push(!{JSON.stringify(task)});
-      populateItemMap(items);
-      var types = {parent: 'task'};
+      var items = {};
+      items.task = [!{JSON.stringify(task)}];
+
+      $(document).ready(function() {
+
+        attachAttributesToItems(items);
+      });
   body
     #error-panel
       .message

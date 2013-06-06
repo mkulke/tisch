@@ -171,7 +171,7 @@ var findOne = function(db, type, id) {
   return deferred.promise; 
 };
 
-var findAndModify = function(db, type, id, postData, fields) {
+var findAndModify = function(db, type, id, rev, postData) {
 
   var deferred = Q.defer();
 
@@ -181,31 +181,12 @@ var findAndModify = function(db, type, id, postData, fields) {
     $inc: {_rev: 1}
   };
   
-  fields.forEach(function(field) {
-  
-    var value = postData[field.name];   
-    switch (field.type) {
-  
-      case "float":
-        value = parseFloat(value);
-        if (isNaN(value)) {
-          
-          deferred.reject(new Error(messages.en.ERROR_UPDATE_INVALID_INPUT));
-        }
-        break;
-      case "int":
-        value = parseInt(value, 10);
-        if (isNaN(value)) {
-          
-          deferred.reject(new Error(messages.en.ERROR_UPDATE_INVALID_INPUT));
-        }
-        break;
-      default:
-    }
-    data.$set[field.name] = value;
-  });
+  for (index in postData) {
 
-  db.collection(type).findAndModify({_id: ObjectID(id), _rev: parseInt(postData._rev, 10)}, [], data, {new: true}, function(err, result) {
+    data.$set[index] = postData[index];  
+  }
+
+  db.collection(type).findAndModify({_id: ObjectID(id), _rev: rev}, [], data, {new: true}, function(err, result) {
 
     if (err) {
       
@@ -307,19 +288,12 @@ function processRequest(request, response) {
     };
   } else if ((type == 'task') && (request.method == 'POST')) {
 
+    assert.ok(id, 'id url part missing.');
+    assert.ok(request.headers.rev, 'rev header missing in request.');
+
     query = function() {
 
-      var fields = [
-        
-        {name: 'summary', type: 'string'},
-        {name: 'description', type: 'string'},
-        {name: 'priority', type: 'float'},
-        {name: 'initial_estimation', type: 'float'},
-        {name: 'remaining_time', type: 'float'},
-        {name: 'time_spent', type: 'float'}
-      ];
-
-      return findAndModify(db, 'task', id, request.body, fields);
+      return findAndModify(db, 'task', id, parseInt(request.headers.rev, 10), request.body);
     };
 
     answer = function(result) {
@@ -332,12 +306,9 @@ function processRequest(request, response) {
   } 
   else if ((type == 'task') && (request.method == 'PUT')) {
 
+    assert.ok(request.headers.parent_id, 'parent_id header missing in request.');
+
     query = function() {
-
-      if (typeof request.headers.parent_id == 'undefined') {
-
-        throw "parent_id missing in http header.";
-      }
 
       var data = {
   
@@ -359,8 +330,8 @@ function processRequest(request, response) {
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
   
-    assert.notEqual(true, html);
-    assert.ok(request.headers.rev);
+    assert.notEqual(true, html, 'html response not supported in task DELETE requests.');
+    assert.ok(request.headers.rev, 'rev header missing in request.');
 
     query = function() {
 
@@ -432,16 +403,12 @@ function processRequest(request, response) {
     }
    } else if ((type == 'story') && (request.method == 'POST')) {
 
-    query = function() {
-    
-      var fields = [
-      
-        {name: 'title', type: 'string'}, 
-        {name: 'description', type: 'string'},
-        {name: 'priority', type: 'float'}
-      ];
+    assert.ok(id, 'id url part missing.');
+    assert.ok(request.headers.rev, 'rev header missing in request.');
 
-      return findAndModify(db, 'story', id, request.body, fields);
+    query = function() {
+
+      return findAndModify(db, 'story', id, parseInt(request.headers.rev, 10), request.body);
     };
 
     answer = function(result) {
@@ -452,7 +419,7 @@ function processRequest(request, response) {
 
     query = function() {
 
-      assert.ok(request.headers.parent_id, 'parent_id missing in http header.');
+      assert.ok(request.headers.parent_id, 'parent_id header missing in request.');
 
       var data = {
       
@@ -522,15 +489,12 @@ function processRequest(request, response) {
     };
    } else if ((type == 'sprint') && (request.method == 'POST')) {
 
+    assert.ok(id, 'id url part missing.');
+    assert.ok(request.headers.rev, 'rev header missing in request.');
+
     query = function() {
     
-      var fields = [
-          
-        {name: 'title', type: 'string'}, 
-        {name: 'description', type: 'string'}
-      ];
-
-      return findAndModify(db, 'sprint', id, request.body, fields);
+      return findAndModify(db, 'sprint', id, parseInt(request.headers.rev, 10), request.body);
     };
 
     answer = function(result) {

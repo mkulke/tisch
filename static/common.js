@@ -1,5 +1,3 @@
-var itemMap = {};
-
 function prefix(id) {
 
   return 'uuid-' + id;
@@ -10,12 +8,37 @@ function unPrefix(prefixedId) {
   return prefixedId.substr('uuid-'.length);
 }
 
-function populateItemMap(items) {
+function attachAttributesToItems(map) {
 
-  $.each(items, function(i, item) {
-  
-    itemMap[item._id] = item;
-  });
+  for (type in map) {
+
+    items = map[type];
+    items.forEach(function(attributes) {
+
+      // this attribute is an exception b/c the prio can't be
+      // extracted from the html alone (like input values), so 
+      // the client prio is stored in an extra variable. 
+      $('#uuid-' + attributes._id).data('priority', attributes.priority);      
+      $('#uuid-' + attributes._id).data('attributes', attributes);
+      $('#uuid-' + attributes._id).data('type', type);
+    });  
+  }
+}
+
+function buildPostDelta(webAttributes, dbAttributes) {
+
+  var delta = {};
+
+  for (var index in webAttributes) {
+
+    var value = webAttributes[index];
+    if (dbAttributes[index] != value) {
+
+      delta[index] = value;
+    }       
+  }
+
+  return delta;
 }
 
 function initPopupSelector(selector, name, updatePopup) {
@@ -59,11 +82,11 @@ function initPopupSelector(selector, name, updatePopup) {
           $('.open span', selector).text(item.label);
           $('.open span', selector).attr('id', prefix(item.id));
 
-          var mainId = unPrefix($('.main-panel').attr('id'));
-          if (itemMap[mainId][name] != item.id) {
+          var mainAttributes = $('.main-panel').data('attributes');
+          if(mainAttributes[name] != item.id) {
 
             $('.main-panel .save-button').show();
-          };
+          }
 
           $('.content', selector).css("visibility", "hidden");
           $(document).unbind('click', closeHandler);
@@ -115,9 +138,11 @@ function addItem(type, parent_id) {
     dataType: 'json',
     success: function(data, textStatus, jqXHR) {
     
-      itemMap[data._id] = data;
-    
       var newPanel = $('#panel-template').clone(true);
+    
+      newPanel.data('attributes', data);
+      newPanel.data('priority', data.priority);
+
       newPanel.attr('id', prefix(data._id));     
     
       // re-sort panels, the new item might not alway be of the lowest prio.
@@ -125,7 +150,7 @@ function addItem(type, parent_id) {
       panels = panels.add(newPanel);
       panels.sort(function(a, b) {
       
-        return itemMap[unPrefix(a.id)].priority - itemMap[unPrefix(b.id)].priority;
+        return $(a).data('priority') - $(b).data('priority');
       });
       
       $('#panel-container').append(panels);
@@ -159,7 +184,6 @@ function removeItem(id, type, rev) {
     dataType: 'json',
     success: function(data, textStatus, jqXHR) {
     
-      delete itemMap[id];
       $('#' + prefix(id)).slideUp(100, function() {      
       
         $('#' + prefix(id)).remove();
@@ -169,17 +193,19 @@ function removeItem(id, type, rev) {
   });
 }
 
-function updateItem(id, type, post_data) {
+function updateItem(id, rev, type, post_data) {
 
   $.ajax({
     
     url: '/' + type + '/' + id,
     type: 'POST',
+    headers: {rev: rev},
     dataType: 'json',
-    data: post_data,
+    contentType: 'application/json',
+    data: JSON.stringify(post_data),
     success: function(data, textStatus, jqXHR) {
   
-      itemMap[id] = data;
+      $('#' + prefix(id)).data('attributes', data);
       $('#' + prefix(id) + ' .save-button').hide();
     },
     error: handleServerError
@@ -195,8 +221,7 @@ function updatePriority(li, previousLi, nextLi) {
   // not the first item
   if (li.index() > 0) {
   
-    var previousId = unPrefix(previousLi.attr('id'));
-    previousPriority = itemMap[previousId].priority;
+    previousPriority = previousLi.data('priority');
   }
   
   // last item
@@ -206,48 +231,14 @@ function updatePriority(li, previousLi, nextLi) {
   }
   else {
   
-    var nextId = unPrefix(nextLi.attr('id'));
-    nextPriority = itemMap[nextId].priority;
+    nextPriority = nextLi.data('priority');
     priority = (nextPriority - previousPriority) / 2 + previousPriority;
   }
   
-  var id = unPrefix(li.attr('id'));
-  itemMap[id].priority = priority;
-  
+  li.data('priority', priority);
+
   $('.save-button', li).show();
 }
-
-/* This is required for testing. A headless browser cannot drag and drop. */
-
-var moveItemUp = function(liId) {
-
-  var li = $('#' + liId);
-  var previousLi = li.prev();
-  if ($.isEmptyObject(li) || $.isEmptyObject(previousLi)) {
-    
-    return;
-  }
-  
-  previousLi.detach();
-  li.after(previousLi);
-  
-  updatePriority(li, null, previousLi);
-};
-
-var moveItemDown = function(liId) {
-
-  var li = $('#' + liId);
-  var nextLi = li.next();
-  if ($.isEmptyObject(li) || $.isEmptyObject(nextLi)) {
-    
-    return;
-  }
-  
-  li.detach();
-  nextLi.after(li);
-  
-  updatePriority(li, nextLi, null);
-};
 
 $(document).ready(function() {
 
@@ -261,24 +252,17 @@ $(document).ready(function() {
   // This prevents firefox from keeping form values after reload.
   $('input,textarea').attr('autocomplete', 'off');
 
-  $('#add-button').on('click', function(event) {
-   
-    event.preventDefault();
-   
-    var mainPanel = $('.main-panel').first();
-    var id = unPrefix(mainPanel.attr('id'));
-    addItem(types.child, id);
-  });
-
   $('.panel').on('click', '.remove-button', function(event) {
   
     event.preventDefault();
   
     var item = $(event.delegateTarget);
-    var id = unPrefix(item.attr('id'));
-    var rev = itemMap[id]._rev;
-    
-    removeItem(id, types.child, rev);
+    var dbAttributes = item.data('attributes');
+    var id = dbAttributes._id;
+    var rev = dbAttributes._rev;
+    var type = item.data('type');
+
+    removeItem(id, type, rev);
   });
 
   $('.panel').on('click', '.hide-button', function(event) {
@@ -315,10 +299,9 @@ $(document).ready(function() {
     var field = $(event.target);
     var attribute = field.attr('name');
     var item = $(event.delegateTarget);
-    var id = unPrefix(item.attr('id'));
     
-    if (itemMap[id][attribute] != field.val()) {
-    
+    if (item.data('attributes')[attribute] != field.val()) {
+
       $('.save-button', item).show();
     }
   });
@@ -356,7 +339,9 @@ $(document).ready(function() {
   
     var handle = $(event.delegateTarget);
     var li = handle.parents('li').first();
-    var id = unPrefix(li.attr('id'));
-    window.location.href = '/' + types.child + '/' + id;
+    var id = li.data('attributes')._id;
+    var type = li.data('type');
+
+    window.location.href = '/' + type + '/' + id;
   });
 });

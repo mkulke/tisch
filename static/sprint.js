@@ -1,19 +1,34 @@
 $(document).ready(function() {
     
+  $('#add-button').on('click', function(event) {
+   
+    event.preventDefault();
+   
+    var parentId = $('.main-panel').data('attributes')._id;
+    addItem("story", parentId);
+  });
+
   $('.panel').on('click', '.save-button', function(event) {
 
     event.preventDefault();
-  
+
     var story = $(event.delegateTarget);
-    var id = unPrefix(story.attr('id'));
+    var dbAttributes = story.data('attributes');
+    var id = dbAttributes._id;
     var title = $('input', story).val();
     var description = $('textarea', story).val();
-
-    var post_data = itemMap[id];
-    post_data.title = title;
-    post_data.description = description;
     
-    updateItem(id, 'story', post_data);
+    var webAttributes = {
+
+      title: title,
+      description: description,
+      priority: story.data('priority')
+    };
+
+    var delta = buildPostDelta(webAttributes, dbAttributes);
+
+    var rev = dbAttributes._rev;
+    updateItem(id, rev, 'story', delta);
   });
   
   $('.main-panel').on('click', '.save-button', function(event) {
@@ -21,21 +36,20 @@ $(document).ready(function() {
     event.preventDefault();
 
     var sprint = $(event.delegateTarget);
-    var id = unPrefix(sprint.attr('id'));
+    var dbAttributes = sprint.data('attributes');
+    var id = dbAttributes._id;
     var title = $('input', sprint).val();
     var description = $('textarea', sprint).val();
-
-    var post_data = itemMap[id];
-    post_data.title = title;
-    post_data.description = description;
     
-    updateItem(id, 'sprint', post_data);
-  });
-  
-  /*$('.panel').on('click', '.open-button', function(event) {
+    var webAttributes = {
 
-    var story = $(event.delegateTarget);
-    var id = story.attr('id');
-    window.location.href = "/story/" + id;
-  });*/   
+      title: title,
+      description: description,
+    };
+
+    var delta = buildPostDelta(webAttributes, dbAttributes);
+
+    var rev = dbAttributes._rev;
+    updateItem(id, rev, 'sprint', delta);
+  }); 
 });

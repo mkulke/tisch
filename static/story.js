@@ -1,30 +1,55 @@
 $(document).ready(function() {
-    
+
+  $('#add-button').on('click', function(event) {
+   
+    event.preventDefault();
+   
+    var parentId = $('.main-panel').data('attributes')._id;
+    addItem("task", parentId);
+  }); 
+
   $('.panel').on('click', '.save-button', function(event) {
   
-    var story = $(event.delegateTarget);
-    var id = unPrefix(story.attr('id'));
+    event.preventDefault();
+
+    var task = $(event.delegateTarget);
+    var dbAttributes = task.data('attributes');
+    var id = dbAttributes._id;
     var summary = $('input', story).val();
     var description = $('textarea', story).val();
-
-    var post_data = itemMap[id];
-    post_data.summary = summary;
-    post_data.description = description;
     
-    updateItem(id, 'task', post_data);
+    var webAttributes = {
+
+      summary: summary,
+      description: description,
+      priority: task.data('priority')
+    };
+
+    var delta = buildPostDelta(webAttributes, dbAttributes);
+
+    var rev = dbAttributes._rev;
+    updateItem(id, rev, 'task', delta);
   });
   
   $('.main-panel').on('click', '.save-button', function(event) {
    
-    var sprint = $(event.delegateTarget);
-    var id = unPrefix(sprint.attr('id'));
-    var title = $('input', sprint).val();
-    var description = $('textarea', sprint).val();
+    event.preventDefault();
 
-    var post_data = itemMap[id];
-    post_data.title = title;
-    post_data.description = description;
-    
-    updateItem(id, 'story', post_data);
+    var story = $(event.delegateTarget);
+    var dbAttributes = story.data('attributes');
+    var id = dbAttributes._id;
+    var title = $('input', story).val();
+    var description = $('textarea', story).val();
+
+    var webAttributes = {
+
+      title: title,
+      description: description,
+    };
+
+    var delta = buildPostDelta(webAttributes, dbAttributes);
+
+    var rev = dbAttributes._rev;
+    updateItem(id, rev, 'story', delta);
   });
 });

@@ -24,10 +24,14 @@ html
     script(type='text/javascript', src='/sprint.js')
     script(type='text/javascript')
     
-      var items = !{JSON.stringify(stories)};
-      items.push(!{JSON.stringify(sprint)});
-      populateItemMap(items);
-      var types = {parent: 'sprint', child: 'story'};
+      var items = {};
+      items.story = !{JSON.stringify(stories)};
+      items.sprint = [!{JSON.stringify(sprint)}];
+
+      $(document).ready(function() {
+
+        attachAttributesToItems(items);
+      });
   body
     #error-panel
       .message
