@@ -140,6 +140,7 @@ function addItem(type, parent_id) {
     
       var newPanel = $('#panel-template').clone(true);
     
+      newPanel.data('type', type);
       newPanel.data('attributes', data);
       newPanel.data('priority', data.priority);
 
