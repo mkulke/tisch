@@ -17,15 +17,16 @@ casper.then(function() {
 	this.click('#add-button');
 });
 
-casper.waitForResource(url);
+casper.then(function() {
+
+	casper.waitForResource(url);
+});
 
 casper.then(function() {
 
 	this.test.assertVisible('ul#panel-container li:nth-child(1)', 'New story appeared.');
 	firstId = this.getElementAttribute('ul#panel-container li:nth-child(1)', 'id');
 });
-
-// 2nd item created
 
 casper.then(function() {
 
@@ -34,10 +35,13 @@ casper.then(function() {
 	this.click('#add-button');
 });
 
-casper.waitForResource(url, function () {
+casper.then(function() {
 
-	this.test.assertVisible('ul#panel-container li:nth-child(2)', '2nd story appeared.');
-	secondId = this.getElementAttribute('ul#panel-container li:nth-child(2)', 'id');
+	casper.waitForResource(url, function () {
+
+		this.test.assertVisible('ul#panel-container li:nth-child(2)', '2nd story appeared.');
+		secondId = this.getElementAttribute('ul#panel-container li:nth-child(2)', 'id');
+	});
 });
 
 casper.then(function() {
@@ -150,9 +154,12 @@ casper.then(function() {
 	this.click('#' + firstId + ' .remove-button');
 });
 
-casper.waitForResource(url, function() {
+casper.then(function() {
 
-	this.test.assertNotVisible('ul#panel-container li', 'No story remaining.');
+	casper.waitForResource(url, function() {
+
+		this.test.assertNotVisible('ul#panel-container li', 'No story remaining.');
+	});
 });
 
 casper.run(function() {
