@@ -15,8 +15,8 @@ $(document).ready(function() {
     var task = $(event.delegateTarget);
     var dbAttributes = task.data('attributes');
     var id = dbAttributes._id;
-    var summary = $('input', story).val();
-    var description = $('textarea', story).val();
+    var summary = $('input', task).val();
+    var description = $('textarea', task).val();
     
     var webAttributes = {
 
