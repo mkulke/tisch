@@ -204,6 +204,25 @@ var findAndModify = function(db, type, id, rev, postData) {
   return deferred.promise;
 };
 
+var checkAssignmentChange = function(db, assignmentType, assignmentId) {
+
+  var deferred = Q.defer();
+
+  if (assignmentId) {
+
+    return findOne(db, assignmentType, assignmentId)
+    .fail(function() {
+
+        throw "The story to which the task was assigned to does not exist.";
+    });
+  }
+  else {
+
+    deferred.resolve();
+    return deferred.promise;
+  } 
+}
+
 var complainWithPlain = function(err) {
 
   this.writeHead(500, "Error", {"Content-Type": "text/plain"});
@@ -293,7 +312,11 @@ function processRequest(request, response) {
 
     query = function() {
 
-      return findAndModify(db, 'task', id, parseInt(request.headers.rev, 10), request.body);
+      return checkAssignmentChange(db, 'story', request.body.story_id)
+      .then(function() {
+
+        return findAndModify(db, 'task', id, parseInt(request.headers.rev, 10), request.body);
+      });
     };
 
     answer = function(result) {
@@ -408,7 +431,11 @@ function processRequest(request, response) {
 
     query = function() {
 
-      return findAndModify(db, 'story', id, parseInt(request.headers.rev, 10), request.body);
+      return checkAssignmentChange(db, 'sprint', request.body.sprint_id)
+      .then(function() {
+
+        return findAndModify(db, 'story', id, parseInt(request.headers.rev, 10), request.body);
+      });
     };
 
     answer = function(result) {
