@@ -3,7 +3,7 @@ mixin popup-selector(label, story, id)
   =label + ': '
   span(class='popup-selector', id=id)
     a(class='open', href='#')
-      span(id='uuid-' + story._id)
+      span
         =story.title
       .template
         .line
@@ -22,6 +22,7 @@ html
       $(document).ready(function() {
 
         attachAttributesToItems(items);
+        $('#story-selector').data('selected', '!{story._id}');
       });
   body
     #error-panel

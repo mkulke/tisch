@@ -73,14 +73,14 @@ function initPopupSelector(selector, name, updatePopup) {
       
         var newItem = $('.template', selector).children().clone(true);
         newItem.text(item.label);
-        newItem.attr('id', item.id);
+
         $('.content', selector).append(newItem);
         newItem.bind('click', function(event) {
         
           event.preventDefault();
         
           $('.open span', selector).text(item.label);
-          $('.open span', selector).attr('id', prefix(item.id));
+          selector.data('selected', item.id);
 
           var mainAttributes = $('.main-panel').data('attributes');
           if(mainAttributes[name] != item.id) {

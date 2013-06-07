@@ -28,6 +28,7 @@ $(document).ready(function() {
     var initialEstimation = $('input[name="initial_estimation"]', task).val();
     var remainingTime = $('input[name="remaining_time"]', task).val();
     var timeSpent = $('input[name="time_spent"]', task).val();
+    var storyId = $('#story-selector').data('selected');
 
     try {
      
@@ -50,7 +51,8 @@ $(document).ready(function() {
         description: description,
         initial_estimation: parseFloat(initialEstimation, 10),
         remaining_time: parseFloat(remainingTime, 10),
-        time_spent: parseFloat(timeSpent, 10)
+        time_spent: parseFloat(timeSpent, 10),
+        story_id: storyId
       };
 
       var delta = buildPostDelta(webAttributes, dbAttributes);
