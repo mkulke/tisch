@@ -139,38 +139,27 @@ casper.then(function() {
 
 casper.then(function() {
 
-	casper.waitForResource(sprintUrl, function () {
+	casper.waitForResource(storyUrl, function () {
 
-		casper.capture('test.png');
+		this.test.assertDoesntExist('ul#panel-container .panel', 'No task visible.');
+
+		casper.test.info("Click the add button:");
+
+		this.click('#add-button');
 	});
 });
 
 casper.then(function() {
 
-	this.test.assertDoesntExist('ul#panel-container .panel', 'No task visible.');
+	casper.waitForResource(storyUrl, function() {
 
-	casper.test.info("Click the add button:");
+		this.test.assertVisible('ul#panel-container li:nth-child(1)', 'New task appeared.');
+		firstId = this.getElementAttribute('ul#panel-container li:nth-child(1)', 'id');
 
-	this.click('#add-button');
-});
+		casper.test.info("Click the add button:");
 
-
-casper.then(function() {
-
-	casper.waitForResource(storyUrl);
-});
-
-casper.then(function() {
-
-	this.test.assertVisible('ul#panel-container li:nth-child(1)', 'New task appeared.');
-	firstId = this.getElementAttribute('ul#panel-container li:nth-child(1)', 'id');
-});
-
-casper.then(function() {
-
-	casper.test.info("Click the add button:");
-
-	this.click('#add-button');
+		this.click('#add-button');
+	});
 });
 
 casper.then(function() {
@@ -263,22 +252,11 @@ casper.then(function() {
 	casper.waitForResource(secondUrl, function () {
 
 		casper.capture('test.png');
-	});
-});
 
-casper.then(function() {
-
-	var summary = this.getElementAttribute('#' + secondId + ' input[name="summary"]', 'value');
-	var description = this.getHTML('#' + secondId + ' textarea[name="description"]');
-	this.test.assertEquals(summary, "New Task II", 'Summary is correct.');
-	this.test.assertEquals(description, "Test description", 'Description is correct.');
-});
-
-// actual task tests
-
-casper.then(function() {
-
-	casper.waitForResource(secondUrl, function () {
+		var summary = this.getElementAttribute('#' + secondId + ' input[name="summary"]', 'value');
+		var description = this.getHTML('#' + secondId + ' textarea[name="description"]');
+		this.test.assertEquals(summary, "New Task II", 'Summary is correct.');
+		this.test.assertEquals(description, "Test description", 'Description is correct.');
 
 		this.test.assertNotVisible('#' + secondId + ' .save-button', "Save button not visible.");
 
@@ -307,35 +285,80 @@ casper.then(function() {
 
 		this.test.assertEquals(summary, "Test summary", 'Summary is correct.');
 		this.test.assertEquals(description, "New Test description", 'Description is correct.');
-
-		//this.test.assert((summary == 'Test summary') && (description == 'Test description'), 'Task attributes are correct.');
-
-		casper.test.info('Put "abc" into "Initial Estimation" field & click save button:');
-
-		this.sendKeys('#' + secondId + ' input[name="initial_estimation"]', 'abc');
-		this.click('#' + secondId + ' .save-button');
-		this.test.assertVisible('#error-panel', 'The error panel appears.');
-
-		casper.back();
 	});
+});
+
+casper.then(function() {
+
+	this.test.info("Click on story selector:");
+
+	this.clickLabel("New Story");
+});
+
+casper.then(function() {
+
+	casper.waitForResource(secondUrl, function() {
+
+    this.test.assertEval(function() {
+
+        return document.querySelectorAll('#story-selector .content div').length == 2;
+    }, 'Selector has 2 lines.');
+
+		this.test.assertSelectorHasText('#story-selector .content div:nth-child(1)', 'New Story', "Line 1 in selector is correct.");
+		this.test.assertSelectorHasText('#story-selector .content div:nth-child(2)', 'New Story II', 'Line 2 in selector is correct.');	
+
+		this.test.info('Click line 2 in selector:')
+		this.click('#story-selector .content div:nth-child(2)');
+	});
+});
+
+casper.then(function() {
+
+	casper.waitForResource(secondUrl, function() {
+
+		this.test.assertSelectorHasText('#story-selector .open span', 'New Story II', "Story label is correct.");
+		this.test.assertVisible('#' + secondId + ' .save-button', "Save button is visible.");
+
+		this.test.info('Click the save button:')
+		this.click('#' + secondId + ' .save-button');
+	});
+});
+
+casper.then(function() {
+
+	casper.waitForResource(secondUrl, function() {
+
+		this.test.assertNotVisible('#' + secondId + ' .save-button', "Save button disappeared.");	
+	});
+});
+
+casper.then(function() {
+
+	casper.test.info('Put "abc" into "Initial Estimation" field & click save button:');
+
+	this.sendKeys('#' + secondId + ' input[name="initial_estimation"]', 'abc');
+	this.click('#' + secondId + ' .save-button');
+	this.test.assertVisible('#error-panel', 'The error panel appears.');
+
+	casper.back();
 });
 
 // cleanup
 
 casper.then(function() {
 
-	casper.test.info("Click remove button on 2nd task:");
+	casper.test.info("Click remove button on task:");
 
-	this.click('#' + secondId + ' .remove-button');
+	this.click('#' + firstId + ' .remove-button');
 });
 
 casper.then(function() {
 
 	casper.waitForResource(storyUrl, function() {
 
-		this.test.assertNotVisible('#' + secondId, '2nd task disappeared.');
+		this.test.assertNotVisible('ul#panel-container li', 'No task remaining.');
 
-		casper.test.info("Go back and click remove button on storie:");
+		casper.test.info("Go back and click remove button on story:");
 
 		casper.back();
 	});
@@ -365,6 +388,6 @@ casper.then(function() {
 
 casper.run(function() {
 
-	this.test.done(32);
+	this.test.done(38);
   this.test.renderResults(true);
 });
