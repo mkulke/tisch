@@ -67,6 +67,22 @@ function initPopupSelector(selector, name, updatePopup) {
     
     updatePopup(function(data) {
     
+      data.sort(function(a, b) {
+      
+        if (a.label < b.label) {
+
+          return -1;
+        }
+        else if(a.label > b.label) {
+
+          return 1;
+        }
+        else {
+
+          return 0;
+        }
+      });
+
       $('.content', selector).children().remove();
       
       data.forEach(function(item) {
