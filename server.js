@@ -406,7 +406,7 @@ function processRequest(request, response) {
 
       query = function(result) {
 
-        return find(db, 'story', {});
+        return find(db, 'story', request.headers.parent_id ? {sprint_id: ObjectID(request.headers.parent_id)} : {});
       };
 
       answer = function(result) {
@@ -415,7 +415,7 @@ function processRequest(request, response) {
 
         result.forEach(function(story) {
 
-          json.push({id: story._id, label: story.title});
+          json.push({id: story._id, label: story.title, parent_id: story.sprint_id});
         });
 
         return Q.fcall(function() {

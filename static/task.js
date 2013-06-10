@@ -2,10 +2,13 @@ $(document).ready(function() {
   
   initPopupSelector($('#story-selector'), 'story_id', function(fillIn) {
     
+    var sprint_id = $('#story-selector').data('sprint_id');
+
     $.ajax({
 
       url: '/story',
       type: 'GET',
+      headers: {parent_id: sprint_id},
       dataType: 'json',
       success: function(data, textStatus, jqXHR) {
 

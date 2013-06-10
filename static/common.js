@@ -81,6 +81,7 @@ function initPopupSelector(selector, name, updatePopup) {
         
           $('.open span', selector).text(item.label);
           selector.data('selected', item.id);
+          selector.data('parent_id', item.parent_id);
 
           var mainAttributes = $('.main-panel').data('attributes');
           if(mainAttributes[name] != item.id) {
