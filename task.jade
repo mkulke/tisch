@@ -1,14 +1,3 @@
-mixin popup-selector(label, story, id)
-
-  =label + ': '
-  span(class='popup-selector', id=id)
-    a(class='open', href='#')
-      span
-        =story.title
-      .template
-        .line
-      .content
-
 html
   head
     title Task details
@@ -22,8 +11,8 @@ html
       $(document).ready(function() {
 
         attachAttributesToItems(items);
-        $('#story-selector').data('selected', '!{story._id}');
-        $('#story-selector').data('sprint_id', '!{story.sprint_id}');
+        $('#story-selector').data('selected', {id: '!{story._id}', label: '!{story.title}', parent_id: '!{story.sprint_id }'});
+        $('#color-selector').data('selected', {id:'!{task.color}'});
       });
   body
     #error-panel
@@ -33,8 +22,8 @@ html
           img(class='ok-button', src='/ok.png', alt='ok')
     .main-panel(id='uuid-' + task._id)
       form
-        .header
-          input(type='text', name='summary', value=task.summary)
+        div(class='header ' + task.color)
+          input(type='text', name='summary', value=task.summary, class=task.color)
           .icons
             a(href='#')
               img(class='save-button', src='/save.png', alt='save')
@@ -51,6 +40,6 @@ html
           | Time spent:
           input(type='text', name='time_spent', value=task.time_spent, size='5', maxlength='5')
         .stats
-          mixin popup-selector('Story', story, 'story-selector')
-        //.stats
-        //  mixin popup-selector('Color setting', {title: 'Some Color', _id: 'some id'}, 'color-selector')
+          mixin item-selector('Story', story, 'story-selector')
+        .stats
+          mixin color-selector('Color', task.color, 'color-selector')

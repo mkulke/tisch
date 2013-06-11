@@ -61,7 +61,7 @@ function initPopupSelector(selector, name, updatePopup) {
     }
   };  
            
-  $('a.open span', selector).bind('click', function(event) {
+  $('a.open .selected', selector).bind('click', function(event) {
 
     event.preventDefault();
     
@@ -89,6 +89,7 @@ function initPopupSelector(selector, name, updatePopup) {
       
         var newItem = $('.template', selector).children().clone(true);
         newItem.text(item.label);
+        newItem.data('id', item.id);
 
         $('.content', selector).append(newItem);
         newItem.bind('click', function(event) {
@@ -96,8 +97,7 @@ function initPopupSelector(selector, name, updatePopup) {
           event.preventDefault();
         
           $('.open span', selector).text(item.label);
-          selector.data('selected', item.id);
-          selector.data('parent_id', item.parent_id);
+          selector.data('selected', item);
 
           var mainAttributes = $('.main-panel').data('attributes');
           if(mainAttributes[name] != item.id) {
@@ -179,7 +179,9 @@ function addItem(type, parent_id) {
       var value = data[attribute];
       input.val(value);
       input.attr('value', value);
-    
+      input.addClass(data.color);
+      $('.header', newPanel).addClass(data.color);
+
       var textarea = $('#' + id + " textarea");
       attribute = textarea.attr('name');
       textarea.val(data[attribute]);

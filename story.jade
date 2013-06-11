@@ -1,8 +1,8 @@
-mixin panel(id, summary, description)
+mixin panel(id, summary, description, color)
   li(class='panel', id=id)
     form
-      .header
-        input(type='text', name='summary', value=summary)
+      div(class='header '+ color)
+        input(type='text', name='summary', value=summary, class=color)
         .icons
           //img(class='open-button', src='/open.png', alt='open')
           a(href='#')
@@ -41,8 +41,8 @@ html
           img(class='ok-button', src='/ok.png', alt='ok')
     .main-panel(id='uuid-' + story._id)
       form
-        .header
-          input(type='text', name='title', value=story.title)
+        .header.blue
+          input(type='text', name='title', value=story.title).blue
           .icons
             a(href='#')
               img(class='save-button', src='/save.png', alt='save')
@@ -51,12 +51,12 @@ html
           textarea(name='description').
             #{story.description}
     ul
-      mixin panel('panel-template', '', '')
+      mixin panel('panel-template')
     ul(id='panel-container')
 
       each task, i in tasks
       
-        mixin panel('uuid-' + task._id, task.summary, task.description)
+        mixin panel('uuid-' + task._id, task.summary, task.description, task.color)
     a(href='#')
       img(id='add-button', src='/add-circle.png', alt='add')
                 

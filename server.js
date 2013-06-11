@@ -315,6 +315,10 @@ function processRequest(request, response) {
       return checkAssignmentChange(db, 'story', request.body.story_id)
       .then(function() {
 
+        if (request.body.story_id) {
+
+          request.body.story_id = ObjectID(request.body.story_id);
+        }
         return findAndModify(db, 'task', id, parseInt(request.headers.rev, 10), request.body);
       });
     };
@@ -340,6 +344,7 @@ function processRequest(request, response) {
         remaining_time: 1,
         time_spent: 1, 
         summary: 'New Task',
+        color: 'blue',
         story_id: ObjectID(request.headers.parent_id)
       };
 

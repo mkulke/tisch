@@ -251,8 +251,6 @@ casper.then(function() {
 
 	casper.waitForResource(secondUrl, function () {
 
-		casper.capture('test.png');
-
 		var summary = this.getElementAttribute('#' + secondId + ' input[name="summary"]', 'value');
 		var description = this.getHTML('#' + secondId + ' textarea[name="description"]');
 		this.test.assertEquals(summary, "New Task II", 'Summary is correct.');
@@ -334,11 +332,64 @@ casper.then(function() {
 
 casper.then(function() {
 
+	this.test.info("Click on color selector:");
+
+	this.click('#color-selector .selected');
+	this.test.assertVisible('#color-selector .content', 'Color dialog appeared.');
+
+	this.test.info("Click on purple box:");
+	this.click('#color-selector .purple');
+
+	this.test.assertEquals(this.getElementAttribute('.main-panel .header', 'class'), 'header purple', 'Header color is set to purple.');
+	this.test.assertEquals(this.getElementAttribute('.main-panel .header input', 'class'), 'purple', 'Input color is set to purple.');
+  this.test.assertVisible('#' + secondId + ' .save-button', "Save button appeared.");	
+
+  this.test.info("Click on save button:")
+
+	this.click('#' + secondId + ' .save-button');
+});
+
+casper.then(function() {
+
+	casper.waitForResource(secondUrl, function() {
+
+		this.test.assertNotVisible('#' + secondId + ' .save-button', "Save button disappeared.");
+
+		casper.test.info("Reload the page:");
+
+		this.reload(function() {
+
+			this.test.assertEquals(this.getElementAttribute('.main-panel .header', 'class'), 'header purple', 'Header color is kept.');
+			this.test.assertEquals(this.getElementAttribute('.main-panel .header input', 'class'), 'purple', 'Input color is kept.');
+		});	
+	});
+});
+
+casper.then(function() {
+
 	casper.test.info('Put "abc" into "Initial Estimation" field & click save button:');
 
 	this.sendKeys('#' + secondId + ' input[name="initial_estimation"]', 'abc');
 	this.click('#' + secondId + ' .save-button');
-	this.test.assertVisible('#error-panel', 'The error panel appears.');
+	this.test.assertVisible('#error-panel', 'The error panel appeared.');
+
+	this.test.info('Click ok button on error panel:')
+
+	this.click('#error-panel img.ok-button');
+
+	this.waitWhileVisible('#error-panel', function() {
+
+		this.test.pass('Error panel disappeared.');
+	}, function() {
+
+		this.test.fail('Error panel disappeared.');
+	}, 1000);
+
+});
+
+casper.then(function() {
+
+	casper.test.info("Go back:");
 
 	casper.back();
 });
@@ -347,7 +398,14 @@ casper.then(function() {
 
 casper.then(function() {
 
-	casper.test.info("Click remove button on task:");
+	casper.capture("test3.png");
+
+  this.test.assertEval(function() {
+
+      return document.querySelectorAll('#panel-container .panel').length == 1;
+  }, 'Only 1 task panel is visible.');
+
+	casper.test.info('Click remove button on task:')
 
 	this.click('#' + firstId + ' .remove-button');
 });
@@ -358,7 +416,7 @@ casper.then(function() {
 
 		this.test.assertNotVisible('ul#panel-container li', 'No task remaining.');
 
-		casper.test.info("Go back and click remove button on story:");
+		casper.test.info("Go back:");
 
 		casper.back();
 	});
@@ -366,6 +424,26 @@ casper.then(function() {
 
 casper.then(function() {
 
+	casper.test.info("Doubleclick on the header:");
+
+	this.mouseEvent('dblclick', 'ul#panel-container li:nth-child(1) .handle');
+});
+
+casper.then(function() {
+
+	casper.waitForResource(secondUrl, function() {
+
+		casper.capture("test2.png");
+
+		this.test.assertEquals(this.getElementAttribute('#' + secondId + ' .header', 'class'), 'header purple', 'Header color is purple.');
+
+		casper.back();
+	});
+});
+
+casper.then(function() {
+
+	this.test.info("Click remove button on story:");
 	this.click('ul#panel-container li:nth-child(2) .remove-button');
 
 	casper.waitForResource(sprintUrl, function() {
@@ -388,6 +466,6 @@ casper.then(function() {
 
 casper.run(function() {
 
-	this.test.done(38);
+	this.test.done(48);
   this.test.renderResults(true);
 });

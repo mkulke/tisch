@@ -2,7 +2,7 @@ $(document).ready(function() {
   
   initPopupSelector($('#story-selector'), 'story_id', function(fillIn) {
     
-    var sprint_id = $('#story-selector').data('sprint_id');
+    var sprint_id = $('#story-selector').data('selected').parent_id;
 
     $.ajax({
 
@@ -17,7 +17,28 @@ $(document).ready(function() {
       error: handleServerError
     });
   });    
-           
+         
+  initPopupSelector($('#color-selector'), 'color', function(fillIn) {
+    
+    fillIn([{id: "red"}, {id: "green"}, {id: "yellow"}, {id: "orange"}, {id: "purple"}, {id: "blue"}]);
+
+    $('#color-selector .content .color').each(function(index, value){
+
+      var colorBox = $(value);
+      var colorId = colorBox.data('id');
+      colorBox.addClass(colorId);
+      colorBox.addClass('box-' + index);  
+    });
+
+    $('#color-selector .content .color').bind('click', function(event) {
+
+      var chosenColor = $(event.target);
+      var colorId = chosenColor.data('id');
+      $('#color-selector .selected').removeClass("red green yellow orange purple blue").addClass(colorId);
+      $('.main-panel .header, .main-panel .header input').removeClass("red green yellow orange purple blue").addClass(colorId);
+    });
+  });    
+
   $('.main-panel').on('click', '.save-button', function(event) {
    
     event.preventDefault();
@@ -31,7 +52,8 @@ $(document).ready(function() {
     var initialEstimation = $('input[name="initial_estimation"]', task).val();
     var remainingTime = $('input[name="remaining_time"]', task).val();
     var timeSpent = $('input[name="time_spent"]', task).val();
-    var storyId = $('#story-selector').data('selected');
+    var story = $('#story-selector').data('selected').id;
+    var color = $('#color-selector').data('selected').id;
 
     try {
      
@@ -55,7 +77,8 @@ $(document).ready(function() {
         initial_estimation: parseFloat(initialEstimation, 10),
         remaining_time: parseFloat(remainingTime, 10),
         time_spent: parseFloat(timeSpent, 10),
-        story_id: storyId
+        story_id: story,
+        color: color
       };
 
       var delta = buildPostDelta(webAttributes, dbAttributes);

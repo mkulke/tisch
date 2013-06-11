@@ -1,3 +1,22 @@
+mixin item-selector(label, item, id)
+  =label + ': '
+  span(class='popup-selector', id=id)
+    a(class='open', href='#')
+      span.selected
+        =item.title
+      .template
+        .line
+      .content
+
+mixin color-selector(label, color, id)
+  =label + ': '
+  span(class='popup-selector', id=id)
+    a(class='open', href='#')
+      div(class='selected '+color)
+      .template
+        .color
+      .content
+
 link(rel='stylesheet', href='/common.css', type='text/css')
 script(type='text/javascript', src='/jquery-dev.js')
 script(type='text/javascript', src='/jquery-ui.js')

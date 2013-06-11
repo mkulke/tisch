@@ -1,8 +1,8 @@
 mixin panel(id, title, description)
   li(class='panel', id=id)
     form
-      .header
-        input(type='text', name='title', value=title)
+      .header.blue
+        input(type='text', name='title', value=title, class='blue')
         .icons
           //img(class='open-button', src='/open.png', alt='open')
           a(href='#')
@@ -40,8 +40,8 @@ html
           img(class='ok-button', src='/ok.png', alt='ok')
     .main-panel(id='uuid-' + sprint._id)
       form
-        .header
-          input(type='text', name='title', value=sprint.title)
+        .header.blue
+          input(type='text', name='title', value=sprint.title, class='blue')
           .icons
             a(href='#')
               img(class='save-button', src='/save.png', alt='save')
