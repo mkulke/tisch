@@ -365,3 +365,11 @@ $(document).ready(function() {
     window.location.href = '/' + type + '/' + id;
   });
 });
+
+// this makes safari reload a page when using the back button.
+
+window.onpageshow = function(event) {
+    if (event.persisted) {
+        window.location.reload() 
+    }
+}
