@@ -17,6 +17,14 @@ mixin color-selector(label, color, id)
         .color
       .content
 
+mixin time-input(task, label, property)
+  span
+    =label + ':'
+    span(class='error-popup')
+      .content
+        =label + ' must be specified as a positive number < 100 with not more than two precision digits (e.g. "1" or "99.25").'
+    input(type='text', size='5', maxlength='5', name=property, value=task[property])
+
 link(rel='stylesheet', href='/common.css', type='text/css')
 script(type='text/javascript', src='/jquery-dev.js')
 script(type='text/javascript', src='/jquery-ui.js')

@@ -45,6 +45,35 @@ function respondOk(response) {
   response.end();
 }
 
+function getMaxPriority(db, type, parentType, parentId) {
+
+  var deferred = Q.defer();
+
+  var aggregation = [
+    {$match: {}},
+    {$group: {_id: null, max_priority: {$max: '$priority'}}}
+  ];
+  aggregation[0].$match[parentType + '_id'] = parentId;
+
+  db.collection(type).aggregate(aggregation, function(err, result) {
+
+    if (err) {
+
+      deferred.reject(new Error(err));
+    }
+    
+    var priority = 1;
+    if (result.length == 1) {
+    
+      priority = Math.ceil(result[0].max_priority + 1);
+    }
+
+    deferred.resolve(priority);
+  });
+
+  return deferred.promise;
+}
+
 var insert = function(db, type, parentType, data) {
 
   // TODO: not exactly atomic, do we need to clean up
@@ -52,68 +81,44 @@ var insert = function(db, type, parentType, data) {
 
   var optimisticLoop = function () {
 
-    var deferred = Q.defer();
+    return getMaxPriority(db, type, parentType, data[parentType + '_id'])
+    .then(function(result) {
 
-    // get item w/ max priority.
-
-    var aggregation = [
-      {$match: {}},
-      {$group: {_id: null, max_priority: {$max: '$priority'}}}
-    ];
-    aggregation[0].$match[parentType + '_id'] = data[parentType + '_id'];
-
-    db.collection(type).aggregate(aggregation, function(err, result) {
-
-      if (err) {
-
-        deferred.reject(new Error(err));
-      }
-
-      var priority = 1;
-      if (result.length == 1) {
-      
-        priority = result[0].max_priority + 1;
-      }
       var itemId = new ObjectID();
+      var priority = result;
 
       data._id = itemId;
       data._rev = 0;
       data.priority = priority;
+    })
+    .then(function() {
 
-      deferred.resolve(data);
+      var deferred = Q.defer();
+      db.collection(type).insert(data, function(err, result) {
+
+        // Run again if the story is a duplicate.
+
+        if (err && err.code == 11000) {
+
+          return optimisticLoop();
+        }
+        else if (err) {
+
+          deferred.reject(new Error(err));
+        }
+        else {
+
+          assert.equal(1, result.length);
+          var item = result[0];
+
+          deferred.resolve(item);
+        }
+      });
+      return deferred.promise;
     });
-
-    return deferred.promise;
   };
 
-  var tryInsert = function() {
-
-    var deferred = Q.defer();
-    db.collection(type).insert(data, function(err, result) {
-
-      // Run again if the story is a duplicate.
-
-      if (err && err.code == 11000) {
-
-        return optimisticLoop();
-      }
-      else if (err) {
-
-        deferred.reject(new Error(err));
-      }
-      else {
-
-        assert.equal(1, result.length);
-        var item = result[0];
-
-        deferred.resolve(item);
-      }
-    });
-    return deferred.promise;
-  };
-
-  return optimisticLoop(type, parentType, data)
-  .then(tryInsert);
+  return optimisticLoop(type, parentType, data);
 };
 
 function remove(db, type, filter, failOnNoDeletion) {
@@ -204,17 +209,52 @@ var findAndModify = function(db, type, id, rev, postData) {
   return deferred.promise;
 };
 
-var checkAssignmentChange = function(db, assignmentType, assignmentId) {
+var updateAssignment = function(db, type, id, rev, parentType, parentId) {
+
+  var optimisticLoop = function () {
+
+    return getMaxPriority(db, type, parentType, ObjectID(parentId))
+    .then(function (result) {
+
+      var deferred = Q.defer();
+
+      var data = {
+
+        $set: {priority: result}
+      };
+      data.$set[parentType + '_id'] = ObjectID(parentId);
+
+      db.collection(type).findAndModify({_id: ObjectID(id), _rev: rev}, [], data, {new: true}, function(err, result) {
+
+        // Run again if the story is a duplicate.
+
+        if (err && err.code == 11000) {
+
+          return optimisticLoop();
+        }
+        else if (err) {
+
+          deferred.reject(new Error(err));
+        }
+        else {
+
+          deferred.resolve();
+        }
+      });
+      return deferred.promise;
+    });
+  };
 
   var deferred = Q.defer();
 
-  if (assignmentId) {
+  if (parentId) {
 
-    return findOne(db, assignmentType, assignmentId)
+    return findOne(db, parentType, parentId)
     .fail(function() {
 
         throw "The story to which the task was assigned to does not exist.";
-    });
+    })
+    .then(optimisticLoop);
   }
   else {
 
@@ -312,13 +352,10 @@ function processRequest(request, response) {
 
     query = function() {
 
-      return checkAssignmentChange(db, 'story', request.body.story_id)
+      return updateAssignment(db, 'task', id, parseInt(request.headers.rev, 10), 'story', request.body.story_id)
       .then(function() {
 
-        if (request.body.story_id) {
-
-          request.body.story_id = ObjectID(request.body.story_id);
-        }
+        delete request.body.story_id;
         return findAndModify(db, 'task', id, parseInt(request.headers.rev, 10), request.body);
       });
     };
@@ -436,9 +473,10 @@ function processRequest(request, response) {
 
     query = function() {
 
-      return checkAssignmentChange(db, 'sprint', request.body.sprint_id)
+      return updateAssignment(db, 'story', id, parseInt(request.headers.rev, 10), 'sprint', request.body.sprint_id)
       .then(function() {
 
+        delete request.body.sprint_id;
         return findAndModify(db, 'story', id, parseInt(request.headers.rev, 10), request.body);
       });
     };

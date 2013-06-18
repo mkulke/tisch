@@ -5,10 +5,10 @@ $(document).ready(function() {
     event.preventDefault();
    
     var parentId = $('.main-panel').data('attributes')._id;
-    addItem("story", parentId);
+    add("story", parentId);
   });
 
-  $('.panel').on('click', '.save-button', function(event) {
+  /*$('.panel').on('click', '.save-button', function(event) {
 
     event.preventDefault();
 
@@ -51,5 +51,5 @@ $(document).ready(function() {
 
     var rev = dbAttributes._rev;
     updateItem(id, rev, 'sprint', delta);
-  }); 
+  });*/
 });

@@ -1,4 +1,4 @@
-$(document).ready(function() {
+ $(document).ready(function() {
   
   initPopupSelector($('#story-selector'), 'story_id', function(fillIn) {
     
@@ -13,6 +13,18 @@ $(document).ready(function() {
       success: function(data, textStatus, jqXHR) {
 
         fillIn(data);
+        $('#story-selector .content .line').bind('click', $('.main-panel'), function(event) {
+
+          var task = event.data;
+          var line = $(event.target);
+          var storyId = line.data('id');
+
+          update(task, {story_id: storyId}, function() {
+
+            $('#story-selector .open span').text(line.text());
+            //selector.data('selected', item);
+          });
+        });
       },
       error: handleServerError
     });
@@ -30,20 +42,52 @@ $(document).ready(function() {
       colorBox.addClass('box-' + index);  
     });
 
-    $('#color-selector .content .color').bind('click', function(event) {
+    $('#color-selector .content .color').bind('click', $('.main-panel'), function(event) {
+
+      var task = event.data;
+
+      var chosenColor = $(event.target);
+      var colorId = chosenColor.data('id');
+
+      update(task, {color: colorId}, function() {
+
+        colorId = task.data('attributes').color;
+        $('#color-selector .selected').removeClass("red green yellow orange purple blue").addClass(colorId);
+        $('.main-panel .header, .main-panel .header input').removeClass("red green yellow orange purple blue").addClass(colorId);
+      }); 
+    });
+
+    /*$('#color-selector .content .color').bind('click', function(event) {
 
       var chosenColor = $(event.target);
       var colorId = chosenColor.data('id');
       $('#color-selector .selected').removeClass("red green yellow orange purple blue").addClass(colorId);
       $('.main-panel .header, .main-panel .header input').removeClass("red green yellow orange purple blue").addClass(colorId);
-    });
-  });    
+    });*/
+  });
 
-  $('.main-panel').on('click', '.save-button', function(event) {
+  $('input[name="initial_estimation"], input[name="remaining_time"], input[name="time_spent"]').data('parser', function(value) {
+
+    var result = value.match(/^\d{1,2}(\.\d{1,2}){0,1}$/);
+    if (result === null) {
+
+      return null;
+    }
+    result = parseFloat(value);
+    if (isNaN(result)) { // should not happen but anyway
+
+      return null;
+    }
+
+    return result;
+  });
+
+  /*$('.main-panel').on('click', '.save-button', function(event) {
    
     event.preventDefault();
 
     var task = $(event.delegateTarget);
+
     var dbAttributes = task.data('attributes');
     var id = dbAttributes._id;
 
@@ -89,5 +133,5 @@ $(document).ready(function() {
     
       showErrorPanel(e);
     }
-  });
+  });*/
 });

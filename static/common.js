@@ -18,14 +18,14 @@ function attachAttributesToItems(map) {
       // this attribute is an exception b/c the prio can't be
       // extracted from the html alone (like input values), so 
       // the client prio is stored in an extra variable. 
-      $('#uuid-' + attributes._id).data('priority', attributes.priority);      
+      // $('#uuid-' + attributes._id).data('priority', attributes.priority);      
       $('#uuid-' + attributes._id).data('attributes', attributes);
       $('#uuid-' + attributes._id).data('type', type);
     });  
   }
 }
 
-function buildPostDelta(webAttributes, dbAttributes) {
+/*function buildPostDelta(webAttributes, dbAttributes) {
 
   var delta = {};
 
@@ -39,7 +39,7 @@ function buildPostDelta(webAttributes, dbAttributes) {
   }
 
   return delta;
-}
+}*/
 
 function initPopupSelector(selector, name, updatePopup) {
   
@@ -96,23 +96,23 @@ function initPopupSelector(selector, name, updatePopup) {
         
           event.preventDefault();
         
-          $('.open span', selector).text(item.label);
-          selector.data('selected', item);
+          /*$('.open span', selector).text(item.label);
+          selector.data('selected', item);*/
 
-          var mainAttributes = $('.main-panel').data('attributes');
+          /*var mainAttributes = $('.main-panel').data('attributes');
           if(mainAttributes[name] != item.id) {
 
             $('.main-panel .save-button').show();
-          }
+          }*/
 
-          $('.content', selector).css("visibility", "hidden");
+          $('.content', selector).css('visibility', 'hidden');
           $(document).unbind('click', closeHandler);
         });
       });
       
       $(document).bind('click', closeHandler);
   
-      $('.content', selector).css("visibility", "visible");
+      $('.content', selector).css('visibility', 'visible');
     });
   });  
 }
@@ -145,7 +145,7 @@ function handleServerError(qHXR, textStatus, errorThrown) {
   showErrorPanel(errorMessage);
 }
 
-function addItem(type, parent_id) {
+function add(type, parent_id) {
 
   $.ajax({
   
@@ -159,7 +159,7 @@ function addItem(type, parent_id) {
     
       newPanel.data('type', type);
       newPanel.data('attributes', data);
-      newPanel.data('priority', data.priority);
+      //newPanel.data('priority', data.priority);
 
       newPanel.attr('id', prefix(data._id));     
     
@@ -168,7 +168,7 @@ function addItem(type, parent_id) {
       panels = panels.add(newPanel);
       panels.sort(function(a, b) {
       
-        return $(a).data('priority') - $(b).data('priority');
+        return $(a).data('attributes').priority - $(b).data('attributes').priority;
       });
       
       $('#panel-container').append(panels);
@@ -192,7 +192,43 @@ function addItem(type, parent_id) {
   });
 }
 
-function removeItem(id, type, rev) {
+function update(item, postData, done) {
+
+  var attributes = item.data('attributes');
+
+  var skip = true;
+  for (attribute in postData) {
+
+    skip &= (postData[attribute] == attributes[attribute]);
+  }
+
+  if (skip) {
+
+    return;
+  }
+
+  var id = attributes._id;
+  var rev = attributes._rev;
+  var type = item.data('type');
+
+  $.ajax({
+    
+    url: '/' + type + '/' + id,
+    type: 'POST',
+    headers: {rev: rev},
+    dataType: 'json',
+    contentType: 'application/json',
+    data: JSON.stringify(postData),
+    success: function(data, textStatus, jqXHR) {
+  
+      item.data('attributes', data);
+      done();
+    },
+    error: handleServerError
+  });
+}
+
+function remove(id, type, rev) {
 
   if (!confirm('Do you want to remove the item and its assigned objects?')) return;
 
@@ -213,7 +249,7 @@ function removeItem(id, type, rev) {
   });
 }
 
-function updateItem(id, rev, type, post_data) {
+/*function updateItem(id, rev, type, post_data) {
 
   $.ajax({
     
@@ -230,7 +266,7 @@ function updateItem(id, rev, type, post_data) {
     },
     error: handleServerError
   });
-}
+}*/
 
 function updatePriority(li, previousLi, nextLi) {
 
@@ -241,23 +277,27 @@ function updatePriority(li, previousLi, nextLi) {
   // not the first item
   if (li.index() > 0) {
   
-    previousPriority = previousLi.data('priority');
+    previousPriority = previousLi.data('attributes').priority;
   }
   
   // last item
   if(li.index() + 1 == $('#panel-container li').size()) {
   
-    priority = previousPriority + 1;
+    priority = Math.ceil(previousPriority + 1);
   }
   else {
   
-    nextPriority = nextLi.data('priority');
+    nextPriority = nextLi.data('attributes').priority;
     priority = (nextPriority - previousPriority) / 2 + previousPriority;
   }
   
-  li.data('priority', priority);
+  update(li, {priority: priority}, function() {
 
-  $('.save-button', li).show();
+    li.data('attributes').priority = priority;
+  });
+  
+  //li.data('priority', priority);
+  //$('.save-button', li).show();
 }
 
 $(document).ready(function() {
@@ -282,7 +322,7 @@ $(document).ready(function() {
     var rev = dbAttributes._rev;
     var type = item.data('type');
 
-    removeItem(id, type, rev);
+    remove(id, type, rev);
   });
 
   $('.panel').on('click', '.hide-button', function(event) {
@@ -309,7 +349,7 @@ $(document).ready(function() {
     });
   });
   
-  $('.panel, .main-panel').on('keyup', ['input', 'textarea'], function(event) {
+  /*$('.panel, .main-panel').on('keyup', ['input', 'textarea'], function(event) {
 
     if((event.target.localName == 'input') && (event.which == 13)) {
     
@@ -324,7 +364,7 @@ $(document).ready(function() {
 
       $('.save-button', item).show();
     }
-  });
+  });*/
         
   $('#error-panel').on('click', '.ok-button', function(event) {
 
@@ -363,6 +403,45 @@ $(document).ready(function() {
     var type = li.data('type');
 
     window.location.href = '/' + type + '/' + id;
+  });
+
+  // refactored:
+
+  $('input, textarea').data('timer', null);
+
+  $('.panel, .main-panel').on('keyup', ['input', 'textarea'], function(event) {
+
+    if((event.target.localName == 'input') && (event.which == 13)) {
+    
+      event.preventDefault();
+      return false;
+    }  
+
+    var field = $(event.target);
+    var attribute = field.attr('name');
+    var item = $(event.delegateTarget);
+    var value = field.val(); 
+    
+    clearTimeout(field.data('timer'));
+    field.data('timer', setTimeout(function() { 
+
+      var parseValue = field.data('parser');
+      if (parseValue) {
+
+        value = parseValue(value);
+        if (value === null) {
+
+          field.siblings('.error-popup').find('.content').show();
+          return false;
+        }
+        field.siblings('.error-popup').find('.content').hide();
+      }
+
+      var data = {};
+      data[attribute] = value;
+
+      update(item, data, function() {});
+    }, 1500));
   });
 });
 
