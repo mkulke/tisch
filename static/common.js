@@ -14,36 +14,15 @@ function attachAttributesToItems(map) {
 
     items = map[type];
     items.forEach(function(attributes) {
-
-      // this attribute is an exception b/c the prio can't be
-      // extracted from the html alone (like input values), so 
-      // the client prio is stored in an extra variable. 
-      // $('#uuid-' + attributes._id).data('priority', attributes.priority);      
+    
       $('#uuid-' + attributes._id).data('attributes', attributes);
       $('#uuid-' + attributes._id).data('type', type);
     });  
   }
 }
 
-/*function buildPostDelta(webAttributes, dbAttributes) {
-
-  var delta = {};
-
-  for (var index in webAttributes) {
-
-    var value = webAttributes[index];
-    if (dbAttributes[index] != value) {
-
-      delta[index] = value;
-    }       
-  }
-
-  return delta;
-}*/
-
 function initPopupSelector(selector, name, updatePopup) {
   
-  //var selector = $(this);
   var id = selector.attr('id');
     
   // position popup, TODO: adjust the arrow pointing according to css
@@ -95,15 +74,6 @@ function initPopupSelector(selector, name, updatePopup) {
         newItem.bind('click', function(event) {
         
           event.preventDefault();
-        
-          /*$('.open span', selector).text(item.label);
-          selector.data('selected', item);*/
-
-          /*var mainAttributes = $('.main-panel').data('attributes');
-          if(mainAttributes[name] != item.id) {
-
-            $('.main-panel .save-button').show();
-          }*/
 
           $('.content', selector).css('visibility', 'hidden');
           $(document).unbind('click', closeHandler);
@@ -159,7 +129,6 @@ function add(type, parent_id) {
     
       newPanel.data('type', type);
       newPanel.data('attributes', data);
-      //newPanel.data('priority', data.priority);
 
       newPanel.attr('id', prefix(data._id));     
     
@@ -249,25 +218,6 @@ function remove(id, type, rev) {
   });
 }
 
-/*function updateItem(id, rev, type, post_data) {
-
-  $.ajax({
-    
-    url: '/' + type + '/' + id,
-    type: 'POST',
-    headers: {rev: rev},
-    dataType: 'json',
-    contentType: 'application/json',
-    data: JSON.stringify(post_data),
-    success: function(data, textStatus, jqXHR) {
-  
-      $('#' + prefix(id)).data('attributes', data);
-      $('#' + prefix(id) + ' .save-button').hide();
-    },
-    error: handleServerError
-  });
-}*/
-
 function updatePriority(li, previousLi, nextLi) {
 
   var previousPriority = 0;
@@ -295,9 +245,6 @@ function updatePriority(li, previousLi, nextLi) {
 
     li.data('attributes').priority = priority;
   });
-  
-  //li.data('priority', priority);
-  //$('.save-button', li).show();
 }
 
 $(document).ready(function() {
@@ -348,23 +295,6 @@ $(document).ready(function() {
       $('.hide-button', item).show();
     });
   });
-  
-  /*$('.panel, .main-panel').on('keyup', ['input', 'textarea'], function(event) {
-
-    if((event.target.localName == 'input') && (event.which == 13)) {
-    
-      event.preventDefault();
-      return false;
-    }
-    var field = $(event.target);
-    var attribute = field.attr('name');
-    var item = $(event.delegateTarget);
-    
-    if (item.data('attributes')[attribute] != field.val()) {
-
-      $('.save-button', item).show();
-    }
-  });*/
         
   $('#error-panel').on('click', '.ok-button', function(event) {
 
@@ -404,8 +334,6 @@ $(document).ready(function() {
 
     window.location.href = '/' + type + '/' + id;
   });
-
-  // refactored:
 
   $('input, textarea').data('timer', null);
 
