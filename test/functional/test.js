@@ -4,6 +4,9 @@ var casper = require('casper').create();
 var storyId, firstId, secondId, secondUrl, storyUrl;
 
 var sprintUrl = 'http://localhost:8000/sprint/51ac972325dfbc3750000001';
+var story1Id, story2Id;
+
+casper.test.info("Open the sprint test page:");
 
 casper.start(sprintUrl);
 
@@ -11,14 +14,130 @@ casper.viewport(1024, 768);
 
 casper.then(function() {
 
-	this.test.assertDoesntExist('ul#panel-container .panel', 'No story visible.');
+	this.test.assertDoesntExist('#panel-container .panel', 'No story visible.');
 
 	casper.test.info("Click the add button:");
 
 	this.click('#add-button');
+	this.waitForResource(sprintUrl);
 });
 
 casper.then(function() {
+
+  this.test.assertEval(function() {
+
+      return document.querySelectorAll('#panel-container .panel').length == 1;
+  }, '1 story panel is visible.');
+
+	story1Id = this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id');
+
+	casper.test.info("Edit title of story 1 (and wait 1500ms):");
+
+	this.sendKeys('#' + story1Id + ' input[name="title"]', ' 1');
+  this.wait(1500, function () {
+
+  	this.waitForResource(sprintUrl);
+  });
+});
+
+casper.then(function() {
+
+	this.test.assertNotVisible('#error-panel', 'Error panel is not visible.');
+
+	casper.test.info("Reload the page:");
+
+	this.reload();
+});
+
+casper.then(function() {
+
+	this.test.assertEquals(this.getElementAttribute('#' + story1Id + ' input[name="title"]', 'value'), 'New Story 1', 'Story title changes are kept.');
+
+	casper.test.info("Edit description of story 1 (and wait 1500ms):");
+
+	this.sendKeys('#' + story1Id + ' textarea[name="description"]', 'Description of story 1.');
+  this.wait(1500, function () {
+
+  	this.waitForResource(sprintUrl);
+  });
+});
+
+casper.then(function() {
+
+	this.test.assertNotVisible('#error-panel', 'Error panel is not visible.');
+
+	casper.test.info("Reload the page:");
+
+	this.reload();
+});
+
+casper.then(function() {
+
+	this.test.assertEquals(this.getHTML('#' + story1Id + ' textarea[name="description"]'), 'Description of story 1.', 'Story description changes are kept.');
+
+	casper.test.info("Click the add button:");
+
+	this.click('#add-button');
+	this.waitForResource(sprintUrl);
+});
+
+casper.then(function() {
+
+  this.test.assertEval(function() {
+
+      return document.querySelectorAll('#panel-container .panel').length == 2;
+  }, '2 story panels are visible.');
+
+	story2Id = this.getElementAttribute('#panel-container .panel:nth-child(2)', 'id');
+
+	casper.test.info("Move story 2 to position 1:");
+
+	var info1 = this.getElementInfo('#' + story1Id +' .handle');
+	var info2 = this.getElementInfo('#' + story2Id +' .handle');
+
+	this.mouse.down(info2.x + info2.width / 2, info2.y);
+	this.mouse.move(info1.x + info1.width / 2, info1.y);
+	this.mouse.up(info1.x + info1.width / 2, info1.y);
+
+	this.test.assertEquals(story2Id, this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id'), 'Story 2 is on position 1.');
+
+	casper.test.info("Reload page:");
+
+	this.reload();
+});
+
+casper.then(function() {
+
+	this.test.assertEquals(story2Id, this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id'), 'Story 2 is still on position 1.');
+
+  casper.test.info("Click the remove button on story 1:");
+
+  this.click('#' + story1Id + ' .remove-button');
+  this.waitForResource(sprintUrl);
+});
+
+casper.then(function() {
+
+  this.test.assertEval(function() {
+
+      return document.querySelectorAll('#panel-container .panel').length == 1;
+  }, '1 story panel is visible.');
+
+  casper.test.info("Click the remove button on story 2:");
+
+  this.click('#' + story2Id + ' .remove-button');
+  this.waitForResource(sprintUrl);
+});
+
+casper.then(function() {
+
+  this.test.assertEval(function() {
+
+      return document.querySelectorAll('#panel-container .panel').length === 0;
+  }, 'No story panel is visible.');
+});
+
+/*casper.then(function() {
 
 	casper.waitForResource(sprintUrl);
 });
@@ -462,10 +581,10 @@ casper.then(function() {
 
 		this.test.assertNotVisible('ul#panel-container li', 'No story remaining.');	
 	});
-});
+});*/
 
 casper.run(function() {
 
-	this.test.done(48);
+	this.test.done(11);
   this.test.renderResults(true);
 });
