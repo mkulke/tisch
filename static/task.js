@@ -28,10 +28,15 @@
       error: handleServerError
     });
   });    
-         
+    
+  var colors = ["yellow", "orange", "red", "purple", "blue", "green"];
+
   initPopupSelector($('#color-selector'), 'color', function(fillIn) {
     
-    fillIn([{id: "red"}, {id: "green"}, {id: "yellow"}, {id: "orange"}, {id: "purple"}, {id: "blue"}]);
+    fillIn($.map(colors, function(color) {
+
+      return {id: color};
+    }));
 
     $('#color-selector .content .color').each(function(index, value){
 
@@ -51,8 +56,7 @@
       update(task, {color: colorId}, function() {
 
         colorId = task.data('attributes').color;
-        $('#color-selector .selected').removeClass("red green yellow orange purple blue").addClass(colorId);
-        $('.main-panel .header, .main-panel .header input').removeClass("red green yellow orange purple blue").addClass(colorId);
+        $('.main-panel .header, .main-panel .header input, #color-selector .selected').removeClass(colors.join(' ')).addClass(colorId);
       }); 
     });
   });
