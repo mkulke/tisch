@@ -4,7 +4,7 @@ var casper = require('casper').create();
 var storyId, firstId, secondId, secondUrl, storyUrl;
 
 var sprintUrl = 'http://localhost:8000/sprint/51ac972325dfbc3750000001';
-var story1Id, story2Id;
+var story1Id, story2Id, story1Url, task1Id, task2Id;
 
 casper.test.info("Open the sprint test page:");
 
@@ -16,8 +16,9 @@ casper.then(function() {
 
 	this.test.assertDoesntExist('#panel-container .panel', 'No story visible.');
 
-	casper.test.info("Click the add button:");
+	casper.test.info("Click the add button 2 times:");
 
+	this.click('#add-button');
 	this.click('#add-button');
 	this.waitForResource(sprintUrl);
 });
@@ -26,10 +27,11 @@ casper.then(function() {
 
   this.test.assertEval(function() {
 
-      return document.querySelectorAll('#panel-container .panel').length == 1;
-  }, '1 story panel is visible.');
+    return document.querySelectorAll('#panel-container .panel').length == 2;
+  }, '2 story panels are visible.');
 
   story1Id = this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id');
+	story2Id = this.getElementAttribute('#panel-container .panel:nth-child(2)', 'id');
 
   casper.test.info("Edit title & description of story 1 (and wait 2s):");
 
@@ -56,21 +58,6 @@ casper.then(function() {
 	this.test.assertEquals(this.getElementAttribute('#' + story1Id + ' input[name="title"]', 'value'), 'New Story 1', 'Story title changes are kept.');
 	this.test.assertEquals(this.getHTML('#' + story1Id + ' textarea[name="description"]'), 'Description of story 1.', 'Story description changes are kept.');
 
-	casper.test.info("Click the add button:");
-
-	this.click('#add-button');
-	this.waitForResource(sprintUrl);
-});
-
-casper.then(function() {
-
-  this.test.assertEval(function() {
-
-      return document.querySelectorAll('#panel-container .panel').length == 2;
-  }, '2 story panels are visible.');
-
-	story2Id = this.getElementAttribute('#panel-container .panel:nth-child(2)', 'id');
-
 	casper.test.info("Move story 2 to position 1:");
 
 	var info1 = this.getElementInfo('#' + story1Id +' .handle');
@@ -91,6 +78,167 @@ casper.then(function() {
 
 	this.test.assertEquals(story2Id, this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id'), 'Story 2 is still on position 1.');
 
+	casper.test.info("Double-click on the header of story 1:");
+
+	this.mouseEvent('dblclick', '#' + story1Id + ' .handle');
+
+	story1Url = 'http://localhost:8000/story/' + story1Id.substr('uuid-'.length);
+
+	casper.waitForResource(story1Url);
+});
+
+casper.then(function() {
+
+	this.test.assertEquals(this.getElementAttribute('#' + story1Id + ' input[name="title"]', 'value'), 'New Story 1', 'Story title is correct.');
+	this.test.assertEquals(this.getHTML('#' + story1Id + ' textarea[name="description"]'), 'Description of story 1.', 'Story description is correct.');
+  this.test.assertEval(function() {
+
+  	return document.querySelectorAll('#panel-container .panel').length == 0;
+  }, 'No panels are visible.');
+
+  this.test.info('Click the add button 3 times.')
+
+	this.click('#add-button');
+	this.click('#add-button');
+	this.click('#add-button');
+
+	this.waitForResource(story1Url);
+});
+
+casper.then(function() {
+
+  this.test.assertEval(function() {
+
+  	return document.querySelectorAll('#panel-container .panel').length == 3;
+  }, '3 task panels are visible.');
+
+  task1Id = this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id');
+  task2Id = this.getElementAttribute('#panel-container .panel:nth-child(2)', 'id');
+
+  casper.test.info("Edit title & description of task 2 (and wait 2s):");
+
+  this.sendKeys('#' + task2Id + ' input[name="summary"]', ' 2');
+	this.sendKeys('#' + task2Id + ' textarea[name="description"]', 'Description of task 2.');
+
+	this.wait(2000, function () {
+
+		this.waitForResource(story1Url);
+	});
+});
+
+casper.then(function() {
+
+	this.test.assertNotVisible('#error-panel', 'Error panel is not visible.');
+
+	casper.test.info("Reload the page:");
+
+	this.reload();
+});
+
+casper.then(function() {
+
+	this.test.assertEquals(this.getElementAttribute('#' + task2Id + ' input[name="summary"]', 'value'), 'New Task 2', 'Task summary changes are kept.');
+	this.test.assertEquals(this.getHTML('#' + task2Id + ' textarea[name="description"]'), 'Description of task 2.', 'Task description changes are kept.');
+
+	casper.test.info("Move task 1 to position 2:");
+
+	var info1 = this.getElementInfo('#' + task1Id +' .handle');
+	var info2 = this.getElementInfo('#' + task2Id +' .handle');
+
+	this.mouse.down(info1.x + info1.width / 2, info1.y);
+	this.mouse.move(info2.x + info2.width / 2, info2.y);
+	this.mouse.up(info2.x + info2.width / 2, info2.y);
+
+	this.test.assertEquals(task1Id, this.getElementAttribute('#panel-container .panel:nth-child(2)', 'id'), 'Task 1 is on position 2.');
+
+	casper.test.info("Reload page:");
+
+	this.reload();
+});
+
+casper.then(function() {
+
+	this.test.assertEquals(task1Id, this.getElementAttribute('#panel-container .panel:nth-child(2)', 'id'), 'Task 1 is still on position 2.');
+
+  casper.test.info("Click the remove button on task 1:");
+
+  this.click('#' + task1Id + ' .remove-button');
+  this.waitForResource(story1Url);
+});
+
+casper.then(function() {
+
+  this.test.assertEval(function() {
+
+  	return document.querySelectorAll('#panel-container .panel').length == 2;
+  }, '2 task panels are visible.');
+
+	casper.test.info("Double-click on the header of task 2:");
+
+	this.mouseEvent('dblclick', '#' + task2Id + ' .handle');
+
+	task2Url = 'http://localhost:8000/task/' + task2Id.substr('uuid-'.length);
+
+	casper.waitForResource(task2Url);
+});
+
+casper.then(function() {
+
+	this.test.assertEquals(this.getElementAttribute('#' + task2Id + ' input[name="summary"]', 'value'), 'New Task 2', 'Task summary is correct.');
+	this.test.assertEquals(this.getHTML('#' + task2Id + ' textarea[name="description"]'), 'Description of task 2.', 'Task description is correct.');
+	this.test.assert(this.getElementAttribute('.main-panel .header', 'class').split(' ').indexOf('blue') != -1, 'Header color is set to blue.');
+
+	this.test.info("Click on color selector:");
+
+	this.click('#color-selector .selected');
+	this.test.assertVisible('#color-selector .content', 'Color dialog appeared.');
+
+	this.test.info("Click on purple box:");
+	this.click('#color-selector .purple');
+
+	casper.waitForResource(task2Url);
+});
+
+casper.then(function(){
+
+	this.test.assert(this.getElementAttribute('.main-panel .header', 'class').split(' ').indexOf('purple') != -1, 'Header color is set to purple.');
+
+	this.test.info('Add an illegal character into the "Initial Estimation" field (and wait 1.5s):');
+
+	this.sendKeys('.main-panel input[name="initial_estimation"]', 'a');
+
+	this.wait(1500, function() {
+
+		casper.capture('test.png');
+
+		this.test.assertVisible('.error-popup .content', 'Error popup appeared.');
+
+  	casper.test.info('Go back:');
+
+  	this.back();
+	});
+});
+
+casper.then(function() {
+
+	this.test.assert(this.getElementAttribute('#' + task2Id + ' .header', 'class').split(' ').indexOf('purple') != -1, 'Header color of task 2 is purple.');
+  this.test.assertEval(function() {
+
+  	return document.querySelectorAll('#panel-container .panel').length == 2;
+  }, '2 task panels are visible.');
+
+  casper.test.info('Go back:');
+
+  this.back();
+});
+
+casper.then(function() {
+
+  this.test.assertEval(function() {
+
+  	return document.querySelectorAll('#panel-container .panel').length == 2;
+  }, '2 story panels are visible.');
+
   casper.test.info("Click the remove button on story 1:");
 
   this.click('#' + story1Id + ' .remove-button');
@@ -101,7 +249,7 @@ casper.then(function() {
 
   this.test.assertEval(function() {
 
-      return document.querySelectorAll('#panel-container .panel').length == 1;
+  	return document.querySelectorAll('#panel-container .panel').length == 1;
   }, '1 story panel is visible.');
 
   casper.test.info("Click the remove button on story 2:");
@@ -114,7 +262,7 @@ casper.then(function() {
 
   this.test.assertEval(function() {
 
-      return document.querySelectorAll('#panel-container .panel').length === 0;
+  	return document.querySelectorAll('#panel-container .panel').length === 0;
   }, 'No story panel is visible.');
 });
 
@@ -566,6 +714,6 @@ casper.then(function() {
 
 casper.run(function() {
 
-	this.test.done(10);
+	this.test.done(28);
   this.test.renderResults(true);
 });
