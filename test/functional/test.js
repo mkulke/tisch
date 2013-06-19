@@ -29,15 +29,17 @@ casper.then(function() {
       return document.querySelectorAll('#panel-container .panel').length == 1;
   }, '1 story panel is visible.');
 
-	story1Id = this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id');
+  story1Id = this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id');
 
-	casper.test.info("Edit title of story 1 (and wait 1500ms):");
+  casper.test.info("Edit title & description of story 1 (and wait 2s):");
 
-	this.sendKeys('#' + story1Id + ' input[name="title"]', ' 1');
-  this.wait(1500, function () {
+  this.sendKeys('#' + story1Id + ' input[name="title"]', ' 1');
+	this.sendKeys('#' + story1Id + ' textarea[name="description"]', 'Description of story 1.');
 
-  	this.waitForResource(sprintUrl);
-  });
+	this.wait(2000, function () {
+
+		this.waitForResource(sprintUrl);
+	});
 });
 
 casper.then(function() {
@@ -52,27 +54,6 @@ casper.then(function() {
 casper.then(function() {
 
 	this.test.assertEquals(this.getElementAttribute('#' + story1Id + ' input[name="title"]', 'value'), 'New Story 1', 'Story title changes are kept.');
-
-	casper.test.info("Edit description of story 1 (and wait 1500ms):");
-
-	this.sendKeys('#' + story1Id + ' textarea[name="description"]', 'Description of story 1.');
-  this.wait(1500, function () {
-
-  	this.waitForResource(sprintUrl);
-  });
-});
-
-casper.then(function() {
-
-	this.test.assertNotVisible('#error-panel', 'Error panel is not visible.');
-
-	casper.test.info("Reload the page:");
-
-	this.reload();
-});
-
-casper.then(function() {
-
 	this.test.assertEquals(this.getHTML('#' + story1Id + ' textarea[name="description"]'), 'Description of story 1.', 'Story description changes are kept.');
 
 	casper.test.info("Click the add button:");
@@ -585,6 +566,6 @@ casper.then(function() {
 
 casper.run(function() {
 
-	this.test.done(11);
+	this.test.done(10);
   this.test.renderResults(true);
 });

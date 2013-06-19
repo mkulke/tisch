@@ -117,7 +117,7 @@ function handleServerError(qHXR, textStatus, errorThrown) {
 
 function add(type, parent_id) {
 
-  $.ajax({
+  $.ajaxq('client', {
   
     url: '/' + type,
     headers: {parent_id: parent_id},
@@ -180,18 +180,20 @@ function update(item, postData, done) {
   var rev = attributes._rev;
   var type = item.data('type');
 
-  $.ajax({
+  $.ajaxq('client', {
     
     url: '/' + type + '/' + id,
     type: 'POST',
-    headers: {rev: rev},
     dataType: 'json',
     contentType: 'application/json',
     data: JSON.stringify(postData),
+    beforeSend: function(jqXHR, settings) {
+
+      jqXHR.setRequestHeader('rev', item.data('attributes')._rev);
+    },
     success: function(data, textStatus, jqXHR) {
   
       item.data('attributes', data);
-      done();
     },
     error: handleServerError
   });
@@ -201,12 +203,15 @@ function remove(id, type, rev) {
 
   if (!confirm('Do you want to remove the item and its assigned objects?')) return;
 
-  $.ajax({
+  $.ajaxq('client', {
   
     url: '/' + type + '/' + id,
     type: 'DELETE',
-    headers: {rev: rev},
     dataType: 'json',
+    beforeSend: function(jqXHR, settings) {
+
+      jqXHR.setRequestHeader('rev', $('#uuid-' + id).data('attributes')._rev);
+    },
     success: function(data, textStatus, jqXHR) {
     
       $('#' + prefix(id)).slideUp(100, function() {      
