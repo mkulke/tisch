@@ -194,6 +194,7 @@ function update(item, postData, done) {
     success: function(data, textStatus, jqXHR) {
   
       item.data('attributes', data);
+      done();
     },
     error: handleServerError
   });
