@@ -1,8 +1,8 @@
-mixin panel(id, title, description)
+mixin panel(id, title, description, color)
   li(class='panel', id=id)
     form
-      .header.blue
-        input(type='text', name='title', value=title, class='blue')
+      div(class='header '+color)
+        input(type='text', name='title', value=title, class=color)
         .icons
           //img(class='open-button', src='/open.png', alt='open')
           a(href='#')
@@ -55,6 +55,6 @@ html
 
       each story, i in stories
       
-        mixin panel('uuid-' + story._id, story.title, story.description)
+        mixin panel('uuid-' + story._id, story.title, story.description, story.color)
     a(href='#')
       img(id='add-button', src='/add-circle.png', alt='add')  

@@ -6,5 +6,9 @@ $(document).ready(function() {
    
     var parentId = $('.main-panel').data('attributes')._id;
     add("task", parentId);
-  }); 
+  });
+
+  $('input[name="estimation"]').data('parser', timeParser);
+
+  initColorSelector();
 });

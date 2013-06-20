@@ -494,7 +494,8 @@ function processRequest(request, response) {
       var data = {
       
         description: "", 
-        estimated_time: 0, 
+        estimation: 0,
+        color: 'yellow', 
         title: 'New Story',
         sprint_id: ObjectID(request.headers.parent_id)
       };

@@ -41,8 +41,8 @@ html
           img(class='ok-button', src='/ok.png', alt='ok')
     .main-panel(id='uuid-' + story._id)
       form
-        .header.blue
-          input(type='text', name='title', value=story.title).blue
+        div(class='header ' + story.color)
+          input(type='text', name='title', value=story.title, class=story.color)
           .icons
             a(href='#')
               img(class='save-button', src='/save.png', alt='save')
@@ -50,6 +50,11 @@ html
         .description
           textarea(name='description').
             #{story.description}
+        hr
+        .line
+          mixin time-input(story, 'Time estimation', 'estimation')
+        .line
+          mixin color-selector('Color', story.color, 'color-selector')
     ul
       mixin panel('panel-template')
     ul(id='panel-container')
