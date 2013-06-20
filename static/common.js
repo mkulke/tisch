@@ -161,7 +161,7 @@ function add(type, parent_id) {
   });
 }
 
-function update(item, postData, done) {
+function update(item, postData, success, failure) {
 
   var attributes = item.data('attributes');
 
@@ -194,9 +194,19 @@ function update(item, postData, done) {
     success: function(data, textStatus, jqXHR) {
   
       item.data('attributes', data);
-      done();
+      if (success) {
+       
+        success();
+      }
     },
-    error: handleServerError
+    error: function(data, textStatus, jqXH) {
+    
+      handleServerError(data, textStatus, jqXH);
+      if (failure) {
+
+        failure();        
+      }
+    }
   });
 }
 
@@ -250,6 +260,24 @@ function updatePriority(li, previousLi, nextLi) {
   update(li, {priority: priority}, function() {
 
     li.data('attributes').priority = priority;
+  }, function() {
+
+    // resort the panels after priority values
+
+    var panels = [];
+    $('#panel-container li').each(function() {
+
+      panels.push($(this));
+    });
+    panels.sort(function(a, b) {
+
+      return a.data('attributes').priority - b.data('attributes').priority;
+    });
+
+    $.each(panels, function(index, panel) {
+
+      $('#panel-container').append(panel);
+    });
   });
 }
 
@@ -374,7 +402,10 @@ $(document).ready(function() {
       var data = {};
       data[attribute] = value;
 
-      update(item, data, function() {});
+      update(item, data, null, function() {
+
+        field.val(item.data('attributes')[attribute]);  
+      });
     }, 1500));
   });
 });
