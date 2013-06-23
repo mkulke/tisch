@@ -5,6 +5,6 @@ $(document).ready(function() {
     event.preventDefault();
    
     var parentId = $('.main-panel').data('attributes')._id;
-    add("story", parentId);
+    requestAdd("story", parentId);
   });
 });

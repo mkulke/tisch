@@ -1,3 +1,5 @@
+var colors = ["yellow", "orange", "red", "purple", "blue", "green"];
+
 function prefix(id) {
 
   return 'uuid-' + id;
@@ -10,14 +12,14 @@ function unPrefix(prefixedId) {
 
 function attachAttributesToItems(map) {
 
-  for (type in map) {
+  for (var type in map) {
 
     items = map[type];
     items.forEach(function(attributes) {
     
       $('#uuid-' + attributes._id).data('attributes', attributes);
       $('#uuid-' + attributes._id).data('type', type);
-    });  
+    });
   }
 }
 
@@ -89,8 +91,6 @@ function initPopupSelector(selector, name, updatePopup) {
 
 function initColorSelector() {
 
-  var colors = ["yellow", "orange", "red", "purple", "blue", "green"];
-
   initPopupSelector($('#color-selector'), 'color', function(fillIn) {
     
     fillIn($.map(colors, function(color) {
@@ -113,11 +113,11 @@ function initColorSelector() {
       var chosenColor = $(event.target);
       var colorId = chosenColor.data('id');
 
-      update(task, {color: colorId}, function() {
+      requestUpdate(task, {color: colorId});/* , function() {
 
         colorId = task.data('attributes').color;
         $('.main-panel .header, .main-panel .header input, #color-selector .selected').removeClass(colors.join(' ')).addClass(colorId);
-      }); 
+      });*/ 
     });
   });
 }
@@ -166,58 +166,145 @@ function handleServerError(qHXR, textStatus, errorThrown) {
   showErrorPanel(errorMessage);
 }
 
-function add(type, parent_id) {
+function sortPanels() {
+
+  var panels = $('#panel-container li');
+  panels.sort(function(a, b) {
+
+    return $(a).data('attributes').priority - $(b).data('attributes').priority;
+  });
+
+  $.each(panels, function(index, panel) {
+
+    $('#panel-container').append(panel);
+  });
+}
+
+function add(type, parentType, data) {
+
+  // TODO: what if no main-panel is present?
+  var parentId = $('.main-panel').data('attributes')._id;
+  if (data[parentType + '_id'] != parentId) {
+
+    return;
+  }
+
+  var newPanel = $('#panel-template').clone(true);
+
+  newPanel.data('type', type);
+  newPanel.data('attributes', data);
+
+  newPanel.attr('id', prefix(data._id));     
+  
+  $('#panel-container').append(newPanel);
+  sortPanels();    
+
+  var id = prefix(data._id);
+  var input = $('#' + id + " input");
+  var attribute = input.attr('name');
+  var value = data[attribute];
+  input.val(value);
+  input.attr('value', value);
+  input.addClass(data.color);
+  $('.header', newPanel).addClass(data.color);
+
+  var textarea = $('#' + id + " textarea");
+  attribute = textarea.attr('name');
+  textarea.val(data[attribute]);
+  
+  $("html, body").animate({ scrollTop: $(document).height() }, "slow");  
+}
+
+function requestAdd(type, parent_id) {
 
   $.ajaxq('client', {
   
     url: '/' + type,
     headers: {parent_id: parent_id},
     type: 'PUT',
-    dataType: 'json',
-    success: function(data, textStatus, jqXHR) {
-    
-      var newPanel = $('#panel-template').clone(true);
-    
-      newPanel.data('type', type);
-      newPanel.data('attributes', data);
-
-      newPanel.attr('id', prefix(data._id));     
-    
-      // re-sort panels, the new item might not alway be of the lowest prio.
-      var panels = $('#panel-container li').detach();
-      panels = panels.add(newPanel);
-      panels.sort(function(a, b) {
-      
-        return $(a).data('attributes').priority - $(b).data('attributes').priority;
-      });
-      
-      $('#panel-container').append(panels);
-          
-      var id = prefix(data._id);
-      var input = $('#' + id + " input");
-      var attribute = input.attr('name');
-      var value = data[attribute];
-      input.val(value);
-      input.attr('value', value);
-      input.addClass(data.color);
-      $('.header', newPanel).addClass(data.color);
-
-      var textarea = $('#' + id + " textarea");
-      attribute = textarea.attr('name');
-      textarea.val(data[attribute]);
-      
-      $("html, body").animate({ scrollTop: $(document).height() }, "slow");
-    },
     error: handleServerError
   });
 }
 
-function update(item, postData, success, failure) {
+function update(id, type, attributes) {
+
+  var item = $('#' + prefix(id));
+  var parentType = $('.main-panel').data('type');
+  var parentId = $('.main-panel').data('attributes')._id;
+
+  // view contains item or is to be added to the view?
+  if (item.length > 0) {
+
+    // item is child of another main-panel and its assignment changed?
+
+    if (($('#panel-container').has(item).length > 0 ) && (attributes[parentType + '_id'] != parentId)) {
+
+      remove(attributes._id);
+    }
+    else {
+
+      for (var i in attributes) {
+
+        item.data('attributes')[i] = attributes[i];
+      }
+      //item.data('attributes', attributes);
+
+      // necessary gui updates
+
+      if (attributes.priority) {
+
+        sortPanels();  
+      }
+
+      for (var i in attributes) {
+
+        $('input[name="' + i + '"], textarea[name="' + i + '"]', item).val(attributes[i]);
+      }
+
+      if (attributes.color) {
+
+        $('.header, .header input, #color-selector .selected', item).removeClass(colors.join(' ')).addClass(attributes.color);
+      }
+
+      $.each(['story', 'sprint'], function(index, type) {
+
+        var selector = $('#' + type + '-selector');
+
+        if (selector.length < 1) {
+
+          return;
+        }
+
+        if (selector.data('selected').id != attributes[type + '_id']) {
+
+          $.ajaxq('client', {
+
+            url: '/' + type + '/' + attributes[type + '_id'],
+            type: 'GET',
+            dataType: 'json',
+            success: function(data, textStatus, jqXHR) {
+
+              $('.open span', selector).text(data.label);
+              selector.data('selected', data);
+            },
+            error: handleServerError
+          });
+        }
+      });
+    }
+  }
+  else if (attributes[parentType + '_id'] == parentId) {
+
+    add(type, attributes);
+  }
+}
+
+function requestUpdate(item, postData, undo) {
 
   var attributes = item.data('attributes');
 
   var skip = true;
-  for (attribute in postData) {
+  for (var attribute in postData) {
 
     skip &= (postData[attribute] == attributes[attribute]);
   }
@@ -235,33 +322,40 @@ function update(item, postData, success, failure) {
     
     url: '/' + type + '/' + id,
     type: 'POST',
-    dataType: 'json',
     contentType: 'application/json',
     data: JSON.stringify(postData),
+    dataType: 'json', 
     beforeSend: function(jqXHR, settings) {
 
       jqXHR.setRequestHeader('rev', item.data('attributes')._rev);
     },
-    success: function(data, textStatus, jqXHR) {
-  
-      item.data('attributes', data);
-      if (success) {
-       
-        success();
-      }
+    success: function(data, textStatus, jqXH) {
+
+      update(data.id, data.type, data.data); 
     },
     error: function(data, textStatus, jqXH) {
-    
-      handleServerError(data, textStatus, jqXH);
-      if (failure) {
 
-        failure();        
-      }
+      if (undo) {
+
+        undo();
+      }    
+      handleServerError(data, textStatus, jqXH);
     }
   });
 }
 
-function remove(id, type, rev) {
+function remove(id) {
+
+  $('#' + prefix(id)).slideUp(100, function() {      
+  
+    $('#' + prefix(id)).remove();
+  });
+
+  // TODO: handle case when the gui item is the main-panel, furthermore: what to do you are working on a child panel, which was
+  // deleted by cascade?
+}
+
+function requestRemove(id, type, rev) {
 
   if (!confirm('Do you want to remove the item and its assigned objects?')) return;
 
@@ -269,17 +363,9 @@ function remove(id, type, rev) {
   
     url: '/' + type + '/' + id,
     type: 'DELETE',
-    dataType: 'json',
     beforeSend: function(jqXHR, settings) {
 
       jqXHR.setRequestHeader('rev', $('#uuid-' + id).data('attributes')._rev);
-    },
-    success: function(data, textStatus, jqXHR) {
-    
-      $('#' + prefix(id)).slideUp(100, function() {      
-      
-        $('#' + prefix(id)).remove();
-      });
     },
     error: handleServerError
   });
@@ -308,31 +394,27 @@ function updatePriority(li, previousLi, nextLi) {
     priority = (nextPriority - previousPriority) / 2 + previousPriority;
   }
   
-  update(li, {priority: priority}, function() {
-
-    li.data('attributes').priority = priority;
-  }, function() {
-
-    // resort the panels after priority values
-
-    var panels = [];
-    $('#panel-container li').each(function() {
-
-      panels.push($(this));
-    });
-    panels.sort(function(a, b) {
-
-      return a.data('attributes').priority - b.data('attributes').priority;
-    });
-
-    $.each(panels, function(index, panel) {
-
-      $('#panel-container').append(panel);
-    });
-  });
+  requestUpdate(li, {priority: priority}, sortPanels);
 }
 
 $(document).ready(function() {
+
+  var socket = io.connect('http://localhost');
+
+  socket.on('remove', function (data) {
+
+    remove(data.id);
+  });
+
+  socket.on('add', function (data) {
+
+    add(data.type, data.parent_type, data.data);
+  });
+
+  socket.on('update', function (data) {
+
+    update(data.id, data.type, data.data);
+  });
 
   // This enables drag and drop on the list items
   $("#panel-container").sortable({
@@ -354,7 +436,7 @@ $(document).ready(function() {
     var rev = dbAttributes._rev;
     var type = item.data('type');
 
-    remove(id, type, rev);
+    requestRemove(id, type, rev);
   });
 
   $('.panel').on('click', '.hide-button', function(event) {
@@ -453,7 +535,7 @@ $(document).ready(function() {
       var data = {};
       data[attribute] = value;
 
-      update(item, data, null, function() {
+      requestUpdate(item, data, function() {
 
         field.val(item.data('attributes')[attribute]);  
       });
@@ -465,6 +547,7 @@ $(document).ready(function() {
 
 window.onpageshow = function(event) {
     if (event.persisted) {
-        window.location.reload() 
+
+        window.location.reload();
     }
-}
+};

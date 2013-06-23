@@ -23,10 +23,11 @@ mixin time-input(task, label, property)
     span(class='error-popup')
       .content
         =label + ' must be specified as a positive number < 100 with not more than two precision digits (e.g. "1" or "99.25").'
-    input(type='text', size='5', maxlength='5', name=property, value=task[property])
+    input(type='text', size='5', maxlength='5', name=property, value=task[property]).time
 
 link(rel='stylesheet', href='/common.css', type='text/css')
 script(type='text/javascript', src='/jquery-dev.js')
 script(type='text/javascript', src='/jquery-ui.js')
 script(type='text/javascript', src='/ajaxq.js')
+script(type='text/javascript', src='/socket.io/socket.io.js')
 script(type='text/javascript', src='/common.js')

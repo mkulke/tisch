@@ -17,12 +17,9 @@
 
           var task = event.data;
           var line = $(event.target);
-          var storyId = line.data('id');
+          var storyId = line.data('id')
 
-          update(task, {story_id: storyId}, function() {
-
-            $('#story-selector .open span').text(line.text());
-          });
+          requestUpdate(task, {story_id: storyId});
         });
       },
       error: handleServerError

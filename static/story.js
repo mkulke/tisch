@@ -5,7 +5,7 @@ $(document).ready(function() {
     event.preventDefault();
    
     var parentId = $('.main-panel').data('attributes')._id;
-    add("task", parentId);
+    requestAdd("task", parentId);
   });
 
   $('input[name="estimation"]').data('parser', timeParser);

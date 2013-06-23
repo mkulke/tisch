@@ -8,6 +8,7 @@ var MongoClient = require('mongodb').MongoClient;
 var ObjectID = require('mongodb').ObjectID;
 var messages = require('./messages.json');
 var Q = require('q');
+var io = require('socket.io');
 
 var cwd = process.cwd();
 var options = { pretty: false, filename: 'sprint.jade' };
@@ -16,6 +17,17 @@ options.filename = 'story.jade';
 var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'task.jade';
 var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
+
+var socket;
+var clients = [];
+
+function updateClients(message, data) {
+
+  for (i in clients) {
+   
+    clients[i].emit(message, data);
+  }
+}
 
 function respondWithHtml(html, response) {
 
@@ -352,11 +364,11 @@ function processRequest(request, response) {
 
     query = function() {
 
-      return updateAssignment(db, 'task', id, parseInt(request.headers.rev, 10), 'story', request.body.story_id)
+      return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'story', request.body.story_id)
       .then(function() {
 
         delete request.body.story_id;
-        return findAndModify(db, 'task', id, parseInt(request.headers.rev, 10), request.body);
+        return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body);
       });
     };
 
@@ -364,7 +376,16 @@ function processRequest(request, response) {
 
       return Q.fcall(function() {
 
-        respondWithJson(result, response);
+        //respondOk(response);
+
+        var body = {_rev: result._rev, story_id: result.story_id};
+        for (var i in request.body) {
+
+          body[i] = result[i];
+        }
+
+        respondWithJson({id: id, type: type, data: body}, response)
+        updateClients('update', {id: id, type: type, data: body});
       });
     };
   } 
@@ -390,12 +411,13 @@ function processRequest(request, response) {
       
     answer = function(result) {
 
-      respondWithJson(result, response);
+      respondOk(response);
+      //respondWithJson({type: type, parent_type: 'story', data: result}, response)
+      updateClients('add', {type: type, parent_type: 'story', data: result});
     };
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
   
-    assert.notEqual(true, html, 'html response not supported in task DELETE requests.');
     assert.ok(request.headers.rev, 'rev header missing in request.');
 
     query = function() {
@@ -407,14 +429,13 @@ function processRequest(request, response) {
       
     answer = function() {
 
-      respondWithJson({}, response);
+      respondOk(response);
+      updateClients('remove', {id: id});
     };
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
 
     if (id) {
-
-      assert.equal(true, html, 'Story GET available only as html, yet.');
 
       query = function() {
 
@@ -433,14 +454,27 @@ function processRequest(request, response) {
         });
       };
 
-      answer = function(result) {
+      if (html) {
 
-        return Q.fcall(function() {
+        answer = function(result) {
+        
+          return Q.fcall(function() {
  
-          var html = story_template({story: result.story, tasks: result.tasks});
-          respondWithHtml(html, response);
-        });
-      };
+            var html = story_template({story: result.story, tasks: result.tasks});
+            respondWithHtml(html, response);
+          });
+        };  
+      }
+      else {
+
+        answer = function(result) {
+        
+          return Q.fcall(function() {
+ 
+            respondWithJson({id: result.story._id, label: result.story.title, parent_id: result.story.sprint_id}, response);
+          });
+        };        
+      }
     }
     else {
 
@@ -473,17 +507,26 @@ function processRequest(request, response) {
 
     query = function() {
 
-      return updateAssignment(db, 'story', id, parseInt(request.headers.rev, 10), 'sprint', request.body.sprint_id)
+      return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'sprint', request.body.sprint_id)
       .then(function() {
 
         delete request.body.sprint_id;
-        return findAndModify(db, 'story', id, parseInt(request.headers.rev, 10), request.body);
+        return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body);
       });
     };
 
     answer = function(result) {
 
-      respondWithJson(result, response);
+      //respondOk(response);
+
+      var body = {_rev: result._rev, sprint_id: result.sprint_id};
+      for (var i in request.body) {
+
+        body[i] = result[i];
+      }
+
+      respondWithJson({id: id, type: type, data: body}, response)
+      updateClients('update', {id: id, type: type, data: body});
     };
   } else if ((type == 'story') && (request.method == 'PUT')) {
 
@@ -500,17 +543,17 @@ function processRequest(request, response) {
         sprint_id: ObjectID(request.headers.parent_id)
       };
 
-      return insert(db, 'story', 'sprint', data);
+      return insert(db, type, 'sprint', data);
     };
       
     answer = function(result) {
 
-      respondWithJson(result, response);
+      respondOk(response);
+      updateClients('add', {type: type, parent_type: 'sprint', data: result});
     };
   } 
   else if ((type == 'story') && (request.method == 'DELETE')) {
   
-    assert.notEqual(true, html);
     assert.ok(request.headers.rev);
 
     query = function() {
@@ -524,11 +567,12 @@ function processRequest(request, response) {
 
         return remove(db, 'task', filter, false);
       });
-    };
-      
+    };  
+
     answer = function() {
 
-      respondWithJson({}, response);
+      respondOk(response);
+      updateClients('remove', {id: id});
     };
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
@@ -565,12 +609,13 @@ function processRequest(request, response) {
 
     query = function() {
     
-      return findAndModify(db, 'sprint', id, parseInt(request.headers.rev, 10), request.body);
+      return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body);
     };
 
     answer = function(result) {
 
-      respondWithJson(result, response);
+      respondOk(response);
+      updateClients('update', {id: id, type: type, data: result});
     };
 
   } else {
@@ -602,8 +647,21 @@ var app = connect()
 module.exports = app;
 if (!module.parent) {
 
-  http.createServer(app).listen(8000, function() {
+  var server = http.createServer(app).listen(8000, function() {
   
     console.log('Server listening on port 8000');  
+  });
+
+  socket = io.listen(server);
+
+  socket.on('connection', function(client) {
+    
+    clients.push(client);
+
+    client.on('disconnect', function() {
+
+      var index = clients.indexOf(client);
+      clients.splice(index, 1);
+    });
   });
 }
