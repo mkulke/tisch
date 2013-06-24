@@ -376,7 +376,7 @@ function processRequest(request, response) {
 
       return Q.fcall(function() {
 
-        //respondOk(response);
+        respondOk(response);
 
         var body = {_rev: result._rev, story_id: result.story_id};
         for (var i in request.body) {
@@ -384,7 +384,6 @@ function processRequest(request, response) {
           body[i] = result[i];
         }
 
-        respondWithJson({id: id, type: type, data: body}, response)
         updateClients('update', {id: id, type: type, data: body});
       });
     };
@@ -412,7 +411,6 @@ function processRequest(request, response) {
     answer = function(result) {
 
       respondOk(response);
-      //respondWithJson({type: type, parent_type: 'story', data: result}, response)
       updateClients('add', {type: type, parent_type: 'story', data: result});
     };
   } 
@@ -517,7 +515,7 @@ function processRequest(request, response) {
 
     answer = function(result) {
 
-      //respondOk(response);
+      respondOk(response);
 
       var body = {_rev: result._rev, sprint_id: result.sprint_id};
       for (var i in request.body) {
@@ -525,7 +523,6 @@ function processRequest(request, response) {
         body[i] = result[i];
       }
 
-      respondWithJson({id: id, type: type, data: body}, response)
       updateClients('update', {id: id, type: type, data: body});
     };
   } else if ((type == 'story') && (request.method == 'PUT')) {

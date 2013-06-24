@@ -4,7 +4,7 @@
     
     var sprint_id = $('#story-selector').data('selected').parent_id;
 
-    $.ajaxq('client', {
+    $.ajax({
 
       url: '/story',
       type: 'GET',

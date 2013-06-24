@@ -1,5 +1,25 @@
 var colors = ["yellow", "orange", "red", "purple", "blue", "green"];
 
+var ajaxQueue = [];
+
+function shiftAjaxQueue() {
+
+  ajaxQueue.shift();
+  if (ajaxQueue.length > 0) {
+
+    ajaxQueue[0]();
+  }  
+}
+
+function pushAjaxQueue(ajaxCall) {
+
+  ajaxQueue.push(ajaxCall);
+  if (ajaxQueue.length == 1) {
+
+    ajaxQueue[0]();
+  }  
+}
+
 function prefix(id) {
 
   return 'uuid-' + id;
@@ -163,6 +183,8 @@ function handleServerError(qHXR, textStatus, errorThrown) {
       errorMessage = 'Operation failed for unknown reasons. Check server logs.';
   }
 
+  shiftAjaxQueue();
+
   showErrorPanel(errorMessage);
 }
 
@@ -217,12 +239,15 @@ function add(type, parentType, data) {
 
 function requestAdd(type, parent_id) {
 
-  $.ajaxq('client', {
-  
-    url: '/' + type,
-    headers: {parent_id: parent_id},
-    type: 'PUT',
-    error: handleServerError
+  pushAjaxQueue(function() {
+
+    $.ajax({
+    
+      url: '/' + type,
+      headers: {parent_id: parent_id},
+      type: 'PUT',
+      error: handleServerError
+    });
   });
 }
 
@@ -277,7 +302,7 @@ function update(id, type, attributes) {
 
         if (selector.data('selected').id != attributes[type + '_id']) {
 
-          $.ajaxq('client', {
+          $.ajax({
 
             url: '/' + type + '/' + attributes[type + '_id'],
             type: 'GET',
@@ -318,7 +343,30 @@ function requestUpdate(item, postData, undo) {
   var rev = attributes._rev;
   var type = item.data('type');
 
-  $.ajaxq('client', {
+  pushAjaxQueue(function () {
+
+    $.ajax({
+      
+      url: '/' + type + '/' + id,
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(postData),
+      beforeSend: function(jqXHR, settings) {
+
+        jqXHR.setRequestHeader('rev', item.data('attributes')._rev);
+      },
+      error: function(data, textStatus, jqXH) {
+
+        if (undo) {
+
+          undo();
+        }    
+        handleServerError(data, textStatus, jqXH);
+      }
+    });
+  });
+
+  /*$.ajaxq('client', {
     
     url: '/' + type + '/' + id,
     type: 'POST',
@@ -331,6 +379,7 @@ function requestUpdate(item, postData, undo) {
     },
     success: function(data, textStatus, jqXH) {
 
+      //item.data('attributes')._rev = data;
       update(data.id, data.type, data.data); 
     },
     error: function(data, textStatus, jqXH) {
@@ -341,7 +390,7 @@ function requestUpdate(item, postData, undo) {
       }    
       handleServerError(data, textStatus, jqXH);
     }
-  });
+  });*/
 }
 
 function remove(id) {
@@ -359,15 +408,18 @@ function requestRemove(id, type, rev) {
 
   if (!confirm('Do you want to remove the item and its assigned objects?')) return;
 
-  $.ajaxq('client', {
-  
-    url: '/' + type + '/' + id,
-    type: 'DELETE',
-    beforeSend: function(jqXHR, settings) {
+  pushAjaxQueue(function() {
 
-      jqXHR.setRequestHeader('rev', $('#uuid-' + id).data('attributes')._rev);
-    },
-    error: handleServerError
+    $.ajax({
+    
+      url: '/' + type + '/' + id,
+      type: 'DELETE',
+      beforeSend: function(jqXHR, settings) {
+
+        jqXHR.setRequestHeader('rev', $('#uuid-' + id).data('attributes')._rev);
+      },
+      error: handleServerError
+    });
   });
 }
 
@@ -404,16 +456,19 @@ $(document).ready(function() {
   socket.on('remove', function (data) {
 
     remove(data.id);
+    shiftAjaxQueue();
   });
 
   socket.on('add', function (data) {
 
     add(data.type, data.parent_type, data.data);
+    shiftAjaxQueue();
   });
 
   socket.on('update', function (data) {
 
     update(data.id, data.type, data.data);
+    shiftAjaxQueue();
   });
 
   // This enables drag and drop on the list items
