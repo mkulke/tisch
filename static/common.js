@@ -66,15 +66,17 @@ function initPopupSelector(selector, name, updatePopup) {
 
     event.preventDefault();
     
+    var nameAttribute = selector.data('name');
+
     updatePopup(function(data) {
     
       data.sort(function(a, b) {
       
-        if (a.label < b.label) {
+        if (a[nameAttribute] < b[nameAttribute]) {
 
           return -1;
         }
-        else if(a.label > b.label) {
+        else if(a[nameAttribute] > b[nameAttribute]) {
 
           return 1;
         }
@@ -89,8 +91,8 @@ function initPopupSelector(selector, name, updatePopup) {
       data.forEach(function(item) {
       
         var newItem = $('.template', selector).children().clone(true);
-        newItem.text(item.label);
-        newItem.data('id', item.id);
+        newItem.text(item[nameAttribute]);
+        newItem.data('id', item._id);
 
         $('.content', selector).append(newItem);
         newItem.bind('click', function(event) {
@@ -115,7 +117,7 @@ function initColorSelector() {
     
     fillIn($.map(colors, function(color) {
 
-      return {id: color};
+      return {_id: color};
     }));
 
     $('#color-selector .content .color').each(function(index, value){
@@ -133,11 +135,7 @@ function initColorSelector() {
       var chosenColor = $(event.target);
       var colorId = chosenColor.data('id');
 
-      requestUpdate(task, {color: colorId});/* , function() {
-
-        colorId = task.data('attributes').color;
-        $('.main-panel .header, .main-panel .header input, #color-selector .selected').removeClass(colors.join(' ')).addClass(colorId);
-      });*/ 
+      requestUpdate(task, {color: colorId});
     });
   });
 }
@@ -182,8 +180,6 @@ function handleServerError(qHXR, textStatus, errorThrown) {
     
       errorMessage = 'Operation failed for unknown reasons. Check server logs.';
   }
-
-  shiftAjaxQueue();
 
   showErrorPanel(errorMessage);
 }
@@ -246,7 +242,11 @@ function requestAdd(type, parent_id) {
       url: '/' + type,
       headers: {parent_id: parent_id},
       type: 'PUT',
-      error: handleServerError
+      error: function(data, textStatus, jqXH) {
+
+        shiftAjaxQueue(); 
+        handleServerError(data, textStatus, jqXH);
+      }
     });
   });
 }
@@ -257,22 +257,21 @@ function update(id, type, attributes) {
   var parentType = $('.main-panel').data('type');
   var parentId = $('.main-panel').data('attributes')._id;
 
-  // view contains item or is to be added to the view?
+  // view contains item
   if (item.length > 0) {
 
-    // item is child of another main-panel and its assignment changed?
+    // assignment change requested?
+    if ((attributes[parentType + '_id']) && (attributes[parentType + '_id'] != parentId)) {
 
-    if (($('#panel-container').has(item).length > 0 ) && (attributes[parentType + '_id'] != parentId)) {
-
-      remove(attributes._id);
+      remove(id);
     }
+    // assignment is kept.
     else {
 
       for (var i in attributes) {
 
         item.data('attributes')[i] = attributes[i];
       }
-      //item.data('attributes', attributes);
 
       // necessary gui updates
 
@@ -281,7 +280,7 @@ function update(id, type, attributes) {
         sortPanels();  
       }
 
-      for (var i in attributes) {
+      for (i in attributes) {
 
         $('input[name="' + i + '"], textarea[name="' + i + '"]', item).val(attributes[i]);
       }
@@ -309,7 +308,8 @@ function update(id, type, attributes) {
             dataType: 'json',
             success: function(data, textStatus, jqXHR) {
 
-              $('.open span', selector).text(data.label);
+              var label = data[selector.data('name')];
+              $('.open span', selector).text(label);
               selector.data('selected', data);
             },
             error: handleServerError
@@ -318,9 +318,20 @@ function update(id, type, attributes) {
       });
     }
   }
+  // item is to be added due to assignment change
   else if (attributes[parentType + '_id'] == parentId) {
 
-    add(type, attributes);
+    $.ajax({
+
+      url: '/' + type + '/' + id,
+      type: 'GET',
+      dataType: 'json',
+      success: function(data, textStatus, jqXHR) {
+
+        add(type, parentType, data);
+      },
+      error: handleServerError
+    });
   }
 }
 
@@ -357,10 +368,11 @@ function requestUpdate(item, postData, undo) {
       },
       error: function(data, textStatus, jqXH) {
 
+        shiftAjaxQueue();
         if (undo) {
 
           undo();
-        }    
+        }  
         handleServerError(data, textStatus, jqXH);
       }
     });
@@ -392,7 +404,11 @@ function requestRemove(id, type, rev) {
 
         jqXHR.setRequestHeader('rev', $('#uuid-' + id).data('attributes')._rev);
       },
-      error: handleServerError
+      error: function(data, textStatus, jqXH) {
+
+        shiftAjaxQueue();
+        handleServerError(data, textStatus, jqXH);
+      }
     });
   });
 }

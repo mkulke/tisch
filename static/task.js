@@ -1,7 +1,9 @@
  $(document).ready(function() {
   
+  // TODO: make that generic?
+  $('#story-selector').data('name', 'title');    
   initPopupSelector($('#story-selector'), 'story_id', function(fillIn) {
-    
+
     var sprint_id = $('#story-selector').data('selected').parent_id;
 
     $.ajax({

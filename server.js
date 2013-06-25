@@ -379,15 +379,31 @@ function processRequest(request, response) {
       });
     };
 
-    answer = function(result) {
+    // TODO: merge code w/ story part.
+    if (html) {
 
-      return Q.fcall(function() {
+      answer = function(result) {
+      
+        return Q.fcall(function() {
 
-        var html = task_template({task: result.task, story: result.story});
-        respondWithHtml(html, response);
-      });
-    };
-  } else if ((type == 'task') && (request.method == 'POST')) {
+          var html = task_template({task: result.task, story: result.story});
+          respondWithHtml(html, response);
+        });
+      };  
+    }
+    else {
+
+      answer = function(result) {
+      
+        return Q.fcall(function() {
+
+          // TODO: story find unecessary in this case. 
+          respondWithJson(result.task, response);
+        });
+      };        
+    }
+  } 
+  else if ((type == 'task') && (request.method == 'POST')) {
 
     assert.ok(id, 'id url part missing.');
     assert.ok(request.headers.rev, 'rev header missing in request.');
@@ -499,7 +515,9 @@ function processRequest(request, response) {
         
           return Q.fcall(function() {
  
-            respondWithJson({id: result.story._id, label: result.story.title, parent_id: result.story.sprint_id}, response);
+            // TODO: find tasks uncecessary in this case
+            respondWithJson(result.story, response);
+            //respondWithJson({id: result.story._id, label: result.story.title, parent_id: result.story.sprint_id}, response);
           });
         };        
       }
@@ -515,16 +533,16 @@ function processRequest(request, response) {
 
       answer = function(result) {
 
-        var json = [];
+        /*var json = [];
 
         result.forEach(function(story) {
 
           json.push({id: story._id, label: story.title, parent_id: story.sprint_id});
-        });
+        });*/
 
         return Q.fcall(function() {
 
-          respondWithJson(json, response);
+          respondWithJson(result, response);
         });  
       };
     }
@@ -547,7 +565,8 @@ function processRequest(request, response) {
 
       respondOk(response);
 
-      var body = {_rev: result._rev, sprint_id: result.sprint_id};
+      //var body = {_rev: result._rev, sprint_id: result.sprint_id};
+      var body = {_rev: result._rev};
       for (var i in request.body) {
 
         body[i] = result[i];
