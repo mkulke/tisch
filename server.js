@@ -406,7 +406,8 @@ function processRequest(request, response) {
   else if ((type == 'task') && (request.method == 'POST')) {
 
     assert.ok(id, 'id url part missing.');
-    assert.ok(request.headers.rev, 'rev header missing in request.');
+    assert.ok(request.headers.rev, 'rev missing in request headers.');
+    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
     query = function() {
 
@@ -430,13 +431,14 @@ function processRequest(request, response) {
           body[i] = result[i];
         }
 
-        updateClients('update', {id: id, type: type, data: body});
+        updateClients('update', {id: id, type: type, source_uuid: request.headers.client_uuid, data: body});
       });
     };
   } 
   else if ((type == 'task') && (request.method == 'PUT')) {
 
     assert.ok(request.headers.parent_id, 'parent_id header missing in request.');
+    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
     query = function() {
 
@@ -457,12 +459,13 @@ function processRequest(request, response) {
     answer = function(result) {
 
       respondOk(response);
-      updateClients('add', {type: type, parent_type: 'story', data: result});
+      updateClients('add', {type: type, source_uuid: request.headers.client_uuid, parent_type: 'story', data: result});
     };
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
   
     assert.ok(request.headers.rev, 'rev header missing in request.');
+    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
     query = function() {
 
@@ -474,7 +477,7 @@ function processRequest(request, response) {
     answer = function() {
 
       respondOk(response);
-      updateClients('remove', {ids: [id]});
+      updateClients('remove', {ids: [id], source_uuid: request.headers.client_uuid});
     };
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
@@ -541,7 +544,8 @@ function processRequest(request, response) {
    } else if ((type == 'story') && (request.method == 'POST')) {
 
     assert.ok(id, 'id url part missing.');
-    assert.ok(request.headers.rev, 'rev header missing in request.');
+    assert.ok(request.headers.rev, 'rev missing in request headers.');
+    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
     query = function() {
 
@@ -563,13 +567,14 @@ function processRequest(request, response) {
         body[i] = result[i];
       }
 
-      updateClients('update', {id: id, type: type, data: body});
+      updateClients('update', {id: id, type: type, source_uuid: request.headers.client_uuid, data: body});
     };
   } else if ((type == 'story') && (request.method == 'PUT')) {
 
     query = function() {
 
       assert.ok(request.headers.parent_id, 'parent_id header missing in request.');
+      assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
       var data = {
       
@@ -586,12 +591,13 @@ function processRequest(request, response) {
     answer = function(result) {
 
       respondOk(response);
-      updateClients('add', {type: type, parent_type: 'sprint', data: result});
+      updateClients('add', {type: type, parent_type: 'sprint', source_uuid: request.headers.client_uuid, data: result});
     };
   } 
   else if ((type == 'story') && (request.method == 'DELETE')) {
   
-    assert.ok(request.headers.rev);
+    assert.ok(request.headers.rev, 'rev missing in request headers.');
+    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
     query = function() {
 
@@ -609,7 +615,7 @@ function processRequest(request, response) {
     answer = function(result) {
 
       respondOk(response);
-      updateClients('remove', {ids: result});
+      updateClients('remove', {ids: result, source_uuid: request.headers.client_uuid});
     };
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
@@ -642,7 +648,8 @@ function processRequest(request, response) {
    } else if ((type == 'sprint') && (request.method == 'POST')) {
 
     assert.ok(id, 'id url part missing.');
-    assert.ok(request.headers.rev, 'rev header missing in request.');
+    assert.ok(request.headers.rev, 'rev missing in request headers.');
+    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
     query = function() {
     
@@ -659,7 +666,7 @@ function processRequest(request, response) {
         body[i] = result[i];
       }
 
-      updateClients('update', {id: id, type: type, data: body});
+      updateClients('update', {id: id, type: type, source_uuid: request.headers.client_uuid, data: body});
     };
 
   } else {

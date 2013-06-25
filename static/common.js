@@ -1,23 +1,32 @@
 var colors = ["yellow", "orange", "red", "purple", "blue", "green"];
 
+var clientUUID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+
+  var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+  return v.toString(16);
+});
+
 var ajaxQueue = [];
 
-function shiftAjaxQueue() {
+function ackAjax(uuid) {
 
-  ajaxQueue.shift();
-  if (ajaxQueue.length > 0) {
+  if (uuid == clientUUID) {
 
-    ajaxQueue[0]();
-  }  
+    ajaxQueue.shift();
+    if (ajaxQueue.length > 0) {
+
+      ajaxQueue[0]();
+    }
+  }
 }
 
-function pushAjaxQueue(ajaxCall) {
+function queueAjax(ajax) {
 
-  ajaxQueue.push(ajaxCall);
+  ajaxQueue.push(ajax);
   if (ajaxQueue.length == 1) {
 
     ajaxQueue[0]();
-  }  
+  }
 }
 
 function prefix(id) {
@@ -234,12 +243,12 @@ function add(type, parentType, data) {
 
 function requestAdd(type, parent_id) {
 
-  pushAjaxQueue(function() {
+  queueAjax(function() {
 
     $.ajax({
     
       url: '/' + type,
-      headers: {parent_id: parent_id},
+      headers: {parent_id: parent_id, client_uuid: clientUUID},
       type: 'PUT',
       error: function(data, textStatus, jqXH) {
 
@@ -355,12 +364,13 @@ function requestUpdate(item, postData, undo) {
   var rev = attributes._rev;
   var type = item.data('type');
 
-  pushAjaxQueue(function () {
+  queueAjax(function () {
 
     $.ajax({
       
       url: '/' + type + '/' + id,
       type: 'POST',
+      headers: {client_uuid: clientUUID},
       contentType: 'application/json',
       data: JSON.stringify(postData),
       beforeSend: function(jqXHR, settings) {
@@ -394,12 +404,13 @@ function requestRemove(id, type, rev) {
 
   if (!confirm('Do you want to remove the item and its assigned objects?')) return;
 
-  pushAjaxQueue(function() {
+  queueAjax(function() {
 
     $.ajax({
     
       url: '/' + type + '/' + id,
       type: 'DELETE',
+      headers: {client_uuid: clientUUID},
       beforeSend: function(jqXHR, settings) {
 
         jqXHR.setRequestHeader('rev', $('#uuid-' + id).data('attributes')._rev);
@@ -449,19 +460,19 @@ $(document).ready(function() {
 
       remove(data.ids[i]);
     }
-    shiftAjaxQueue();
+    ackAjax(data.source_uuid);
   });
 
   socket.on('add', function (data) {
 
     add(data.type, data.parent_type, data.data);
-    shiftAjaxQueue();
+    ackAjax(data.source_uuid);
   });
 
   socket.on('update', function (data) {
 
     update(data.id, data.type, data.data);
-    shiftAjaxQueue();
+    ackAjax(data.source_uuid);
   });
 
   // This enables drag and drop on the list items
