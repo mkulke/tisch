@@ -141,15 +141,45 @@ function remove(db, type, filter, failOnNoDeletion) {
     if (err) {
 
       deferred.reject(new Error(err));
-    } else if (failOnNoDeletion && (result <= 0)) {
+    } 
+    else if (failOnNoDeletion && (result <= 0)) {
 
       deferred.reject(new Error(messages.en.ERROR_REMOVE));
-    } else {
+    } 
+    else {
     
       deferred.resolve();
     }
   });
   return deferred.promise;  
+}
+
+function findAndRemove(db, type, filter, removedIds) {
+
+  var deferred = Q.defer();  
+
+  function loop() {
+
+    db.collection(type).findAndRemove(filter, function(err, result) {
+
+      if (err) {
+
+        deferred.reject(new Error(err));
+      } 
+      else if (result !== null) {
+
+        removedIds.push(result._id.toString());
+        loop();
+      }
+      else {
+
+        deferred.resolve(removedIds);
+      }
+    });
+  }
+
+  loop();
+  return deferred.promise;
 }
 
 var find = function(db, type, filter) {
@@ -428,7 +458,7 @@ function processRequest(request, response) {
     answer = function() {
 
       respondOk(response);
-      updateClients('remove', {id: id});
+      updateClients('remove', {ids: [id]});
     };
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
@@ -560,16 +590,16 @@ function processRequest(request, response) {
       return remove(db, 'story', filter, true)
       .then(function() {
 
-        filter = {story_id: ObjectID(request.body._id)};
+        filter = {story_id: ObjectID(id)};
 
-        return remove(db, 'task', filter, false);
+        return findAndRemove(db, 'task', filter, [id]);
       });
     };  
 
-    answer = function() {
+    answer = function(result) {
 
       respondOk(response);
-      updateClients('remove', {id: id});
+      updateClients('remove', {ids: result});
     };
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {

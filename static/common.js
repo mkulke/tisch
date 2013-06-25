@@ -365,32 +365,6 @@ function requestUpdate(item, postData, undo) {
       }
     });
   });
-
-  /*$.ajaxq('client', {
-    
-    url: '/' + type + '/' + id,
-    type: 'POST',
-    contentType: 'application/json',
-    data: JSON.stringify(postData),
-    dataType: 'json', 
-    beforeSend: function(jqXHR, settings) {
-
-      jqXHR.setRequestHeader('rev', item.data('attributes')._rev);
-    },
-    success: function(data, textStatus, jqXH) {
-
-      //item.data('attributes')._rev = data;
-      update(data.id, data.type, data.data); 
-    },
-    error: function(data, textStatus, jqXH) {
-
-      if (undo) {
-
-        undo();
-      }    
-      handleServerError(data, textStatus, jqXH);
-    }
-  });*/
 }
 
 function remove(id) {
@@ -455,7 +429,10 @@ $(document).ready(function() {
 
   socket.on('remove', function (data) {
 
-    remove(data.id);
+    for (var i in data.ids) {
+
+      remove(data.ids[i]);
+    }
     shiftAjaxQueue();
   });
 
