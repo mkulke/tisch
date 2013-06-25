@@ -200,7 +200,6 @@ function sortPanels() {
 
 function add(type, parentType, data) {
 
-  // TODO: what if no main-panel is present?
   var parentId = $('.main-panel').data('attributes')._id;
   if (data[parentType + '_id'] != parentId) {
 
@@ -254,6 +253,8 @@ function requestAdd(type, parent_id) {
 function update(id, type, attributes) {
 
   var item = $('#' + prefix(id));
+
+  // TODO: what if there is no main-panel?
   var parentType = $('.main-panel').data('type');
   var parentId = $('.main-panel').data('attributes')._id;
 
@@ -292,12 +293,12 @@ function update(id, type, attributes) {
 
       $.each(['story', 'sprint'], function(index, type) {
 
-        var selector = $('#' + type + '-selector');
-
-        if (selector.length < 1) {
+        if (!attributes[type + '_id']) {
 
           return;
         }
+
+        var selector = $('#' + type + '-selector');
 
         if (selector.data('selected').id != attributes[type + '_id']) {
 
@@ -386,8 +387,7 @@ function remove(id) {
     $('#' + prefix(id)).remove();
   });
 
-  // TODO: handle case when the gui item is the main-panel, furthermore: what to do you are working on a child panel, which was
-  // deleted by cascade?
+  // TODO: handle case when the gui item is the main-panel?
 }
 
 function requestRemove(id, type, rev) {

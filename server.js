@@ -424,7 +424,7 @@ function processRequest(request, response) {
 
         respondOk(response);
 
-        var body = {_rev: result._rev, story_id: result.story_id};
+        var body = {_rev: result._rev};
         for (var i in request.body) {
 
           body[i] = result[i];
@@ -517,7 +517,6 @@ function processRequest(request, response) {
  
             // TODO: find tasks uncecessary in this case
             respondWithJson(result.story, response);
-            //respondWithJson({id: result.story._id, label: result.story.title, parent_id: result.story.sprint_id}, response);
           });
         };        
       }
@@ -532,13 +531,6 @@ function processRequest(request, response) {
       };
 
       answer = function(result) {
-
-        /*var json = [];
-
-        result.forEach(function(story) {
-
-          json.push({id: story._id, label: story.title, parent_id: story.sprint_id});
-        });*/
 
         return Q.fcall(function() {
 
@@ -565,7 +557,6 @@ function processRequest(request, response) {
 
       respondOk(response);
 
-      //var body = {_rev: result._rev, sprint_id: result.sprint_id};
       var body = {_rev: result._rev};
       for (var i in request.body) {
 
@@ -661,7 +652,14 @@ function processRequest(request, response) {
     answer = function(result) {
 
       respondOk(response);
-      updateClients('update', {id: id, type: type, data: result});
+
+      var body = {_rev: result._rev};
+      for (var i in request.body) {
+
+        body[i] = result[i];
+      }
+
+      updateClients('update', {id: id, type: type, data: body});
     };
 
   } else {
