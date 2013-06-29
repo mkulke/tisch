@@ -6,29 +6,6 @@ var clientUUID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, functio
   return v.toString(16);
 });
 
-var ajaxQueue = [];
-
-function ackAjax(uuid) {
-
-  if (uuid == clientUUID) {
-
-    ajaxQueue.shift();
-    if (ajaxQueue.length > 0) {
-
-      ajaxQueue[0]();
-    }
-  }
-}
-
-function queueAjax(ajax) {
-
-  ajaxQueue.push(ajax);
-  if (ajaxQueue.length == 1) {
-
-    ajaxQueue[0]();
-  }
-}
-
 function prefix(id) {
 
   return 'uuid-' + id;
@@ -144,7 +121,8 @@ function initColorSelector() {
       var chosenColor = $(event.target);
       var colorId = chosenColor.data('id');
 
-      requestUpdate(task, {color: colorId});
+      requestUpdate(task, 'color', colorId);
+      //requestUpdate(task, {color: colorId});
     });
   });
 }
@@ -207,156 +185,107 @@ function sortPanels() {
   });
 }
 
-function add(type, parentType, data) {
+function add(parent_id, attributes) {
 
-  var parentId = $('.main-panel').data('attributes')._id;
-  if (data[parentType + '_id'] != parentId) {
+  if ($('.main-panel').data('attributes')._id != parent_id) {
 
+    // does not concern this view.
     return;
   }
 
   var newPanel = $('#panel-template').clone(true);
 
-  newPanel.data('type', type);
-  newPanel.data('attributes', data);
+  newPanel.data('attributes', attributes);
 
-  newPanel.attr('id', prefix(data._id));     
+  newPanel.attr('id', prefix(attributes._id));     
   
   $('#panel-container').append(newPanel);
   sortPanels();    
 
-  var id = prefix(data._id);
+  var id = prefix(attributes._id);
   var input = $('#' + id + " input");
   var attribute = input.attr('name');
-  var value = data[attribute];
+  var value = attributes[attribute];
   input.val(value);
   input.attr('value', value);
-  input.addClass(data.color);
-  $('.header', newPanel).addClass(data.color);
+  input.addClass(attributes.color);
+  $('.header', newPanel).addClass(attributes.color);
 
   var textarea = $('#' + id + " textarea");
   attribute = textarea.attr('name');
-  textarea.val(data[attribute]);
+  textarea.val(attributes[attribute]);
   
   $("html, body").animate({ scrollTop: $(document).height() }, "slow");  
 }
 
 function requestAdd(type, parent_id) {
 
-  queueAjax(function() {
+  $.ajaxq('client', {
+  
+    url: '/' + type,
+    headers: {parent_id: parent_id, client_uuid: clientUUID},
+    type: 'PUT',
+    success: function(data, textStatus, jqXHR) {
 
-    $.ajax({
-    
-      url: '/' + type,
-      headers: {parent_id: parent_id, client_uuid: clientUUID},
-      type: 'PUT',
-      error: function(data, textStatus, jqXH) {
+      add(data.parent_id, data.attributes);
+    },
+    error: function(data, textStatus, jqXHR) {
 
-        shiftAjaxQueue(); 
-        handleServerError(data, textStatus, jqXH);
-      }
-    });
+      handleServerError(data, textStatus, jqXHR);
+    }
   });
 }
 
-function update(id, type, attributes) {
+function update(id, rev, key, value) {
 
   var item = $('#' + prefix(id));
-
-  // TODO: what if there is no main-panel?
   var parentType = $('.main-panel').data('type');
   var parentId = $('.main-panel').data('attributes')._id;
 
-  // view contains item
-  if (item.length > 0) {
+  // item not present?
+  if (item.length != 1) {
 
-    // assignment change requested?
-    if ((attributes[parentType + '_id']) && (attributes[parentType + '_id'] != parentId)) {
+    // assignment changed to main item?
+    if ((key == parentType + '_id') && (value == parentId)) {
 
-      remove(id);
-    }
-    // assignment is kept.
-    else {
+      var type = $('#panel-template').data('type'); 
+      $.ajaxq('client', {
 
-      for (var i in attributes) {
+        url: '/' + type + '/' + attributes._id,
+        type: 'GET',
+        dataType: 'json',
+        success: function(data, textStatus, jqXHR) {
 
-        item.data('attributes')[i] = attributes[i];
-      }
-
-      // necessary gui updates
-
-      if (attributes.priority) {
-
-        sortPanels();  
-      }
-
-      for (i in attributes) {
-
-        $('input[name="' + i + '"], textarea[name="' + i + '"]', item).val(attributes[i]);
-      }
-
-      if (attributes.color) {
-
-        $('.header, .header input, #color-selector .selected', item).removeClass(colors.join(' ')).addClass(attributes.color);
-      }
-
-      $.each(['story', 'sprint'], function(index, type) {
-
-        if (!attributes[type + '_id']) {
-
-          return;
-        }
-
-        var selector = $('#' + type + '-selector');
-
-        if (selector.data('selected').id != attributes[type + '_id']) {
-
-          $.ajax({
-
-            url: '/' + type + '/' + attributes[type + '_id'],
-            type: 'GET',
-            dataType: 'json',
-            success: function(data, textStatus, jqXHR) {
-
-              var label = data[selector.data('name')];
-              $('.open span', selector).text(label);
-              selector.data('selected', data);
-            },
-            error: handleServerError
-          });
-        }
-      });
+          add(parentId, data);
+        },
+        error: handleServerError
+      });  
     }
   }
-  // item is to be added due to assignment change
-  else if (attributes[parentType + '_id'] == parentId) {
+  // item present
+  else {
 
-    $.ajax({
+    // assignment removed from main item?
+    if ((key == parentType + '_id') && (value != parentId)) {
 
-      url: '/' + type + '/' + id,
-      type: 'GET',
-      dataType: 'json',
-      success: function(data, textStatus, jqXHR) {
+      remove(id);  
+    }
+    else {
 
-        add(type, parentType, data);
-      },
-      error: handleServerError
-    });
+      item.data('attributes')._rev = rev;
+      item.data('attributes')[key] = value;
+      item.data('update')[key](item, value);
+    }
   }
 }
 
-function requestUpdate(item, postData, undo) {
+function requestUpdate(item, key, value, undo) {
 
   var attributes = item.data('attributes');
 
-  var skip = true;
-  for (var attribute in postData) {
+  if (attributes[key] == value) {
 
-    skip &= (postData[attribute] == attributes[attribute]);
-  }
-
-  if (skip) {
-
+    // no change. skip.
     return;
   }
 
@@ -364,29 +293,29 @@ function requestUpdate(item, postData, undo) {
   var rev = attributes._rev;
   var type = item.data('type');
 
-  queueAjax(function () {
+  $.ajaxq('client', {
+    
+    url: '/' + type + '/' + id,
+    type: 'POST',
+    headers: {client_uuid: clientUUID},
+    contentType: 'application/json',
+    data: JSON.stringify({key: key, value: value}),
+    beforeSend: function(jqXHR, settings) {
 
-    $.ajax({
-      
-      url: '/' + type + '/' + id,
-      type: 'POST',
-      headers: {client_uuid: clientUUID},
-      contentType: 'application/json',
-      data: JSON.stringify(postData),
-      beforeSend: function(jqXHR, settings) {
+      jqXHR.setRequestHeader('rev', item.data('attributes')._rev);
+    },
+    success: function(data, textStatus, jqXHR) {
 
-        jqXHR.setRequestHeader('rev', item.data('attributes')._rev);
-      },
-      error: function(data, textStatus, jqXH) {
+      update(data.id, data.rev, data.key, data.value);
+    },
+    error: function(data, textStatus, jqXHR) {
 
-        shiftAjaxQueue();
-        if (undo) {
+      if (undo) {
 
-          undo();
-        }  
-        handleServerError(data, textStatus, jqXH);
-      }
-    });
+        undo();
+      }  
+      handleServerError(data, textStatus, jqXHR);
+    }
   });
 }
 
@@ -404,23 +333,26 @@ function requestRemove(id, type, rev) {
 
   if (!confirm('Do you want to remove the item and its assigned objects?')) return;
 
-  queueAjax(function() {
+  $.ajaxq('client', {
+  
+    url: '/' + type + '/' + id,
+    type: 'DELETE',
+    headers: {client_uuid: clientUUID},
+    beforeSend: function(jqXHR, settings) {
 
-    $.ajax({
-    
-      url: '/' + type + '/' + id,
-      type: 'DELETE',
-      headers: {client_uuid: clientUUID},
-      beforeSend: function(jqXHR, settings) {
+      jqXHR.setRequestHeader('rev', $('#uuid-' + id).data('attributes')._rev);
+    },
+    success: function(ids, textStatus, jqXHR) {
 
-        jqXHR.setRequestHeader('rev', $('#uuid-' + id).data('attributes')._rev);
-      },
-      error: function(data, textStatus, jqXH) {
+      for (var i in ids) {
 
-        shiftAjaxQueue();
-        handleServerError(data, textStatus, jqXH);
+        remove(ids[i]);
       }
-    });
+    },
+    error: function(data, textStatus, jqXHR) {
+
+      handleServerError(data, textStatus, jqXHR);
+    }
   });
 }
 
@@ -447,32 +379,37 @@ function updatePriority(li, previousLi, nextLi) {
     priority = (nextPriority - previousPriority) / 2 + previousPriority;
   }
   
-  requestUpdate(li, {priority: priority}, sortPanels);
+  requestUpdate(li, 'priority', priority, sortPanels);
 }
 
 $(document).ready(function() {
 
-  var socket = io.connect('http://localhost');
+  var socket = io.connect('http://localhost'); 
 
-  socket.on('remove', function (data) {
+  socket.on('connect', function() {
 
-    for (var i in data.ids) {
+    socket.emit('register', {
 
-      remove(data.ids[i]);
+      client_uuid: clientUUID
+    });    
+  });
+
+  socket.on('remove', function (ids) {
+
+    for (var i in ids) {
+
+      remove(ids[i]);
     }
-    ackAjax(data.source_uuid);
   });
 
   socket.on('add', function (data) {
 
-    add(data.type, data.parent_type, data.data);
-    ackAjax(data.source_uuid);
+    add(data.parent_id, data.attributes);
   });
 
   socket.on('update', function (data) {
 
-    update(data.id, data.type, data.data);
-    ackAjax(data.source_uuid);
+    update(data.id, data.rev, data.key, data.value);
   });
 
   // This enables drag and drop on the list items
@@ -572,7 +509,7 @@ $(document).ready(function() {
     }  
 
     var field = $(event.target);
-    var attribute = field.attr('name');
+    var key = field.attr('name');
     var item = $(event.delegateTarget);
     var value = field.val(); 
     
@@ -591,12 +528,9 @@ $(document).ready(function() {
         field.siblings('.error-popup').find('.content').hide();
       }
 
-      var data = {};
-      data[attribute] = value;
+      requestUpdate(item, key, value, function() {
 
-      requestUpdate(item, data, function() {
-
-        field.val(item.data('attributes')[attribute]);  
+        field.val(item.data('attributes')[key]);  
       });
     }, 1500));
   });

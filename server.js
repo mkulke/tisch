@@ -18,14 +18,19 @@ var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), opt
 options.filename = 'task.jade';
 var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 
-var socket;
 var clients = [];
 
-function updateClients(message, data) {
+function broadcastToClients(message, sourceUUID, data) {
 
-  for (i in clients) {
-   
-    clients[i].emit(message, data);
+  var index;
+  for (var i in clients) {
+
+    var client = clients[i];
+    if (client.client_uuid != sourceUUID) {
+
+      //console.log('emit ' + message + ' to ' + client.client_uuid);
+      client.socket.emit(message, data);
+    }
   }
 }
 
@@ -218,7 +223,7 @@ var findOne = function(db, type, id) {
   return deferred.promise; 
 };
 
-var findAndModify = function(db, type, id, rev, postData) {
+var findAndModify = function(db, type, id, rev, key, value) {
 
   var deferred = Q.defer();
 
@@ -227,11 +232,7 @@ var findAndModify = function(db, type, id, rev, postData) {
     $set: {}, 
     $inc: {_rev: 1}
   };
-  
-  for (index in postData) {
-
-    data.$set[index] = postData[index];  
-  }
+  data.$set[key] = value;
 
   db.collection(type).findAndModify({_id: ObjectID(id), _rev: rev}, [], data, {new: true}, function(err, result) {
 
@@ -280,7 +281,7 @@ var updateAssignment = function(db, type, id, rev, parentType, parentId) {
         }
         else {
 
-          deferred.resolve();
+          deferred.resolve(result);
         }
       });
       return deferred.promise;
@@ -411,27 +412,24 @@ function processRequest(request, response) {
 
     query = function() {
 
-      return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'story', request.body.story_id)
-      .then(function() {
+      if (request.body.key == 'story_id') {
 
-        delete request.body.story_id;
-        return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body);
-      });
+        return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'story', request.body.value)
+      }
+      else {
+
+        return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);  
+      }
     };
 
     answer = function(result) {
 
       return Q.fcall(function() {
 
-        respondOk(response);
-
-        var body = {_rev: result._rev};
-        for (var i in request.body) {
-
-          body[i] = result[i];
-        }
-
-        updateClients('update', {id: id, type: type, source_uuid: request.headers.client_uuid, data: body});
+        var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
+        
+        respondWithJson(data, response);
+        broadcastToClients('update', request.headers.client_uuid, data);
       });
     };
   } 
@@ -458,8 +456,9 @@ function processRequest(request, response) {
       
     answer = function(result) {
 
-      respondOk(response);
-      updateClients('add', {type: type, source_uuid: request.headers.client_uuid, parent_type: 'story', data: result});
+      var data = {parent_id: request.headers.parent_id, attributes: result};
+      respondWithJson(data, response);
+      broadcastToClients('add', request.headers.client_uuid, data);
     };
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
@@ -476,8 +475,9 @@ function processRequest(request, response) {
       
     answer = function() {
 
-      respondOk(response);
-      updateClients('remove', {ids: [id], source_uuid: request.headers.client_uuid});
+      var data = [id];
+      respondWithJson(data, response);
+      broadcastToClients('remove', request.headers.client_uuid, data);
     };
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
@@ -549,25 +549,22 @@ function processRequest(request, response) {
 
     query = function() {
 
-      return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'sprint', request.body.sprint_id)
-      .then(function() {
+      if (request.body.key == 'sprint_id') {
 
-        delete request.body.sprint_id;
-        return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body);
-      });
+        return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'sprint', request.body.value)
+      }
+      else {
+
+        return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);  
+      }
     };
 
     answer = function(result) {
 
-      respondOk(response);
-
-      var body = {_rev: result._rev};
-      for (var i in request.body) {
-
-        body[i] = result[i];
-      }
-
-      updateClients('update', {id: id, type: type, source_uuid: request.headers.client_uuid, data: body});
+      var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
+      
+      respondWithJson(data, response);
+      broadcastToClients('update', request.headers.client_uuid, data);
     };
   } else if ((type == 'story') && (request.method == 'PUT')) {
 
@@ -590,20 +587,21 @@ function processRequest(request, response) {
       
     answer = function(result) {
 
-      respondOk(response);
-      updateClients('add', {type: type, parent_type: 'sprint', source_uuid: request.headers.client_uuid, data: result});
+      var data = {parent_id: request.headers.parent_id, attributes: result};
+      respondWithJson(data, response);
+      broadcastToClients('add', request.headers.client_uuid, data);
     };
   } 
   else if ((type == 'story') && (request.method == 'DELETE')) {
   
     assert.ok(request.headers.rev, 'rev missing in request headers.');
-    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
+    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
 
     query = function() {
 
       var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
 
-      return remove(db, 'story', filter, true)
+      return remove(db, type, filter, true)
       .then(function() {
 
         filter = {story_id: ObjectID(id)};
@@ -614,8 +612,8 @@ function processRequest(request, response) {
 
     answer = function(result) {
 
-      respondOk(response);
-      updateClients('remove', {ids: result, source_uuid: request.headers.client_uuid});
+      respondWithJson(result, response);
+      broadcastToClients('remove', request.headers.client_uuid, result);
     };
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
@@ -653,20 +651,15 @@ function processRequest(request, response) {
 
     query = function() {
     
-      return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body);
+      return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);
     };
 
     answer = function(result) {
 
-      respondOk(response);
-
-      var body = {_rev: result._rev};
-      for (var i in request.body) {
-
-        body[i] = result[i];
-      }
-
-      updateClients('update', {id: id, type: type, source_uuid: request.headers.client_uuid, data: body});
+      var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
+      
+      respondWithJson(data, response);
+      broadcastToClients('update', request.headers.client_uuid, data);  
     };
 
   } else {
@@ -705,14 +698,30 @@ if (!module.parent) {
 
   socket = io.listen(server);
 
+  socket.enable('browser client etag');
+  socket.enable('browser client gzip'); 
+  socket.enable('browser client minification');
+  socket.set('log level', 1);
+
   socket.on('connection', function(client) {
     
-    clients.push(client);
+    var index;
+
+    client.on('register', function(data) {
+
+      index = clients.push({
+
+        socket: client,
+        client_uuid: data.client_uuid,
+      }) - 1;
+      //console.log(data.client_uuid + ' registered. ' + clients.length + ' clients connected now.');
+    });
 
     client.on('disconnect', function() {
-
-      var index = clients.indexOf(client);
+    
+      //var aClient = clients[index];
       clients.splice(index, 1);
+      //console.log(aClient.client_uuid + ' disconnected. ' + clients.length + ' clients connected now.');
     });
   });
 }
