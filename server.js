@@ -18,18 +18,17 @@ var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), opt
 options.filename = 'task.jade';
 var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 
-var clients = [];
+var clients = {};
 
 function broadcastToClients(message, sourceUUID, data) {
 
-  var index;
-  for (var i in clients) {
+  for (var key in clients) {
 
-    var client = clients[i];
-    if (client.client_uuid != sourceUUID) {
+    if (key != sourceUUID) {
 
-      //console.log('emit ' + message + ' to ' + client.client_uuid);
-      client.socket.emit(message, data);
+      var client = clients[key];
+      console.log('emit ' + message + ' to ' + key);
+      client.emit(message, data);
     }
   }
 }
@@ -705,23 +704,19 @@ if (!module.parent) {
 
   socket.on('connection', function(client) {
     
-    var index;
+    var key;
 
     client.on('register', function(data) {
 
-      index = clients.push({
-
-        socket: client,
-        client_uuid: data.client_uuid,
-      }) - 1;
-      //console.log(data.client_uuid + ' registered. ' + clients.length + ' clients connected now.');
+      key = data.client_uuid;
+      clients[key] = client;
+      console.log(key + ' registered. ' + Object.keys(clients).length + ' clients connected now.');
     });
 
     client.on('disconnect', function() {
     
-      //var aClient = clients[index];
-      clients.splice(index, 1);
-      //console.log(aClient.client_uuid + ' disconnected. ' + clients.length + ' clients connected now.');
+      delete clients[key];
+      console.log(key + ' disconnected. ' + Object.keys(clients).length + ' clients connected now.');
     });
   });
 }
