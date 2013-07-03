@@ -2,8 +2,6 @@
 var casper1 = require('casper').create();
 var casper2 = require('casper').create();
 
-var storyId, firstId, secondId, secondUrl, storyUrl;
-
 var sprintUrl = 'http://localhost:8000/sprint/51ac972325dfbc3750000001';
 var story1Id, story2Id, story1Url, story2Url, task1Id, task2Id;
 
@@ -85,10 +83,10 @@ casper2.then(function() {
 
 casper2.then(function() {
 
-	this.test.assertEval(function() {
+	this.test.assertEvalEquals(function() {
 
-		return document.querySelectorAll('#panel-container .panel').length == 2;
-	}, this.prefix('2 story panels are visible.'));
+		return document.querySelectorAll('#panel-container .panel').length;
+	}, 2, this.prefix('2 story panels are visible.'));
 
 	story1Id = this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id');
 	story2Id = this.getElementAttribute('#panel-container .panel:nth-child(2)', 'id');
@@ -155,7 +153,150 @@ casper2.then(function() {
 	this.waitForOtherClient();
 });
 
-// Go back.
+// Create Task and Open it.
+
+casper1.then(function() {
+
+  this.test.info(this.prefix("Click the add button."));
+
+	this.click('#add-button');
+
+	this.waitForResource(story1Url);
+});
+
+casper1.then(function() {
+
+	taskId = this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id');
+
+	this.test.info(this.prefix('Double-click on the header of task.'));
+
+	this.mouseEvent('dblclick', '#' + taskId + ' .handle');
+
+	taskUrl = 'http://localhost:8000/task/' + taskId.substr('uuid-'.length);
+	this.waitForResource(taskUrl, function() {
+
+		this.done();
+	});
+});
+
+casper2.then(function() {
+
+	this.test.assert(this.getElementAttribute('#' + story1Id + ' .header', 'class').split(' ').indexOf('purple') != -1, this.prefix('Header color is set to purple.'));
+
+	this.waitForOtherClient();
+});
+
+// Reassign task to story 2
+
+casper2.then(function() {
+
+	this.test.info(this.prefix('Double-click on the header of story 2.'));
+
+	this.mouseEvent('dblclick', '#' + story2Id + ' .handle');
+
+	story2Url = 'http://localhost:8000/story/' + story2Id.substr('uuid-'.length);
+	this.waitForResource(story2Url, function() {
+
+		this.done();
+	});
+});
+
+casper1.then(function() {
+
+	this.waitForOtherClient();
+});
+
+casper1.then(function() {
+
+	this.test.info(this.prefix("Click on story selector."));
+
+	this.click('#story-selector .selected');
+
+	this.waitForResource(taskUrl);
+});
+
+casper1.then(function() {
+
+	this.test.info(this.prefix("Select line 1 (story 2)."));
+
+  this.click('#story-selector .content div:nth-child(1)');
+	this.waitForResource(taskUrl, function() {
+
+		this.done();
+	});
+});
+
+casper2.then(function() {
+
+	this.waitForOtherClient();
+});
+
+casper2.then(function() {
+
+	this.test.assertEvalEquals(function() {
+
+		return document.querySelectorAll('#panel-container .panel').length;
+	}, 1, this.prefix('Task panel is visible.'));
+
+	this.done();
+
+	this.waitForOtherClient();
+});
+
+// And back...
+
+casper1.then(function() {
+
+	this.waitForOtherClient();
+});
+
+casper1.then(function() {
+
+	this.test.info(this.prefix("Click on story selector."));
+
+	this.click('#story-selector .selected');
+
+	this.waitForResource(taskUrl);
+});
+
+casper1.then(function() {
+
+	this.test.info(this.prefix("Select line 2 (story 1)."));
+
+  this.click('#story-selector .content div:nth-child(2)');
+	this.waitForResource(taskUrl, function() {
+
+		this.done();
+	});
+
+	this.waitForOtherClient();
+});
+
+casper2.then(function() {
+
+	this.test.assertEvalEquals(function() {
+
+		return document.querySelectorAll('#panel-container .panel').length;
+	}, 0, this.prefix('Task panel is gone.'));
+
+	this.test.info(this.prefix('Go back to sprint view.'));
+
+	this.back();
+});
+
+casper2.then(function() {
+
+	this.done();
+});
+
+// Go back to story view, then to sprint view..
+
+casper1.then(function() {
+
+	this.test.info(this.prefix('Go back to story 1 view.'));
+
+	this.back();
+});
 
 casper1.then(function() {
 
@@ -170,8 +311,6 @@ casper1.then(function() {
 });
 
 casper2.then(function() {
-
-	this.test.assert(this.getElementAttribute('#' + story1Id + ' .header', 'class').split(' ').indexOf('purple') != -1, this.prefix('Header color is set to purple.'));
 
 	this.waitForOtherClient();
 });
