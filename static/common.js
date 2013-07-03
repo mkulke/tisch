@@ -18,14 +18,21 @@ function unPrefix(prefixedId) {
 
 function attachAttributesToItems(map) {
 
+  // to please jshint 'function within a loop'
+
+  function makeSetter(type) {
+
+    return function(attributes) {
+
+      $('#uuid-' + attributes._id).data('attributes', attributes);
+      $('#uuid-' + attributes._id).data('type', type);
+    };
+  }
+
   for (var type in map) {
 
     items = map[type];
-    items.forEach(function(attributes) {
-    
-      $('#uuid-' + attributes._id).data('attributes', attributes);
-      $('#uuid-' + attributes._id).data('type', type);
-    });
+    items.forEach(makeSetter(type));
   }
 }
 
