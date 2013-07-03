@@ -15,11 +15,11 @@ casper1.viewport(1024, 768);
 casper2.start(sprintUrl);
 casper2.viewport(1024, 768);
 
-function makeInfo(i) {
+function makePrefix(i) {
 
 	return function(text) {
 
-		this.test.info('Client ' + i + ': ' + text);		
+		return 'Client ' + i + ': ' + text;		
 	};
 }
 
@@ -53,7 +53,7 @@ var clients = {1: casper1, 2: casper2};
 for (var i in clients) {
 
 	var client = clients[i];
-	client.info = makeInfo(i);
+	client.prefix = makePrefix(i);
 	client.isDone = false;
 	client.done = makeDone(i);
 	client.waitForOtherClient = makeWaitForOtherClient(i);
@@ -63,9 +63,9 @@ for (var i in clients) {
 
 casper1.then(function() {
 
-	this.test.assertDoesntExist('#panel-container .panel', 'Client 1: No story visible.');
+	this.test.assertDoesntExist('#panel-container .panel', this.prefix('No story visible.'));
 
-  this.info("Click the add button twice.");
+  this.test.info(this.prefix("Click the add button twice."));
 
 	this.click('#add-button');
 	this.click('#add-button');
@@ -88,12 +88,12 @@ casper2.then(function() {
 	this.test.assertEval(function() {
 
 		return document.querySelectorAll('#panel-container .panel').length == 2;
-	}, 'Client 2: 2 story panels are visible.');
+	}, this.prefix('2 story panels are visible.'));
 
 	story1Id = this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id');
 	story2Id = this.getElementAttribute('#panel-container .panel:nth-child(2)', 'id');
 
-  this.info("Edit title & description of story 1 (and wait 2s).");
+  this.test.info(this.prefix('Edit title & description of story 1 (and wait 2s).'));
 
   this.sendKeys('#' + story1Id + ' input[name="title"]', ' 1');
 	this.sendKeys('#' + story1Id + ' textarea[name="description"]', 'Description of story 1.');
@@ -121,14 +121,14 @@ casper1.then(function() {
 	this.test.assertEval(function(id) {
 
 		return document.querySelector('#' + id + ' input[name="title"]').value == 'New Story 1';
-	}, 'Client 1: Story title changes have been updated.', story1Id);
+	}, this.prefix('Story title changes have been updated.'), story1Id);
 
 	this.test.assertEval(function(id) {
 
 		return document.querySelector('#' + id + ' textarea[name="description"]').value == 'Description of story 1.';
-	}, 'Client 1: Story description changes have been updated.', story1Id);
+	}, this.prefix('Story description changes have been updated.'), story1Id);
 
-	this.test.info("Client 1: Double-click on the header of story 1.");
+	this.test.info(this.prefix('Double-click on the header of story 1.'));
 
 	this.mouseEvent('dblclick', '#' + story1Id + ' .handle');
 
@@ -139,7 +139,7 @@ casper1.then(function() {
 
 casper1.then(function() {
 
-	this.test.info("Client 1: Select purple as the story's color.");
+	this.test.info(this.prefix("Select purple as the story's color."));
 
 	this.click('#color-selector .selected');
 	this.click('#color-selector .purple');
@@ -159,7 +159,7 @@ casper2.then(function() {
 
 casper1.then(function() {
 
-	this.test.info("Client 1: Go back to sprint view.");
+	this.test.info(this.prefix('Go back to sprint view.'));
 
 	this.back();
 });
@@ -171,7 +171,7 @@ casper1.then(function() {
 
 casper2.then(function() {
 
-	this.test.assert(this.getElementAttribute('#' + story1Id + ' .header', 'class').split(' ').indexOf('purple') != -1, 'Client 2: Header color is set to purple.');
+	this.test.assert(this.getElementAttribute('#' + story1Id + ' .header', 'class').split(' ').indexOf('purple') != -1, this.prefix('Header color is set to purple.'));
 
 	this.waitForOtherClient();
 });
@@ -180,7 +180,7 @@ casper2.then(function() {
 
 casper1.then(function() {
 
-	this.test.info("Client 1: Move story 2 to position 1.");
+	this.test.info(this.prefix('Move story 2 to position 1.'));
 
 	var info1 = this.getElementInfo('#' + story1Id +' .handle');
 	var info2 = this.getElementInfo('#' + story2Id +' .handle');
@@ -204,9 +204,9 @@ casper2.then(function() {
 
 casper2.then(function() {
 
-	this.test.assertEquals(story2Id, this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id'), 'Client2: Story 2 is on position 1.');
+	this.test.assertEquals(story2Id, this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id'), this.prefix('Story 2 is on position 1.'));
 
-	this.test.info("Client 2: Click the remove button story 1 and story 2.");
+	this.test.info(this.prefix('Click the remove button story 1 and story 2.'));
 
 	this.click('#' + story1Id + ' .remove-button');
 	this.click('#' + story2Id + ' .remove-button');
@@ -226,7 +226,7 @@ casper1.then(function() {
 
 casper1.then(function() {
 
-	this.test.info("Client 1: Go back to sprint view.");
+	this.test.info(this.prefix('Go back to sprint view.'));
 
 	this.back();
 });
@@ -236,7 +236,7 @@ casper1.then(function() {
 	this.test.assertEval(function() {
 
 		return document.querySelectorAll('#panel-container .panel').length === 0;
-	}, 'Client 1: No story panel is visible.');
+	}, this.prefix('No story panel is visible.'));
 
 	this.done();
 });
