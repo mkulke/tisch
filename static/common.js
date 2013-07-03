@@ -258,7 +258,7 @@ function update(id, rev, key, value) {
       var type = $('#panel-template').data('type'); 
       $.ajaxq('client', {
 
-        url: '/' + type + '/' + attributes._id,
+        url: '/' + type + '/' + id,
         type: 'GET',
         dataType: 'json',
         success: function(data, textStatus, jqXHR) {
