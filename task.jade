@@ -11,8 +11,7 @@ html
       $(document).ready(function() {
 
         attachAttributesToItems(items);
-        $('#story-selector').data('selected', {id: '!{story._id}', label: '!{story.title}', parent_id: '!{story.sprint_id }'});
-        $('#color-selector').data('selected', {id:'!{task.color}'});
+        $('#story-selector').data('selected', !{JSON.stringify(story)});
       });
   body
     #error-panel
