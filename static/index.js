@@ -31,6 +31,10 @@ $(document).ready(function() {
     var date = new Date(dateString);
     item.data('attributes').start = date;
     $('.header .start', item).html((date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear().toString().substr(2));
+    var length = item.data('attributes').length;
+    var endDate = new Date(date.getTime() + (length * MS_DAYS_FACTOR));
+    $('.header .end', item).html((endDate.getMonth() + 1) + '/' + endDate.getDate() + '/' + endDate.getFullYear().toString().substr(2));
+
   }
 
   var updateLength = function(item, length) {
