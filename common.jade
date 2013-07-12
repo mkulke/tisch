@@ -8,6 +8,13 @@ mixin item-selector(label, item, id)
         .line
       .content
 
+mixin date-selector(label, id)
+  =label + ':'
+  span(class='popup-selector', id=id)
+    a(class='open', href='#')
+      span.selected
+      .content
+
 mixin color-selector(label, color, id)
   =label + ': '
   span(class='popup-selector', id=id)

@@ -26,9 +26,10 @@ story: [
 sprint: [
 
     _id,
+    title,
     description,
     start,
-    end
+    length
 ]
 
 user: [

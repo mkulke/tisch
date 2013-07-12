@@ -1,0 +1,54 @@
+mixin panel(id, title, description, color)
+  div(class='panel', id=id)
+    form
+      div(class='header ' + color)
+        .label
+          input(type='text', name='title', value=title, class=color)
+        .icons
+          a(href='#')
+            img(class='remove-button', src='/remove.png', alt='remove')         
+          a(href='#')
+            img(class='show-button', src='/show.png', alt='show')
+          a(href='#')
+            img(class='hide-button', src='/hide.png', alt='hide')
+        .handle
+          span.start
+          span.seperator
+            | &nbsp;&ndash;&nbsp;
+          span.end
+      .description
+        textarea(name='description')
+          =description
+html
+  head
+    title Sprints
+    include common
+    script(type='text/javascript', src='/index.js')
+    script(type='text/javascript')
+    
+      var items = {};
+      items.sprint = !{JSON.stringify(sprints)};
+
+      $(document).ready(function() {
+
+        attachAttributesToItems(items);
+        $('.panel').each(function() {
+
+          var panel = $(this);
+          panel.data('update').start(panel, panel.data('attributes').start);
+          panel.data('update').length(panel, panel.data('attributes').length);
+        });
+      });
+  body
+    #error-panel
+      .message
+      .icons
+        a(href='#')
+          img(class='ok-button', src='/ok.png', alt='ok')
+    div(id='panel-container')
+
+      each sprint, i in sprints
+      
+        mixin panel('uuid-' + sprint._id, sprint.title, sprint.description, sprint.color)
+    a(href='#')
+      img(id='add-button', src='/add-circle.png', alt='add')  

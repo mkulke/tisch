@@ -17,6 +17,8 @@ options.filename = 'story.jade';
 var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'task.jade';
 var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
+options.filename = 'index.jade';
+var index_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 
 var clients = {};
 
@@ -61,6 +63,37 @@ function respondOk(response) {
   response.end();
 }
 
+function getRemainingTime(db, type, parentType, parentId) {
+
+  var deferred = Q.defer();
+
+  var aggregation = [
+    {$match: {}},
+    {$group: {_id: null, remaining_time: {$sum: '$remaining_time'}}}
+  ];
+  aggregation[0].$match[parentType + '_id'] = parentId;
+
+  db.collection(type).aggregate(aggregation, function(err, result) {
+
+    if (err) {
+
+      deferred.reject(new Error(err));
+    }
+    else {
+
+      var remainingTime = 0;
+      if (result.length == 1) {
+      
+        remainingTime = result[0].remaining_time;
+      }
+
+      deferred.resolve(remainingTime);      
+    }
+  });
+
+  return deferred.promise;
+}
+
 function getMaxPriority(db, type, parentType, parentId) {
 
   var deferred = Q.defer();
@@ -77,14 +110,16 @@ function getMaxPriority(db, type, parentType, parentId) {
 
       deferred.reject(new Error(err));
     }
-    
-    var priority = 1;
-    if (result.length == 1) {
-    
-      priority = Math.ceil(result[0].max_priority + 1);
-    }
+    else {
 
-    deferred.resolve(priority);
+      var priority = 1;
+      if (result.length == 1) {
+      
+        priority = Math.ceil(result[0].max_priority + 1);
+      }
+
+      deferred.resolve(priority);
+    }
   });
 
   return deferred.promise;
@@ -186,10 +221,20 @@ function findAndRemove(db, type, filter, removedIds) {
   return deferred.promise;
 }
 
-var find = function(db, type, filter) {
+var find = function(db, type, filter, sort) {
 
-  var deferred = Q.defer();  
-  db.collection(type).find(filter).sort({priority: 1}).toArray(function(err, result) {
+  var deferred = Q.defer();
+
+  if (!filter) {
+
+    filter = {};
+  }
+  if (!sort) {
+
+    sort = {};
+  }
+
+  db.collection(type).find(filter).sort(sort).toArray(function(err, result) {
 
     if (err) {
 
@@ -307,7 +352,7 @@ var updateAssignment = function(db, type, id, rev, parentType, parentId) {
 
 var complainWithPlain = function(err) {
 
-  this.writeHead(500, "Error", {"Content-Type": "text/plain"});
+  this.writeHead(500, err.toString(), {"Content-Type": "text/plain"});
   this.write(err.toString());
   this.end();  
 };
@@ -491,7 +536,7 @@ function processRequest(request, response) {
         .then(function (result) {
 
           story = result;
-          return find(db, 'task', {story_id: story._id});
+          return find(db, 'task', {story_id: story._id}, {priority: 1});
         })
         .then(function(result) {
 
@@ -529,7 +574,7 @@ function processRequest(request, response) {
 
       query = function(result) {
 
-        return find(db, 'story', request.headers.parent_id ? {sprint_id: ObjectID(request.headers.parent_id)} : {});
+        return find(db, 'story', request.headers.parent_id ? {sprint_id: ObjectID(request.headers.parent_id)} : {}, {title: 1});
       };
 
       answer = function(result) {
@@ -625,7 +670,7 @@ function processRequest(request, response) {
       .then(function (result) {
 
         sprint = result;
-        return find(db, 'story', {sprint_id: sprint._id});
+        return find(db, 'story', {sprint_id: sprint._id}, {priority: 1});
       })
       .then(function (result) {
 
@@ -636,11 +681,8 @@ function processRequest(request, response) {
 
     answer = function(result) {
 
-      return Q.fcall(function() {
-
-        var html = sprint_template({sprint: result.sprint, stories: result.stories});
-        respondWithHtml(html, response);
-      });
+      var html = sprint_template({sprint: result.sprint, stories: result.stories});
+      respondWithHtml(html, response);
     };
    } else if ((type == 'sprint') && (request.method == 'POST')) {
 
@@ -649,7 +691,12 @@ function processRequest(request, response) {
     assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
     query = function() {
-    
+
+      if (request.body.key == 'start') {
+
+        request.body.value = new Date(request.body.value);
+      } 
+
       return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);
     };
 
@@ -661,13 +708,26 @@ function processRequest(request, response) {
       broadcastToClients('update', request.headers.client_uuid, data);  
     };
 
-  } else {
+  } 
+  else if ((!type) && (request.method == 'GET')) {
+
+    query = function() {
+
+      return find(db, 'sprint');
+    }
+    answer = function(result) {
+
+      var html = index_template({sprints: result});
+      respondWithHtml(html, response);
+    };
+  }
+  else {
 
     // TODO
 
     query = function() {
 
-      throw 'not implemented yet';
+      throw 'This request is not supported.';
     };
     answer = function() {};
   }

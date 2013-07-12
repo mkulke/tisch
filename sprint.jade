@@ -1,7 +1,7 @@
 mixin panel(id, title, description, color)
   li(class='panel', id=id)
     form
-      div(class='header '+color)
+      div(class='header ' + color)
         input(type='text', name='title', value=title, class=color)
         .icons
           //img(class='open-button', src='/open.png', alt='open')
@@ -24,13 +24,19 @@ html
     script(type='text/javascript', src='/sprint.js')
     script(type='text/javascript')
     
+      var sprint = !{JSON.stringify(sprint)};
+      sprint.start = new Date(sprint.start);
+
       var items = {};
       items.story = !{JSON.stringify(stories)};
-      items.sprint = [!{JSON.stringify(sprint)}];
+      items.sprint = [sprint];
 
       $(document).ready(function() {
 
         attachAttributesToItems(items);
+        $('#start-selector span.selected').html(buildDateString(sprint.start));
+        var end = new Date(sprint.start.getTime() + (sprint.length * MS_DAYS_FACTOR));
+        $('#length-selector span.selected').html(buildDateString(end));        
       });
   body
     #error-panel
@@ -40,8 +46,8 @@ html
           img(class='ok-button', src='/ok.png', alt='ok')
     .main-panel(id='uuid-' + sprint._id)
       form
-        .header.blue
-          input(type='text', name='title', value=sprint.title, class='blue')
+        div(class='header ' + sprint.color)
+          input(type='text', name='title', value=sprint.title, class=sprint.color)
           .icons
             a(href='#')
               img(class='save-button', src='/save.png', alt='save')
@@ -49,6 +55,13 @@ html
         .description
           textarea(name='description').
             #{sprint.description}
+        hr
+        .line
+          mixin color-selector('Color', sprint.color, 'color-selector')
+        .line
+          mixin date-selector('Start date', 'start-selector')
+        .line
+          mixin date-selector('End date', 'length-selector')
     ul
       mixin panel('panel-template', '', '')
     ul(id='panel-container')

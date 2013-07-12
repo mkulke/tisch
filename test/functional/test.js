@@ -377,5 +377,5 @@ casper.then(function() {
 casper.run(function() {
 
 	this.test.done(40);
-  this.test.renderResults(true);
+	this.test.renderResults(true);
 });

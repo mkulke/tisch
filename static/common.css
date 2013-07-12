@@ -3,7 +3,7 @@ body {
   font-family: Helvetica, Arial, sans-serif;
   font-size: 10pt;
   margin: 0px;
-  background-image: url(/escheresque.png);
+  background-image: url(/squairy_light.png);
   background-repeat: repeat;
 }
 
@@ -19,11 +19,6 @@ textarea {
   font-size: 10pt;
 }
 
-.form_field {
-
-  display: block;
-}
-
 #error-panel {
 
   padding: 5px;
@@ -33,11 +28,11 @@ textarea {
   box-shadow: 5px 5px 15px #999;
   -webkit-box-shadow: 5px 5px 15px #999;
   -moz-box-shadow: 5px 5px 15px #999;
+  margin: 0 10px 0 10px;
 }
 
 #error-panel .icons {
 
-  /*margin-right: 5px;*/
   text-align: right;
 }
 
@@ -198,7 +193,7 @@ textarea {
 
 .yellow {
 
-  background-color: #F7C808;
+  background-color: #FFCC66;
 }
 
 .orange {
@@ -244,7 +239,7 @@ textarea {
   /*border: 1px solid #BBBBBB;*/
 }
 
-#panel-container {
+ul#panel-container {
 
   padding-left: 10px;
   padding-right: 10px;
@@ -252,8 +247,20 @@ textarea {
   margin: 0px;
 }
 
+div#panel-container {
+
+  margin-top: 10px;
+  margin-left: 10px;
+  margin-right: 10px;
+  box-shadow: 5px 5px 15px #999;
+  -webkit-box-shadow: 5px 5px 15px #999;
+  -moz-box-shadow: 5px 5px 15px #999;
+}
+
 .main-panel {
 
+  margin-left: 10px;
+  margin-right: 10px;
   min-width: 800px;
   box-shadow: 5px 5px 15px #999;
   -webkit-box-shadow: 5px 5px 15px #999;
@@ -298,13 +305,21 @@ form > .line input {
 
 .panel {
 
-  margin-left: 0px;
-  margin-right: 0px;
-  margin-top: 15px;
-  margin-bottom: 0px;
+  margin: 0px;
+  min-width: 780px;
+}
+
+li.panel {
+
   box-shadow: 5px 5px 15px #999;
   -webkit-box-shadow: 5px 5px 15px #999;
   -moz-box-shadow: 5px 5px 15px #999;
+  margin-top: 15px;
+}
+
+.panel form {
+
+  margin-bottom: 0px;
 }
 
 #panel-template {
@@ -317,18 +332,14 @@ form > .line input {
   display: block;
   margin-left: auto;
   margin-right: auto;
-  margin-bottom: 10px;
+  margin-top: 15px;
+  margin-bottom: 15px;
   opacity: 0.7;
 }
 
 #add-button:hover {
     
-    opacity: 1.0;        
-}
-
-.panel {
-
-  min-width: 780px;
+  opacity: 1.0;        
 }
 
 .header {
@@ -337,20 +348,14 @@ form > .line input {
   padding: 5px;
   /*background-color: #88C134;*/
   color: #FFFFFF;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
 }
 
 .description {
 
   padding: 5px;
   background-color: #FFFFFF;
-}
-
-.header .icons {
-
-  float: right;
-  width: 58px;
-  height: 16px;
-  text-align: right;
 }
 
 .panel .header .icons .show-button {
@@ -381,21 +386,25 @@ form > .line input {
   margin: 0px;
   outline: none;
   padding: 0px;
-  /*font-family: "Arial", Sans-serif;*/
   font-size: 11pt;
   border: 0px;
-  /*width: 10px;*/
   color: #FFFFFF;
 }
 
-.header .stats {
+.header .handle {
 
-  float: left;
-  /*font-family: "Arial", Sans-serif;
-  font-size: 11pt;*/
+  font-family: "Arial", Sans-serif;
+  font-size: 11pt;
   border: 0px;
   color: #FFFFFF;
-  /*margin-left: 5px;*/
+  text-align: right;
+}
+
+.header .icons {
+
+  float: right;
+  width: 42px;
+  height: 16px;
 }
 
 .description textarea {
@@ -405,8 +414,6 @@ form > .line input {
   padding: 0px;
   resize: none;
   border: 0px;
-  /*font-family: "Arial", Sans-serif;
-  font-size: 11pt;*/
   width: 100%;
   height: 100px;
 }
@@ -415,4 +422,61 @@ form > .line input {
 
   height: 100%;
   min-width: 522px;
+}
+
+.ui-datepicker {  
+
+}
+
+.ui-datepicker a {  
+
+  text-decoration: none;  
+}
+
+.ui-datepicker table {  
+
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  margin: 0px;
+  padding: 0px;
+  text-align: center;
+}
+
+.ui-datepicker td {
+
+  padding: 0.4em;
+}
+
+.ui-datepicker td:not(.ui-datepicker-unselectable):hover {
+
+  background-color: #DDDDDD;
+}
+
+.ui-datepicker td.ui-datepicker-unselectable {
+
+  color: DimGray;
+}
+
+.ui-datepicker-title {
+
+  text-align: center;  
+}
+
+.ui-datepicker-header {
+
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid black;
+}
+
+.ui-datepicker-next {  
+
+  margin-right: 3px;
+  float: right;  
+}
+
+.ui-datepicker-prev {
+
+  margin-left: 3px;
+  float: left;  
 }

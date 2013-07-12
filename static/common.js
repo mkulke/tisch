@@ -129,7 +129,6 @@ function initColorSelector() {
       var colorId = chosenColor.data('id');
 
       requestUpdate(task, 'color', colorId);
-      //requestUpdate(task, {color: colorId});
     });
   });
 }
@@ -168,7 +167,7 @@ function handleServerError(qHXR, textStatus, errorThrown) {
       break;
     case 'error':
     
-      errorMessage = 'Operation failed. ' + errorThrown;
+      errorMessage = 'Operation failed: ' + ((errorThrown != '') ? errorThrown : 'Unknown server error.');
       break;
     default:
     
@@ -227,10 +226,16 @@ function add(parent_id, attributes) {
 
 function requestAdd(type, parent_id) {
 
+  var headers = {client_uuid: clientUUID};
+  if (parent_id) {
+
+    headers.parent_id = parent_id;
+  }
+
   $.ajaxq('client', {
   
     url: '/' + type,
-    headers: {parent_id: parent_id, client_uuid: clientUUID},
+    headers: headers,
     type: 'PUT',
     success: function(data, textStatus, jqXHR) {
 
@@ -246,8 +251,9 @@ function requestAdd(type, parent_id) {
 function update(id, rev, key, value) {
 
   var item = $('#' + prefix(id));
-  var parentType = $('.main-panel').data('type');
-  var parentId = $('.main-panel').data('attributes')._id;
+  var mainPanel = $('.main-panel');
+  var parentType = mainPanel.length > 0 ? mainPanel.data('type') : null;
+  var parentId = mainPanel.length > 0 ? mainPanel.data('attributes')._id : null;
 
   // item not present?
   if (item.length != 1) {
@@ -420,7 +426,7 @@ $(document).ready(function() {
   });
 
   // This enables drag and drop on the list items
-  $("#panel-container").sortable({
+  $("ul#panel-container").sortable({
   
     tolerance: 'pointer',
     containment: '#panel-container'
@@ -495,12 +501,12 @@ $(document).ready(function() {
     updatePriority(li, previousLi, nextLi);
   });
 
-  $('.panel .handle').on('dblclick', function(event) {
+  $('.panel').on('dblclick', '.handle', function(event) {
   
-    var handle = $(event.delegateTarget);
-    var li = handle.parents('li').first();
-    var id = li.data('attributes')._id;
-    var type = li.data('type');
+    var handle = $(event.target);
+    var panel = $(event.delegateTarget);
+    var id = panel.data('attributes')._id;
+    var type = panel.data('type');
 
     window.location.href = '/' + type + '/' + id;
   });

@@ -1,0 +1,54 @@
+var MS_DAYS_FACTOR = 86400000;
+
+$(document).ready(function() {
+
+  $('#add-button').on('click', function(event) {
+   
+    event.preventDefault();
+   
+    requestAdd('sprint');
+  });
+
+  var updateColor = function(item, color) {
+
+     $('.header, .header input, #color-selector .selected', item).removeClass(colors.join(' ')).addClass(color);  
+  }
+
+  $('#panel-template').data('type', 'task');
+
+  var updateTitle = function(item, text) {
+
+  	$('input[name="title"]', item).val(text);	
+  }
+
+  var updateDescription = function(item, text) {
+
+  	$('textarea[name="description"]', item).val(text);	
+  }
+
+  var updateStart = function(item, dateString) {
+
+    var date = new Date(dateString);
+    item.data('attributes').start = date;
+    $('.header .start', item).html((date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear().toString().substr(2));
+  }
+
+  var updateLength = function(item, length) {
+
+    item.data('attributes').length = length;
+
+    var startDate = item.data('attributes').start;
+    var date = new Date(startDate.getTime() + (length * MS_DAYS_FACTOR));
+
+    $('.header .end', item).html((date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear().toString().substr(2));
+  }
+
+	$('.panel').data('update', {
+
+		title: updateTitle,
+		description: updateDescription,
+    start: updateStart,
+    length: updateLength,
+    color: updateColor
+	});
+});

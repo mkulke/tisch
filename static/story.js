@@ -25,11 +25,6 @@ $(document).ready(function() {
   	 sortPanels();	
   }
 
-  var updateColor = function(item, color) {
-
-     $('.header, .header input, #color-selector .selected', item).removeClass(colors.join(' ')).addClass(color);	
-  }
-
   var updateEstimation = function(item, text) {
 
   	$('input[name="estimation"]', item).val(text);	
@@ -38,6 +33,11 @@ $(document).ready(function() {
   $('input[name="estimation"]').data('parser', timeParser);
 
   initColorSelector();
+
+	var updateColor = function(item, color) {
+
+	   $('.header, .header input, #color-selector .selected', item).removeClass(colors.join(' ')).addClass(color);  
+	}
   
 	$('.main-panel').data('update', {
 
