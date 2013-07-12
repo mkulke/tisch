@@ -3,7 +3,8 @@ var casper = require('casper').create();
 
 var storyId, firstId, secondId, secondUrl, storyUrl;
 
-var sprintUrl = 'http://localhost:8000/sprint/51ac972325dfbc3750000001';
+var indexUrl = 'http://localhost:8000/';
+var sprintUrl = indexUrl + 'sprint/51ac972325dfbc3750000001';
 var story1Id, story2Id, story1Url, story2Url, task1Id, task2Id;
 
 casper.test.info("Open the sprint test page:");
@@ -374,8 +375,106 @@ casper.then(function() {
 	});
 });
 
+casper.then(function() {
+
+	this.test.info("Click on sprint's color selector:");
+
+	this.click('#color-selector .selected');
+	this.test.assertVisible('#color-selector .content', 'Color dialog appeared.');
+
+	this.test.info("Click on red box:");
+	this.click('#color-selector .red');
+
+	casper.waitForResource(sprintUrl, function() {
+
+		this.test.assert(this.getElementAttribute('.main-panel .header', 'class').split(' ').indexOf('red') != -1, 'Header color is set to red.');
+	});
+});
+
+casper.then(function() {
+
+	this.test.info("Click on start date:");
+
+	this.click('#start-selector .selected');
+
+  this.test.assertVisible('#start-selector .content', 'Datepicker popup appeared.');
+
+	this.test.info("Click on Jan 2nd 2013:");
+
+	this.click('#start-selector .content tr:nth-child(1) td:nth-child(4)');
+
+	casper.waitForResource(sprintUrl, function() {
+
+		this.test.assertNotVisible('#start-selector .content', 'Datepicker popup disappeared.');
+		this.test.assertSelectorHasText('#start-selector span.selected', '1/2/13', 'Start date is set to Jan 2nd 2013.');
+		this.test.assertSelectorHasText('#length-selector span.selected', '1/15/13', 'End date has been moved to Jan 15th 2013.');
+	});
+});
+
+casper.then(function() {
+
+	this.test.info("Click on end date:");
+
+	this.click('#length-selector .selected');
+
+  this.test.assertVisible('#length-selector .content', 'Datepicker popup appeared.');
+
+	this.test.info("Click on Jan 1st 2013 (illegal b/c before start date):");
+
+	this.click('#length-selector .content tr:nth-child(1) td:nth-child(3)');
+
+  this.test.assertVisible('#length-selector .content', 'Datepicker popup did not disappear.');
+
+	this.test.info("Click on Jan 13th 2013:");
+
+	this.click('#length-selector .content tr:nth-child(3) td:nth-child(1)');
+
+	casper.waitForResource(sprintUrl, function() {
+
+		this.test.assertNotVisible('#length-selector .content', 'Datepicker popup disappeared.');
+		this.test.assertSelectorHasText('#length-selector span.selected', '1/13/13', 'End date is set to Jan 13th 2013.');
+	});
+});
+
+// Cleanup
+
+casper.then(function() {
+
+	this.test.info("Reset sprint to default values:");
+
+	this.click('#color-selector .selected');
+	this.click('#color-selector .purple');
+
+	casper.waitForResource(sprintUrl, function() {
+
+		this.test.assert(this.getElementAttribute('.main-panel .header', 'class').split(' ').indexOf('purple') != -1, 'Header color is set to purple.');
+	});
+});
+
+casper.then(function() {
+
+	this.click('#start-selector .selected');
+	this.click('#start-selector .content tr:nth-child(1) td:nth-child(3)');
+
+	casper.waitForResource(sprintUrl, function() {
+
+		this.test.assertSelectorHasText('#start-selector span.selected', '1/1/13', 'Start date is set to Jan 1st 2013.');
+	});
+});
+
+casper.then(function() {
+
+	this.click('#length-selector .selected');
+	this.click('#length-selector .content tr:nth-child(3) td:nth-child(2)');
+
+	casper.waitForResource(sprintUrl, function() {
+
+		this.test.assertSelectorHasText('#length-selector span.selected', '1/14/13', 'End date is set to Jan 14th 2013.');
+	});
+});
+
 casper.run(function() {
 
-	this.test.done(40);
+	this.test.done(53);
 	this.test.renderResults(true);
 });

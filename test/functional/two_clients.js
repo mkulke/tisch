@@ -2,7 +2,8 @@
 var casper1 = require('casper').create();
 var casper2 = require('casper').create();
 
-var sprintUrl = 'http://localhost:8000/sprint/51ac972325dfbc3750000001';
+var indexUrl = 'http://localhost:8000/';
+var sprintUrl = indexUrl + 'sprint/51ac972325dfbc3750000001';
 var story1Id, story2Id, story1Url, story2Url, task1Id, task2Id;
 
 casper1.test.info("Open the sprint test page on 2 clients.");
