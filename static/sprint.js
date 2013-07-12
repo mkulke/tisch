@@ -89,6 +89,7 @@ $(document).ready(function() {
 		  nextText: '>',
 		  prevText: '<',
 		  dateFormat: $.datepicker.ISO_8601,
+		  gotoCurrent: true,
 		  onSelect: function(dateText, inst) { 
 
 		  	$('.content', selector).css("visibility", "hidden");
@@ -114,18 +115,26 @@ $(document).ready(function() {
 
   	$('.selected', selector).bind('click', function(event) {
 
-    	event.preventDefault();
-
       $(document).bind('click', closeHandler);
-
-      $('.content', selector).css('visibility', 'visible');
     });
 	});
 
-	// Ensure there cannot be selected a date before the start.
+	$('#start-selector .selected').bind('click', function(event) {
+
+		var date = $('.main-panel').data('attributes').start;
+		$('#start-selector .content').datepicker('setDate', date);
+		$('#start-selector .content').css('visibility', 'visible');  
+	});
+
 	$('#length-selector .selected').bind('click', function(event) {
 
-		$('#length-selector .content').datepicker('option', 'minDate', $('.main-panel').data('attributes').start);    
+		var startDate = $('.main-panel').data('attributes').start;
+		var date = new Date(startDate.getTime() + ($('.main-panel').data('attributes').length * MS_DAYS_FACTOR));
+
+		$('#length-selector .content').datepicker('setDate', date);    
+		// Ensure there cannot be selected a date before the start.
+		$('#length-selector .content').datepicker('option', 'minDate', $('.main-panel').data('attributes').start);
+		$('#length-selector .content').css('visibility', 'visible');    
 	});
 
   $('.main-panel').data('update', {
