@@ -16,6 +16,11 @@ function unPrefix(prefixedId) {
   return prefixedId.substr('uuid-'.length);
 }
 
+function isUpdateOk(item, text) {
+
+  return ((item.data('timer') === null) && (item.val() != text))
+}
+
 function attachAttributesToItems(map) {
 
   // to please jshint 'function within a loop'

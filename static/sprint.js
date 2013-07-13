@@ -41,12 +41,20 @@ $(document).ready(function() {
 
   var updateTitle = function(item, text) {
 
-  	$('input[name="title"]', item).val(text);	
+    var input = $('input[name="title"]', item);
+    if (isUpdateOk(input, text)) {
+
+      input.val(text);  
+    }
   }
 
   var updateDescription = function(item, text) {
 
-  	$('textarea[name="description"]', item).val(text);	
+    var textarea = $('textarea[name="description"]', item);
+    if (isUpdateOk(textarea, text)) {
+
+      textarea.val(text); 
+    }
   }
 
   var updatePriority = function(item, priority) {

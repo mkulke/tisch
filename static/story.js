@@ -12,12 +12,20 @@ $(document).ready(function() {
 
   var updateTitle = function(item, text) {
 
-  	$('input[name="title"]', item).val(text);	
+  	var input = $('input[name="title"]', item);
+  	if (isUpdateOk(input, text)) {
+
+  		input.val(text);	
+  	}
   }
 
   var updateDescription = function(item, text) {
 
-  	$('textarea[name="description"]', item).val(text);	
+  	var textarea = $('textarea[name="description"]', item);
+  	if (isUpdateOk(textarea, text)) {
+
+  		textarea.val(text);	
+  	}
   }
 
   var updatePriority = function(item, priority) {
@@ -27,7 +35,11 @@ $(document).ready(function() {
 
   var updateEstimation = function(item, text) {
 
-  	$('input[name="estimation"]', item).val(text);	
+   	var input = $('input[name="estimation"]', item);
+  	if (isUpdateOk(input, text)) {
+
+  		input.val(text);	
+  	}
   }
 
   $('input[name="estimation"]').data('parser', timeParser);
@@ -49,7 +61,11 @@ $(document).ready(function() {
 
   var updateSummary = function(item, text) {
 
-  	$('input[name="summary"]', item).val(text);	
+  	var input = $('input[name="summary"]', item);
+  	if (isUpdateOk(input, text)) {
+
+  		input.val(text);	
+  	}
   }
 
 	$('.panel').data('update', {

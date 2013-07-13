@@ -63,7 +63,11 @@
 
     updateFunctions[value] = function(item, text) {
 
-      $('input[name="' + value + '"], textarea[name="' + value + '"]', item).val(text);
+      var inputOrTextarea = $('input[name="' + value + '"], textarea[name="' + value + '"]', item);
+      if (isUpdateOk(inputOrTextarea, text)) {
+
+        inputOrTextarea.val(text); 
+      }
     };
   });
 });
