@@ -20,7 +20,7 @@ html
         a(href='#')
           img(class='ok-button', src='/ok.png', alt='ok')
     .main-panel(id='uuid-' + task._id)
-      form
+      form(autocomplete='off')
         div(class='header ' + task.color)
           .left
             input(type='text', name='summary', value=task.summary, class=task.color)

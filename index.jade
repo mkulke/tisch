@@ -1,6 +1,6 @@
 mixin panel(id, title, description, color)
   div(class='panel', id=id)
-    form
+    form(autocomplete='off')
       div(class='header ' + color)
         .left
           input(type='text', name='title', value=title, class=color)

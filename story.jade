@@ -1,6 +1,6 @@
 mixin panel(id, summary, description, color, remaining_time)
   li(class='panel', id=id)
-    form
+    form(autocomplete='off')
       div(class='header ' + color)
         .left
           input(type='text', name='summary', value=summary, class=color)
@@ -40,7 +40,7 @@ html
         a(href='#')
           img(class='ok-button', src='/ok.png', alt='ok')
     .main-panel(id='uuid-' + story._id)
-      form
+      form(autocomplete='off')
         div(class='header ' + story.color)
           .left
             input(type='text', name='title', value=story.title, class=story.color)

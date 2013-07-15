@@ -1,6 +1,6 @@
 mixin panel(id, title, description, color)
   li(class='panel', id=id)
-    form
+    form(autocomplete='off')
       div(class='header ' + color)
         .left
           input(type='text', name='title', value=title, class=color)
@@ -45,7 +45,7 @@ html
         a(href='#')
           img(class='ok-button', src='/ok.png', alt='ok')
     .main-panel(id='uuid-' + sprint._id)
-      form
+      form(autocomplete='off')
         div(class='header ' + sprint.color)
           .left
             input(type='text', name='title', value=sprint.title, class=sprint.color)
