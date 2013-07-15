@@ -2,20 +2,20 @@ mixin panel(id, title, description, color)
   div(class='panel', id=id)
     form
       div(class='header ' + color)
-        .label
+        .left
           input(type='text', name='title', value=title, class=color)
-        .icons
-          a(href='#')
-            img(class='remove-button', src='/remove.png', alt='remove')         
-          a(href='#')
-            img(class='show-button', src='/show.png', alt='show')
-          a(href='#')
-            img(class='hide-button', src='/hide.png', alt='hide')
-        .handle
-          span.start
-          span.seperator
+        .right
+          img(src='calendar.png', alt='calendar').date.icon
+          span.date.text.start
+          span.date.seperator
             | &nbsp;&ndash;&nbsp;
-          span.end
+          span.date.text.end
+          a(href='#')
+            img(src='/remove.png', alt='remove').remove.button       
+          a(href='#')
+            img(src='/show.png', alt='show').show.button
+          a(href='#')
+            img(src='/hide.png', alt='hide').hide.button
       .description
         textarea(name='description')
           =description

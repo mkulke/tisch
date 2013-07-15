@@ -440,7 +440,7 @@ $(document).ready(function() {
   // This prevents firefox from keeping form values after reload.
   $('input,textarea').attr('autocomplete', 'off');
 
-  $('.panel').on('click', '.remove-button', function(event) {
+  $('.panel').on('click', '.remove.button', function(event) {
   
     event.preventDefault();
   
@@ -453,27 +453,27 @@ $(document).ready(function() {
     requestRemove(id, type, rev);
   });
 
-  $('.panel').on('click', '.hide-button', function(event) {
+  $('.panel').on('click', '.hide.button', function(event) {
 
     event.preventDefault();
 
     var story = $(event.delegateTarget);
     $('.description', story).slideUp(100, function() {
     
-      $('.hide-button', story).hide();
-      $('.show-button', story).show();
+      $('.hide.button', story).hide();
+      $('.show.button', story).show();
     });
   });
     
-  $('.panel').on('click', '.show-button', function(event) {
+  $('.panel').on('click', '.show.button', function(event) {
 
     event.preventDefault();
 
     var item = $(event.delegateTarget);
     $('.description', item).slideDown(100, function() {
     
-      $('.show-button', item).hide();
-      $('.hide-button', item).show();
+      $('.show.button', item).hide();
+      $('.hide.button', item).show();
     });
   });
         
@@ -506,14 +506,23 @@ $(document).ready(function() {
     updatePriority(li, previousLi, nextLi);
   });
 
-  $('.panel').on('dblclick', '.handle', function(event) {
-  
-    var handle = $(event.target);
-    var panel = $(event.delegateTarget);
-    var id = panel.data('attributes')._id;
-    var type = panel.data('type');
+  $('.panel').each(function(index, element) {
 
-    window.location.href = '/' + type + '/' + id;
+    var panel = $(element);
+    //var header = $('.header', panel);
+
+    panel.on('dblclick', '.header', function(event) {
+  
+      var panel = $(event.delegateTarget);
+      var id = panel.data('attributes')._id;
+      var type = panel.data('type');
+      window.location.href = '/' + type + '/' + id;
+    });
+
+    $('.button', panel).on('dblclick', function(event) {
+      
+      return false;
+    });
   });
 
   $('input, textarea').data('timer', null);

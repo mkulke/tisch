@@ -22,11 +22,8 @@ html
     .main-panel(id='uuid-' + task._id)
       form
         div(class='header ' + task.color)
-          input(type='text', name='summary', value=task.summary, class=task.color)
-          .icons
-            a(href='#')
-              img(class='save-button', src='/save.png', alt='save')
-          .handle
+          .left
+            input(type='text', name='summary', value=task.summary, class=task.color)
         .description
           textarea(name='description').
             #{task.description}

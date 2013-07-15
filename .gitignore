@@ -5,6 +5,5 @@ static/.DS_Store
 
 .DS_Store
 
-test/functional/test.png
+test/functional/*.png
 
-*.png

@@ -10,7 +10,7 @@ body {
 input {
 
   font-family: Helvetica, Arial, sans-serif;
-  font-size: 10pt;
+  font-size: 11pt;
 }
 
 textarea {
@@ -294,12 +294,12 @@ form > .line input {
   margin-right: 5px;
   outline: none;
   padding: 0px;
-  /*font-family: "Arial", Sans-serif;
-  font-size: 9pt;*/
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
   border: 0px;
   /*width: 10px;*/
   border-bottom: 1px DimGray solid;
-  width: 40px;
+  width: 35px;
   /*text-align: center;*/
 }
 
@@ -358,53 +358,34 @@ li.panel {
   background-color: #FFFFFF;
 }
 
-.panel .header .icons .show-button {
+.panel .header .show.button {
 
   margin-left: 5px;
   display: none;  
 }
 
-.panel .header .icons .hide-button {
+.panel .header .hide.button {
 
   margin-left: 5px;
 }
 
-.panel .header .icons .remove-button {
+.panel .header .remove.button {
 
   margin-left: 5px;
 }
 
-.header .icons .save-button {
-   
-  /*margin-right: 5px;*/
-  display: none;
+.panel .header .remaining-text {
+
+  margin-left: 5px;
 }
 
 .header input {
 
-  float: left;
   margin: 0px;
   outline: none;
   padding: 0px;
-  font-size: 11pt;
   border: 0px;
   color: #FFFFFF;
-}
-
-.header .handle {
-
-  font-family: "Arial", Sans-serif;
-  font-size: 11pt;
-  border: 0px;
-  color: #FFFFFF;
-  text-align: right;
-}
-
-.header .icons {
-
-  float: right;
-  width: 42px;
-  height: 16px;
 }
 
 .description textarea {
@@ -418,9 +399,8 @@ li.panel {
   height: 100px;
 }
 
-.header .handle {
+.header {
 
-  height: 100%;
   min-width: 522px;
 }
 
@@ -479,4 +459,45 @@ li.panel {
 
   margin-left: 3px;
   float: left;  
+}
+
+.header .left {
+
+  float: left;
+
+}
+
+.header .right {
+
+  float: right;
+}
+
+.header .right:after {
+
+  clear: both;
+}
+
+.header span {
+
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11pt;
+}
+
+.header span, .header img, .header input {
+
+  vertical-align: middle;
+  /*margin-bottom: 2px;*/
+}
+
+.header img.remaining.icon, .header img.date.icon {
+
+  padding-right: 5px;
+  padding-left: 5px;
+  border-left: 2px solid white;
+}
+
+.header span.remaining.text, .header span.date.text.end {
+
+  border-right: 2px solid white;
+  padding-right: 5px;
 }
