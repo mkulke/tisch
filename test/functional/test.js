@@ -64,12 +64,12 @@ casper.then(function() {
 
 	casper.test.info("Move story 2 to position 1:");
 
-	var info1 = this.getElementInfo('#' + story1Id +' .handle');
-	var info2 = this.getElementInfo('#' + story2Id +' .handle');
+	var info1 = this.getElementInfo('#' + story1Id + ' .header');
+	var info2 = this.getElementInfo('#' + story2Id + ' .header');
 
-	this.mouse.down(info2.x + info2.width / 2, info2.y);
-	this.mouse.move(info1.x + info1.width / 2, info1.y);
-	this.mouse.up(info1.x + info1.width / 2, info1.y);
+	this.mouse.down(info2.x + info2.width / 2, info2.y + info2.height / 2);
+	this.mouse.move(info1.x + info1.width / 2, info1.y + info1.height / 2);
+	this.mouse.up(info1.x + info1.width / 2, info1.y + info1.height / 2);
 
 	this.test.assertEquals(story2Id, this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id'), 'Story 2 is on position 1.');
 
@@ -85,7 +85,7 @@ casper.then(function() {
 
 	casper.test.info("Double-click on the header of story 1:");
 
-	this.mouseEvent('dblclick', '#' + story1Id + ' .handle');
+	this.mouseEvent('dblclick', '#' + story1Id + ' .header');
 
 	story1Url = 'http://localhost:8000/story/' + story1Id.substr('uuid-'.length);
 
@@ -148,12 +148,12 @@ casper.then(function() {
 
 	casper.test.info("Move task 1 to position 2:");
 
-	var info1 = this.getElementInfo('#' + task1Id +' .handle');
-	var info2 = this.getElementInfo('#' + task2Id +' .handle');
+	var info1 = this.getElementInfo('#' + task1Id + ' .header');
+	var info2 = this.getElementInfo('#' + task2Id + ' .header');
 
-	this.mouse.down(info1.x + info1.width / 2, info1.y);
-	this.mouse.move(info2.x + info2.width / 2, info2.y);
-	this.mouse.up(info2.x + info2.width / 2, info2.y);
+	this.mouse.down(info1.x + info1.width / 2, info1.y + info1.height / 2);
+	this.mouse.move(info2.x + info2.width / 2, info2.y + info2.height / 2);
+	this.mouse.up(info2.x + info2.width / 2, info2.y + info2.height / 2);
 
 	this.test.assertEquals(task1Id, this.getElementAttribute('#panel-container .panel:nth-child(2)', 'id'), 'Task 1 is on position 2.');
 
@@ -169,7 +169,7 @@ casper.then(function() {
 
   casper.test.info("Click the remove button on task 1:");
 
-  this.click('#' + task1Id + ' .remove-button');
+  this.click('#' + task1Id + ' .remove.button');
   this.waitForResource(story1Url, function() {
 
 		this.test.assertEval(function() {
@@ -183,7 +183,7 @@ casper.then(function() {
 
 	casper.test.info("Double-click on the header of task 2:");
 
-	this.mouseEvent('dblclick', '#' + task2Id + ' .handle');
+	this.mouseEvent('dblclick', '#' + task2Id + ' .header');
 
 	task2Url = 'http://localhost:8000/task/' + task2Id.substr('uuid-'.length);
 
@@ -318,7 +318,7 @@ casper.then(function() {
 
 	casper.test.info("Double-click on the header of story 2:");
 
-	this.mouseEvent('dblclick', '#' + story2Id + ' .handle');
+	this.mouseEvent('dblclick', '#' + story2Id + ' .header');
 
 	story2Url = 'http://localhost:8000/story/' + story2Id.substr('uuid-'.length);
 
@@ -351,7 +351,7 @@ casper.then(function() {
 
   casper.test.info("Click the remove button on story 1:");
 
-  this.click('#' + story1Id + ' .remove-button');
+  this.click('#' + story1Id + ' .remove.button');
   this.waitForResource(sprintUrl, function() {
 
 		this.test.assertEval(function() {
@@ -365,7 +365,7 @@ casper.then(function() {
 
   casper.test.info("Click the remove button on story 2:");
 
-  this.click('#' + story2Id + ' .remove-button');
+  this.click('#' + story2Id + ' .remove.button');
   this.waitForResource(sprintUrl, function() {
 
 		this.test.assertEval(function() {

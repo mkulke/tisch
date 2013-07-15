@@ -129,7 +129,7 @@ casper1.then(function() {
 
 	this.test.info(this.prefix('Double-click on the header of story 1.'));
 
-	this.mouseEvent('dblclick', '#' + story1Id + ' .handle');
+	this.mouseEvent('dblclick', '#' + story1Id + ' .header');
 
 	story1Url = 'http://localhost:8000/story/' + story1Id.substr('uuid-'.length);
 
@@ -171,7 +171,7 @@ casper1.then(function() {
 
 	this.test.info(this.prefix('Double-click on the header of task.'));
 
-	this.mouseEvent('dblclick', '#' + taskId + ' .handle');
+	this.mouseEvent('dblclick', '#' + taskId + ' .header');
 
 	taskUrl = 'http://localhost:8000/task/' + taskId.substr('uuid-'.length);
 	this.waitForResource(taskUrl, function() {
@@ -193,7 +193,7 @@ casper2.then(function() {
 
 	this.test.info(this.prefix('Double-click on the header of story 2.'));
 
-	this.mouseEvent('dblclick', '#' + story2Id + ' .handle');
+	this.mouseEvent('dblclick', '#' + story2Id + ' .header');
 
 	story2Url = 'http://localhost:8000/story/' + story2Id.substr('uuid-'.length);
 	this.waitForResource(story2Url, function() {
@@ -322,12 +322,12 @@ casper1.then(function() {
 
 	this.test.info(this.prefix('Move story 2 to position 1.'));
 
-	var info1 = this.getElementInfo('#' + story1Id +' .handle');
-	var info2 = this.getElementInfo('#' + story2Id +' .handle');
+	var info1 = this.getElementInfo('#' + story1Id +' .header');
+	var info2 = this.getElementInfo('#' + story2Id +' .header');
 
-	this.mouse.down(info2.x + info2.width / 2, info2.y);
-	this.mouse.move(info1.x + info1.width / 2, info1.y);
-	this.mouse.up(info1.x + info1.width / 2, info1.y);
+	this.mouse.down(info2.x + info2.width / 2, info2.y + info2.height / 2);
+	this.mouse.move(info1.x + info1.width / 2, info1.y + info1.height / 2);
+	this.mouse.up(info1.x + info1.width / 2, info1.y + info1.height / 2);
 
 	this.waitForResource(sprintUrl, function() {
 
@@ -348,8 +348,8 @@ casper2.then(function() {
 
 	this.test.info(this.prefix('Click the remove button story 1 and story 2.'));
 
-	this.click('#' + story1Id + ' .remove-button');
-	this.click('#' + story2Id + ' .remove-button');
+	this.click('#' + story1Id + ' .remove.button');
+	this.click('#' + story2Id + ' .remove.button');
 
 	this.waitForResource(sprintUrl, function() {
 
