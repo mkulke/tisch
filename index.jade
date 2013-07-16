@@ -3,7 +3,7 @@ mixin panel(id, title, description, color)
     form(autocomplete='off')
       div(class='header ' + color)
         .left
-          input(type='text', name='title', value=title, class=color)
+          input(type='text', name='title', value=title, class=color, maxlength=32)
         .right
           img(src='calendar.png', alt='calendar').date.icon
           span.date.text.start

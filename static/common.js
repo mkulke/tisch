@@ -430,6 +430,10 @@ $(document).ready(function() {
     update(data.id, data.rev, data.key, data.value);
   });
 
+  // This makes the header input grow automatically with its value.
+  $('.header input').autoGrow({comfortZone: 5});
+  $('.header input').css('min-width', '0px');
+
   // This enables drag and drop on the list items
   $("ul#panel-container").sortable({
   
@@ -509,7 +513,7 @@ $(document).ready(function() {
   $('.panel').each(function(index, element) {
 
     var panel = $(element);
-    //var header = $('.header', panel);
+    var header = $('.header', panel);
 
     panel.on('dblclick', '.header', function(event) {
   
@@ -519,7 +523,7 @@ $(document).ready(function() {
       window.location.href = '/' + type + '/' + id;
     });
 
-    $('.button', panel).on('dblclick', function(event) {
+    $('.button, input', header).on('dblclick', function(event) {
       
       return false;
     });

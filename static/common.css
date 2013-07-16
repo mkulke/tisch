@@ -7,7 +7,8 @@ body {
   background-repeat: repeat;
 }
 
-input {
+/* needed for firefox autogrow */
+input, pre.autogrow {
 
   font-family: Helvetica, Arial, sans-serif;
   font-size: 11pt;
@@ -379,15 +380,6 @@ li.panel {
   margin-left: 5px;
 }
 
-.header input {
-
-  margin: 0px;
-  outline: none;
-  padding: 0px;
-  border: 0px;
-  color: #FFFFFF;
-}
-
 .description textarea {
 
   outline: none;
@@ -481,23 +473,55 @@ li.panel {
 
   font-family: Helvetica, Arial, sans-serif;
   font-size: 11pt;
+  /*padding-top: 2px;*/
+}
+
+.header input {
+
+  margin: 0px;
+  outline: none;
+  padding: 0px;
+  border: 0px;
+  color: #FFFFFF;
+  border-right: 1px solid white;
 }
 
 .header span, .header img, .header input {
 
   vertical-align: middle;
-  /*margin-bottom: 2px;*/
 }
 
 .header img.remaining.icon, .header img.date.icon {
 
+  padding-top: 1px;
   padding-right: 5px;
   padding-left: 5px;
-  border-left: 2px solid white;
+  border-left: 1px solid white;
 }
 
 .header span.remaining.text, .header span.date.text.end {
 
-  border-right: 2px solid white;
+  border-right: 1px solid white;
   padding-right: 5px;
+}
+
+@-moz-document url-prefix() {
+
+  .header input {
+
+    padding-top: 2px;
+    font-size: 11pt;
+  }
+
+  .header span {
+
+    padding-top: 2px;
+    font-size: 11pt;
+  }
+
+  .header img {
+
+    padding-top: 1px;
+    padding-bottom: 1px;
+  }
 }

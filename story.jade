@@ -3,7 +3,7 @@ mixin panel(id, summary, description, color, remaining_time)
     form(autocomplete='off')
       div(class='header ' + color)
         .left
-          input(type='text', name='summary', value=summary, class=color)
+          input(type='text', name='summary', value=summary, class=color, maxlength=32)
         .right
           img(src='/clock.png', alt='remaining').remaining.icon
           span.remaining.text
@@ -43,7 +43,7 @@ html
       form(autocomplete='off')
         div(class='header ' + story.color)
           .left
-            input(type='text', name='title', value=story.title, class=story.color)
+            input(type='text', name='title', value=story.title, class=story.color, maxlength=64)
         .description
           textarea(name='description').
             #{story.description}

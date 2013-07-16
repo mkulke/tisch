@@ -3,7 +3,7 @@ mixin panel(id, title, description, color)
     form(autocomplete='off')
       div(class='header ' + color)
         .left
-          input(type='text', name='title', value=title, class=color)
+          input(type='text', name='title', value=title, class=color, maxlength=32)
         .right
           img(src='/clock.png', alt='remaining').remaining.icon
           span.remaining.text
@@ -48,7 +48,7 @@ html
       form(autocomplete='off')
         div(class='header ' + sprint.color)
           .left
-            input(type='text', name='title', value=sprint.title, class=sprint.color)
+            input(type='text', name='title', value=sprint.title, class=sprint.color, maxlength=32)
         .description
           textarea(name='description').
             #{sprint.description}
