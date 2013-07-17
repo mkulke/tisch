@@ -87,7 +87,7 @@ function getRemainingTime(db, type, parentType, parentId) {
         remainingTime = result[0].remaining_time;
       }
 
-      deferred.resolve(remainingTime);      
+      deferred.resolve({id: parentId.toString(), key: 'remaining_time', value: remainingTime});      
     }
   });
 
@@ -454,11 +454,30 @@ function processRequest(request, response) {
     assert.ok(request.headers.rev, 'rev missing in request headers.');
     assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
+    var remainingTimeCalculation;
+
     query = function() {
 
       if (request.body.key == 'story_id') {
 
         return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'story', request.body.value)
+      }
+      else if (request.body.key == 'remaining_time') {
+
+        var task;
+
+        return findAndModify(db, type, id, parseInt(request.headers.rev, 10), 'remaining_time', request.body.value)
+        .then(function (result) {
+
+          task = result;
+
+          return getRemainingTime(db, 'task', 'story', task.story_id);
+        })
+        .then(function (result) {
+
+          remainingTimeCalculation = result;
+          return task;
+        }); 
       }
       else {
 
@@ -468,13 +487,14 @@ function processRequest(request, response) {
 
     answer = function(result) {
 
-      return Q.fcall(function() {
+      var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
+      
+      respondWithJson(data, response);
+      broadcastToClients('update', request.headers.client_uuid, data);
+      if (request.body.key == 'remaining_time') {
 
-        var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
-        
-        respondWithJson(data, response);
-        broadcastToClients('update', request.headers.client_uuid, data);
-      });
+        broadcastToClients('update_calculation', request.headers.client_uuid, remainingTimeCalculation);
+      }
     };
   } 
   else if ((type == 'task') && (request.method == 'PUT')) {
@@ -605,10 +625,13 @@ function processRequest(request, response) {
 
     answer = function(result) {
 
-      var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
-      
-      respondWithJson(data, response);
-      broadcastToClients('update', request.headers.client_uuid, data);
+      return Q.fcall(function() {
+
+        var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
+        
+        respondWithJson(data, response);
+        broadcastToClients('update', request.headers.client_uuid, data);
+      });  
     };
   } else if ((type == 'story') && (request.method == 'PUT')) {
 
@@ -665,6 +688,7 @@ function processRequest(request, response) {
     query = function() {
 
       var sprint;
+      var stories;
 
       return findOne(db, 'sprint', id)
       .then(function (result) {
@@ -674,17 +698,40 @@ function processRequest(request, response) {
       })
       .then(function (result) {
 
-        var stories = result;
-        return {sprint: sprint, stories: stories}; 
+        stories = result;
+
+        function buildCalls() {
+
+          var calls = [];
+          for (var i in stories) {
+
+            calls.push(getRemainingTime(db, 'task', 'story', stories[i]._id));
+          }
+
+          return calls;
+        }
+
+        return Q.all(buildCalls());
+      })
+      .then(function (results) {
+
+        var remaining_time = {};
+        for (var i in results) {
+
+          var result = results[i];
+          remaining_time[result.id] = result.value;
+        }
+
+        return {sprint: sprint, stories: stories, calculations: {remaining_time: remaining_time}}; 
       });
     };
 
     answer = function(result) {
 
-      var html = sprint_template({sprint: result.sprint, stories: result.stories});
+      var html = sprint_template({sprint: result.sprint, stories: result.stories, calculations: result.calculations});
       respondWithHtml(html, response);
     };
-   } else if ((type == 'sprint') && (request.method == 'POST')) {
+  } else if ((type == 'sprint') && (request.method == 'POST')) {
 
     assert.ok(id, 'id url part missing.');
     assert.ok(request.headers.rev, 'rev missing in request headers.');
@@ -707,7 +754,6 @@ function processRequest(request, response) {
       respondWithJson(data, response);
       broadcastToClients('update', request.headers.client_uuid, data);  
     };
-
   } 
   else if ((!type) && (request.method == 'GET')) {
 

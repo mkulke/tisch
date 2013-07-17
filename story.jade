@@ -14,7 +14,7 @@ mixin panel(id, summary, description, color, remaining_time)
             img(src='/show.png', alt='show').show.button
           a(href='#')
             img(src='/hide.png', alt='hide').hide.button
-      .description
+      .body
         textarea(name='description')
           =description
 
@@ -44,14 +44,14 @@ html
         div(class='header ' + story.color)
           .left
             input(type='text', name='title', value=story.title, class=story.color, maxlength=64)
-        .description
-          textarea(name='description').
-            #{story.description}
-        hr
-        .line
-          mixin time-input(story, 'Time estimation', 'estimation')
-        .line
-          mixin color-selector('Color', story.color, 'color-selector')
+        .body
+          textarea(name='description')
+            =story.description
+          hr
+          .line
+            mixin time-input(story, 'Time estimation', 'estimation')
+          .line
+            mixin color-selector('Color', story.color, 'color-selector')
     ul
       mixin panel('panel-template')
     ul(id='panel-container')

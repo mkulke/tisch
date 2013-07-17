@@ -1,3 +1,50 @@
+var updateTitle = function(item, text) {
+
+	var input = $('input[name="title"]', item);
+	if (isUpdateOk(input, text)) {
+
+		input.val(text);
+		input.trigger('input.autogrow');
+	}
+}
+
+var updateDescription = function(item, text) {
+
+	var textarea = $('textarea[name="description"]', item);
+	if (isUpdateOk(textarea, text)) {
+
+		textarea.val(text);	
+	}
+}
+
+var updatePriority = function(item, priority) {
+
+	sortPanels();	
+}
+
+var updateEstimation = function(item, text) {
+
+ 	var input = $('input[name="estimation"]', item);
+	if (isUpdateOk(input, text)) {
+
+		input.val(text);	
+	}
+}
+
+var updateSummary = function(item, text) {
+
+	var input = $('input[name="summary"]', item);
+	if (isUpdateOk(input, text)) {
+
+		input.val(text);	
+	}
+}
+
+var updateColor = function(item, color) {
+
+   $('.header, .header input, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);  
+}
+
 $(document).ready(function() {
 
   $('#add-button').on('click', function(event) {
@@ -10,46 +57,9 @@ $(document).ready(function() {
 
   $('#panel-template').data('type', 'task');
 
-  var updateTitle = function(item, text) {
-
-  	var input = $('input[name="title"]', item);
-  	if (isUpdateOk(input, text)) {
-
-  		input.val(text);	
-  	}
-  }
-
-  var updateDescription = function(item, text) {
-
-  	var textarea = $('textarea[name="description"]', item);
-  	if (isUpdateOk(textarea, text)) {
-
-  		textarea.val(text);	
-  	}
-  }
-
-  var updatePriority = function(item, priority) {
-
-  	 sortPanels();	
-  }
-
-  var updateEstimation = function(item, text) {
-
-   	var input = $('input[name="estimation"]', item);
-  	if (isUpdateOk(input, text)) {
-
-  		input.val(text);	
-  	}
-  }
-
   $('input[name="estimation"]').data('parser', timeParser);
 
   initColorSelector();
-
-	var updateColor = function(item, color) {
-
-	   $('.header, .header input, #color-selector .selected', item).removeClass(colors.join(' ')).addClass(color);  
-	}
   
 	$('.main-panel').data('update', {
 
@@ -58,15 +68,6 @@ $(document).ready(function() {
 		estimation: updateEstimation,
 		color: updateColor
 	});
-
-  var updateSummary = function(item, text) {
-
-  	var input = $('input[name="summary"]', item);
-  	if (isUpdateOk(input, text)) {
-
-  		input.val(text);	
-  	}
-  }
 
 	$('.panel').data('update', {
 

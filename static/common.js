@@ -1,4 +1,6 @@
-var colors = ["yellow", "orange", "red", "purple", "blue", "green"];
+var COLORS = ["yellow", "orange", "red", "purple", "blue", "green"];
+var MS_DAYS_FACTOR = 86400000;
+var AUTOGROW_COMFORT_ZONE = 5;
 
 var clientUUID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
 
@@ -113,7 +115,7 @@ function initColorSelector() {
 
   initPopupSelector($('#color-selector'), 'color', function(fillIn) {
     
-    fillIn($.map(colors, function(color) {
+    fillIn($.map(COLORS, function(color) {
 
       return {_id: color};
     }));
@@ -208,8 +210,8 @@ function add(parent_id, attributes) {
 
   newPanel.data('attributes', attributes);
 
-  newPanel.attr('id', prefix(attributes._id));     
-  
+  newPanel.attr('id', prefix(attributes._id));
+
   $('#panel-container').append(newPanel);
   sortPanels();    
 
@@ -221,11 +223,15 @@ function add(parent_id, attributes) {
   input.attr('value', value);
   input.addClass(attributes.color);
   $('.header', newPanel).addClass(attributes.color);
+  // hack: it seems the autogrow stuff is not correctly cloned, 
+  // hence we need to re-add it here.
+  $('.header input', newPanel).autoGrow({comfortZone: AUTOGROW_COMFORT_ZONE});
 
   var textarea = $('#' + id + " textarea");
   attribute = textarea.attr('name');
   textarea.val(attributes[attribute]);
   
+
   $("html, body").animate({ scrollTop: $(document).height() }, "slow");  
 }
 
@@ -292,6 +298,22 @@ function update(id, rev, key, value) {
 
       item.data('attributes')._rev = rev;
       item.data('attributes')[key] = value;
+      if (item.data('update')[key]) {
+
+        item.data('update')[key](item, value);
+      }
+    }
+  }
+}
+
+function updateCalculation(id, key, value) {
+
+  var item = $('#' + prefix(id));
+
+  if (item.length == 1) {
+
+    if (item.data('update')[key]) {
+
       item.data('update')[key](item, value);
     }
   }
@@ -374,32 +396,6 @@ function requestRemove(id, type, rev) {
   });
 }
 
-function updatePriority(li, previousLi, nextLi) {
-
-  var previousPriority = 0;
-  var nextPriority = 0;
-  var priority = 0;
-  
-  // not the first item
-  if (li.index() > 0) {
-  
-    previousPriority = previousLi.data('attributes').priority;
-  }
-  
-  // last item
-  if(li.index() + 1 == $('#panel-container li').size()) {
-  
-    priority = Math.ceil(previousPriority + 1);
-  }
-  else {
-  
-    nextPriority = nextLi.data('attributes').priority;
-    priority = (nextPriority - previousPriority) / 2 + previousPriority;
-  }
-  
-  requestUpdate(li, 'priority', priority, sortPanels);
-}
-
 $(document).ready(function() {
 
   var socket = io.connect('http://localhost'); 
@@ -430,8 +426,13 @@ $(document).ready(function() {
     update(data.id, data.rev, data.key, data.value);
   });
 
+  socket.on('update_calculation', function (data) {
+
+    updateCalculation(data.id, data.key, data.value);
+  });
+
   // This makes the header input grow automatically with its value.
-  $('.header input').autoGrow({comfortZone: 5});
+  $('.header input').autoGrow({comfortZone: AUTOGROW_COMFORT_ZONE});
   $('.header input').css('min-width', '0px');
 
   // This enables drag and drop on the list items
@@ -507,7 +508,28 @@ $(document).ready(function() {
     var previousLi = ui.item.prev();
     var nextLi = ui.item.next();
   
-    updatePriority(li, previousLi, nextLi);
+    var previousPriority = 0;
+    var nextPriority = 0;
+    var priority = 0;
+    
+    // not the first item
+    if (li.index() > 0) {
+    
+      previousPriority = previousLi.data('attributes').priority;
+    }
+    
+    // last item
+    if(li.index() + 1 == $('#panel-container li').size()) {
+    
+      priority = Math.ceil(previousPriority + 1);
+    }
+    else {
+    
+      nextPriority = nextLi.data('attributes').priority;
+      priority = (nextPriority - previousPriority) / 2 + previousPriority;
+    }
+    
+    requestUpdate(li, 'priority', priority, sortPanels);
   });
 
   $('.panel').each(function(index, element) {

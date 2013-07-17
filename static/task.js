@@ -1,4 +1,28 @@
- $(document).ready(function() {
+var updateColor = function(item, color) {
+
+  $('.header, .header input, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);
+};
+
+var updateStoryId = function(item, id) {
+
+  var selector = $('#story-selector', item);
+
+  $.ajaxq('client', {
+
+    url: '/story/' + id,
+    type: 'GET',
+    dataType: 'json',
+    success: function(data, textStatus, jqXHR) {
+
+      var label = data[selector.data('name')];
+      $('.open span', selector).text(label);
+      selector.data('selected', data);
+    },
+    error: handleServerError
+  });
+};
+
+$(document).ready(function() {
   
   // TODO: make that generic?
   $('#story-selector').data('name', 'title');    
@@ -32,33 +56,7 @@
 
   $('input[name="initial_estimation"], input[name="remaining_time"], input[name="time_spent"]').data('parser', timeParser);
 
-  var updateFunctions = {};
-  $('.main-panel').data('update', updateFunctions);
-  
-  updateFunctions.color = function(item, color) {
-
-    $('.header, .header input, #color-selector .selected', item).removeClass(colors.join(' ')).addClass(color);
-  };
-
-  updateFunctions.story_id = function(item, id) {
-
-    var selector = $('#story-selector', item);
-
-    $.ajaxq('client', {
-
-      url: '/story/' + id,
-      type: 'GET',
-      dataType: 'json',
-      success: function(data, textStatus, jqXHR) {
-
-        var label = data[selector.data('name')];
-        $('.open span', selector).text(label);
-        selector.data('selected', data);
-      },
-      error: handleServerError
-    });
-  };
-
+  var updateFunctions = {color: updateColor, story_id: updateStoryId};  
   $.each(['summary', 'description', 'initial_estimation', 'remaining_time', 'time_spent'], function(index, value) {
 
     updateFunctions[value] = function(item, text) {
@@ -66,8 +64,10 @@
       var inputOrTextarea = $('input[name="' + value + '"], textarea[name="' + value + '"]', item);
       if (isUpdateOk(inputOrTextarea, text)) {
 
-        inputOrTextarea.val(text); 
+        inputOrTextarea.val(text);
+        inputOrTextarea.trigger('input.autogrow');
       }
     };
   });
+  $('.main-panel').data('update', updateFunctions);
 });

@@ -24,15 +24,15 @@ html
         div(class='header ' + task.color)
           .left
             input(type='text', name='summary', value=task.summary, class=task.color)
-        .description
-          textarea(name='description').
-            #{task.description}
-        hr
-        .line
-          mixin time-input(task, 'Initial estimation', 'initial_estimation')
-          mixin time-input(task, 'Remaining Time', 'remaining_time')
-          mixin time-input(task, 'Spent time', 'time_spent')
-        .line
-          mixin item-selector('Story', story, 'story-selector')
-        .line
-          mixin color-selector('Color', task.color, 'color-selector')
+        .body
+          textarea(name='description')
+            =task.description
+          hr
+          .line
+            mixin time-input(task, 'Initial estimation', 'initial_estimation')
+            mixin time-input(task, 'Remaining Time', 'remaining_time')
+            mixin time-input(task, 'Spent time', 'time_spent')
+          .line
+            mixin item-selector('Story', story, 'story-selector')
+          .line
+            mixin color-selector('Color', task.color, 'color-selector')

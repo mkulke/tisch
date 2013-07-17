@@ -1,5 +1,3 @@
-var MS_DAYS_FACTOR = 86400000;
-
 function buildDateString(date) {
 
 	return (date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear().toString().substr(2);
@@ -10,24 +8,60 @@ function updateStart(item, dateText) {
 	var date = new Date(dateText);
 	item.data('attributes').start = date;
 
-	var length = $('.main-panel').data('attributes').length;
+	var length = item.data('attributes').length;
 	var endDate = new Date(date.getTime() + (length * MS_DAYS_FACTOR));
 
-	$('#start-selector span.selected').html(buildDateString(date));
-	$('#length-selector span.selected').html(buildDateString(endDate));	
+	$('#start-selector span.selected', item).html(buildDateString(date));
+	$('#length-selector span.selected', item).html(buildDateString(endDate));	
 }
 
 function updateLength(item, length) {
 
 	item.data('attributes').length = length;
 
-	var startDate = $('.main-panel').data('attributes').start;
+	var startDate = item.data('attributes').start;
 	var date = new Date(startDate.getTime() + (length * MS_DAYS_FACTOR));
 
-	$('#length-selector span.selected').html(buildDateString(date));	
+	$('#length-selector span.selected', item).html(buildDateString(date));	
+}
+
+var updateTitle = function(item, text) {
+
+  var input = $('input[name="title"]', item);
+  if (isUpdateOk(input, text)) {
+
+    input.val(text);
+    input.trigger('input.autogrow');
+  }
+}
+
+var updateDescription = function(item, text) {
+
+  var textarea = $('textarea[name="description"]', item);
+  if (isUpdateOk(textarea, text)) {
+
+    textarea.val(text); 
+  }
+}
+
+var updatePriority = function(item, priority) {
+
+	sortPanels();	
+}
+
+var updateColor = function(item, color) {
+
+  $('.header, .header input, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);	
+}
+
+var updateRemainingTimeCalculation = function(item, remainingTime) {
+
+	$('.header span.remaining.text', item).html(remainingTime);
 }
 
 $(document).ready(function() {
+
+	initColorSelector();
 
   $('#add-button').on('click', function(event) {
    
@@ -38,36 +72,6 @@ $(document).ready(function() {
   });
 
   $('#panel-template').data('type', 'story');
-
-  var updateTitle = function(item, text) {
-
-    var input = $('input[name="title"]', item);
-    if (isUpdateOk(input, text)) {
-
-      input.val(text);  
-    }
-  }
-
-  var updateDescription = function(item, text) {
-
-    var textarea = $('textarea[name="description"]', item);
-    if (isUpdateOk(textarea, text)) {
-
-      textarea.val(text); 
-    }
-  }
-
-  var updatePriority = function(item, priority) {
-
-  	sortPanels();	
-  }
-
-  initColorSelector();
-
-  var updateColor = function(item, color) {
-
-    $('.header, .header input, #color-selector .selected', item).removeClass(colors.join(' ')).addClass(color);	
-  }
 
 	$.each(['start', 'length'], function(index, value) {
 
@@ -123,6 +127,8 @@ $(document).ready(function() {
 
   	$('.selected', selector).bind('click', function(event) {
 
+  		event.preventDefault();
+
       $(document).bind('click', closeHandler);
     });
 	});
@@ -159,6 +165,7 @@ $(document).ready(function() {
 		title: updateTitle, 
 		description: updateDescription, 
 		priority: updatePriority,
-		color: updateColor
+		color: updateColor,
+		remaining_time: updateRemainingTimeCalculation
 	});
 });

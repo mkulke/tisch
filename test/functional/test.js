@@ -37,10 +37,12 @@ casper.then(function() {
 
   casper.test.info("Edit title & description of story 1 (and wait 2s):");
 
+  this.sendKeys('#' + story1Id + ' textarea[name="description"]', 'Description of story 1.');
   this.sendKeys('#' + story1Id + ' input[name="title"]', ' 1');
-	this.sendKeys('#' + story1Id + ' textarea[name="description"]', 'Description of story 1.');
 
 	this.wait(2000, function () {
+
+		this.capture('test.png');
 
 		this.waitForResource(sprintUrl, function() {
 
@@ -262,10 +264,10 @@ casper.then(function() {
 
 	casper.waitForResource(task2Url, function() {
 
-	    this.test.assertEval(function() {
+		this.test.assertEval(function() {
 
-	        return document.querySelectorAll('#story-selector .content div').length == 2;
-	    }, 'Selector has 2 lines.');
+			return document.querySelectorAll('#story-selector .content div').length == 2;
+		}, 'Selector has 2 lines.');
 
 		this.test.assertSelectorHasText('#story-selector .content div:nth-child(1)', 'New Story', 'Line 1 in selector is correct.');
 		this.test.assertSelectorHasText('#story-selector .content div:nth-child(2)', 'New Story 1', 'Line 2 in selector is correct.');	
@@ -274,7 +276,7 @@ casper.then(function() {
 
 casper.then(function() {
 
-	this.test.info('Click line 1 in selector:')
+	this.test.info('Click line 1 in selector:');
 	
 	this.click('#story-selector .content div:nth-child(1)');
 
