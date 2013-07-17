@@ -30,6 +30,8 @@ textarea {
   -webkit-box-shadow: 5px 5px 15px #999;
   -moz-box-shadow: 5px 5px 15px #999;*/
   margin: 0 10px 0 10px;
+  border-left: 1px #BBBBBB solid;
+  border-right: 1px #BBBBBB solid;
 }
 
 #error-panel .icons {
