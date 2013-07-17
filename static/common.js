@@ -462,11 +462,11 @@ $(document).ready(function() {
 
     event.preventDefault();
 
-    var story = $(event.delegateTarget);
-    $('.description', story).slideUp(100, function() {
+    var item = $(event.delegateTarget);
+    $('.body', item).slideUp(100, function() {
     
-      $('.hide.button', story).hide();
-      $('.show.button', story).show();
+      $('.hide.button', item).hide();
+      $('.show.button', item).show();
     });
   });
     
@@ -475,7 +475,7 @@ $(document).ready(function() {
     event.preventDefault();
 
     var item = $(event.delegateTarget);
-    $('.description', item).slideDown(100, function() {
+    $('.body', item).slideDown(100, function() {
     
       $('.show.button', item).hide();
       $('.hide.button', item).show();

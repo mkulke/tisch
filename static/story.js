@@ -40,9 +40,27 @@ var updateSummary = function(item, text) {
 	}
 }
 
+var updateRemainingTime = function(item, remainingTime) {
+
+	var span = $('span.remaining.text', item);
+	span.html(remainingTime);
+	if (remainingTime == 0) {
+
+	  $('img.done.icon', item).show();
+	  $('img.remaining.icon', item).hide();
+	  $('span.remaining.text', item).hide();
+	}
+	else {
+
+	  $('img.done.icon', item).hide();
+	  $('img.remaining.icon', item).show();
+	  $('span.remaining.text', item).show();		
+	}
+}
+
 var updateColor = function(item, color) {
 
-   $('.header, .header input, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);  
+	$('.header, .header input, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);  
 }
 
 $(document).ready(function() {
@@ -74,6 +92,7 @@ $(document).ready(function() {
 		summary: updateSummary,
 		description: updateDescription,
 		priority: updatePriority,
-		color: updateColor
+		color: updateColor,
+		remaining_time: updateRemainingTime
 	});
 });

@@ -30,8 +30,8 @@ textarea {
   -webkit-box-shadow: 5px 5px 15px #999;
   -moz-box-shadow: 5px 5px 15px #999;*/
   margin: 0 10px 0 10px;
-  border-left: 1px #BBBBBB solid;
-  border-right: 1px #BBBBBB solid;
+  /*border-left: 1px #BBBBBB solid;
+  border-right: 1px #BBBBBB solid;*/
 }
 
 #error-panel .icons {
@@ -515,17 +515,27 @@ li.panel {
   padding-right: 5px;
 }
 
+.header img.done.icon {
+
+  display: none;
+  padding-top: 1px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-right: 1px solid white;
+  border-left: 1px solid white;
+}
+
 .main-panel .header {
 
-  border-left: solid 1px #BBBBBB;
-  border-right: solid 1px #BBBBBB;
+  /*border-left: solid 1px #BBBBBB;
+  border-right: solid 1px #BBBBBB;*/
 }
 
 li.panel .header {
 
-  border-top: solid 1px #BBBBBB;
+  /*border-top: solid 1px #BBBBBB;
   border-left: solid 1px #BBBBBB;
-  border-right: solid 1px #BBBBBB;
+  border-right: solid 1px #BBBBBB;*/
 }
 
 li.panel .body, .main-panel .body {
