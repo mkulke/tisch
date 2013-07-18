@@ -453,13 +453,15 @@ li.panel {
 
 .ui-datepicker-next {  
 
-  margin-right: 3px;
+  padding-top: 3px;
+  padding-right: 3px;
   float: right;  
 }
 
 .ui-datepicker-prev {
 
-  margin-left: 3px;
+  padding-top: 3px;
+  padding-left: 3px;
   float: left;  
 }
 

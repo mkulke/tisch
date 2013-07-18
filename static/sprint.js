@@ -98,8 +98,8 @@ $(document).ready(function() {
 		  inline: true,  
 		  showOtherMonths: true,  
 		  dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-		  nextText: '>',
-		  prevText: '<',
+		  nextText: '<img src="/right.png" alt="next">',
+		  prevText: '<img src="/left.png" alt="prev">',
 		  dateFormat: $.datepicker.ISO_8601,
 		  gotoCurrent: true,
 		  onSelect: function(dateText, inst) { 
