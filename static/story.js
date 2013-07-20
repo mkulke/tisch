@@ -46,15 +46,13 @@ var updateRemainingTime = function(item, remainingTime) {
 	span.html(remainingTime);
 	if (remainingTime == 0) {
 
-	  $('img.done.icon', item).show();
-	  $('img.remaining.icon', item).hide();
-	  $('span.remaining.text', item).hide();
+	  $('.done', item).show();
+	  $('.remaining', item).hide();
 	}
 	else {
 
-	  $('img.done.icon', item).hide();
-	  $('img.remaining.icon', item).show();
-	  $('span.remaining.text', item).show();		
+	  $('.done', item).hide();
+	  $('.remaining', item).show();	
 	}
 }
 

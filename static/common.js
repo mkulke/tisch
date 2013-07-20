@@ -212,25 +212,21 @@ function add(parent_id, attributes) {
 
   newPanel.attr('id', prefix(attributes._id));
 
+  for (var key in attributes) {
+
+    if (newPanel.data('update')[key]) {
+
+      newPanel.data('update')[key](newPanel, attributes[key]);      
+    }
+  }
+
   $('#panel-container').append(newPanel);
   sortPanels();    
 
-  var id = prefix(attributes._id);
-  var input = $('#' + id + " input");
-  var attribute = input.attr('name');
-  var value = attributes[attribute];
-  input.val(value);
-  input.attr('value', value);
-  input.addClass(attributes.color);
   $('.header', newPanel).addClass(attributes.color);
   // hack: it seems the autogrow stuff is not correctly cloned, 
   // hence we need to re-add it here.
   $('.header input', newPanel).autoGrow({comfortZone: AUTOGROW_COMFORT_ZONE});
-
-  var textarea = $('#' + id + " textarea");
-  attribute = textarea.attr('name');
-  textarea.val(attributes[attribute]);
-  
 
   $("html, body").animate({ scrollTop: $(document).height() }, "slow");  
 }

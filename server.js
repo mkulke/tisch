@@ -81,7 +81,7 @@ function getRemainingTime(db, type, parentType, parentId) {
     }
     else {
 
-      var remainingTime = 0;
+      var remainingTime = null;
       if (result.length == 1) {
       
         remainingTime = result[0].remaining_time;
@@ -175,7 +175,7 @@ var insert = function(db, type, parentType, data) {
 function remove(db, type, filter, failOnNoDeletion) {
 
   var deferred = Q.defer();  
-  db.collection(type).remove(filter, function(err, result) {
+  db.collection(type).findAndRemove(filter, function(err, result) {
 
     if (err) {
 
@@ -187,7 +187,7 @@ function remove(db, type, filter, failOnNoDeletion) {
     } 
     else {
     
-      deferred.resolve();
+      deferred.resolve(result);
     }
   });
   return deferred.promise;  
@@ -502,20 +502,35 @@ function processRequest(request, response) {
     assert.ok(request.headers.parent_id, 'parent_id header missing in request.');
     assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
+    var remainingTimeCalculation;
+
     query = function() {
 
       var data = {
   
         description: "", 
-        initial_estimation: 2,
+        initial_estimation: 1,
         remaining_time: 1,
-        time_spent: 1, 
+        time_spent: 0, 
         summary: 'New Task',
         color: 'blue',
         story_id: ObjectID(request.headers.parent_id)
       };
 
-      return insert(db, 'task', 'story', data);
+      var task;
+
+      return insert(db, 'task', 'story', data)
+      .then(function (result) {
+
+        task = result;
+
+        return getRemainingTime(db, 'task', 'story', task.story_id);
+      })
+      .then(function (result) {
+
+        remainingTimeCalculation = result;
+        return task;
+      });    
     };
       
     answer = function(result) {
@@ -523,6 +538,7 @@ function processRequest(request, response) {
       var data = {parent_id: request.headers.parent_id, attributes: result};
       respondWithJson(data, response);
       broadcastToClients('add', request.headers.client_uuid, data);
+      broadcastToClients('update_calculation', request.headers.client_uuid, remainingTimeCalculation);
     };
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
@@ -530,11 +546,24 @@ function processRequest(request, response) {
     assert.ok(request.headers.rev, 'rev header missing in request.');
     assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
+    var remainingTimeCalculation;
+
     query = function() {
 
       var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
 
-      return remove(db, 'task', filter, true);
+      var task;
+
+      return remove(db, 'task', filter, true)
+      .then(function (result) {
+
+        task = result;
+        return getRemainingTime(db, 'task', 'story', task.story_id);
+      })
+      .then(function (result) {
+
+        remainingTimeCalculation = result;
+      });
     };
       
     answer = function() {
@@ -542,6 +571,7 @@ function processRequest(request, response) {
       var data = [id];
       respondWithJson(data, response);
       broadcastToClients('remove', request.headers.client_uuid, data);
+      broadcastToClients('update_calculation', request.headers.client_uuid, remainingTimeCalculation);
     };
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
@@ -643,7 +673,7 @@ function processRequest(request, response) {
       var data = {
       
         description: "", 
-        estimation: 0,
+        estimation: 5,
         color: 'yellow', 
         title: 'New Story',
         sprint_id: ObjectID(request.headers.parent_id)

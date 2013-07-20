@@ -57,6 +57,22 @@ var updateColor = function(item, color) {
 var updateRemainingTimeCalculation = function(item, remainingTime) {
 
 	$('.header span.remaining.text', item).html(remainingTime);
+
+	if (remainingTime === null) {
+
+		$('.header .remaining', item).hide();
+		$('.header .done', item).hide();
+	}
+	else if (remainingTime === 0) {
+
+		$('.header .remaining', item).hide();
+		$('.header .done', item).show();
+	}
+	else {
+
+		$('.header .remaining', item).show();
+		$('.header .done', item).hide();
+	}
 }
 
 $(document).ready(function() {
@@ -136,8 +152,14 @@ $(document).ready(function() {
 	$('#start-selector .selected').bind('click', function(event) {
 
 		var date = $('.main-panel').data('attributes').start;
-		$('#start-selector .content').datepicker('setDate', date);
-		$('#start-selector .content').css('visibility', 'visible');  
+		var content = $('#start-selector .content');
+		content.datepicker('setDate', date);
+		content.css('visibility', 'visible');
+	});
+
+	$('.ui-datepicker').on('click', function(event) {
+
+		event.preventDefault();
 	});
 
 	$('#length-selector .selected').bind('click', function(event) {

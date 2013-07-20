@@ -5,6 +5,7 @@ mixin panel(id, title, description, color, remaining_time)
         .left
           input(type='text', name='title', value=title, class=color, maxlength=32)
         .right
+          img(src='/done.png', alt='done').done.icon
           img(src='/clock.png', alt='remaining').remaining.icon
           span.remaining.text
             =remaining_time
@@ -36,7 +37,15 @@ html
         attachAttributesToItems(items);
         $('#start-selector span.selected').html(buildDateString(sprint.start));
         var end = new Date(sprint.start.getTime() + (sprint.length * MS_DAYS_FACTOR));
-        $('#length-selector span.selected').html(buildDateString(end));        
+        $('#length-selector span.selected').html(buildDateString(end));
+        
+        var calculations = !{JSON.stringify(calculations)};
+        $('#panel-container .panel').each(function(index, element){
+
+          var item = $(element);
+          var attributes = item.data('attributes');
+          item.data('update').remaining_time(item, calculations.remaining_time[attributes._id]);
+        });       
       });
   body
     #error-panel

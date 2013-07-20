@@ -36,13 +36,9 @@ html
 
         $('#panel-container .panel').each(function(index, element) {
 
-          var panel = $(element);
-          if (panel.data('attributes').remaining_time == 0) {
-
-            $('img.done.icon', panel).show();
-            $('img.remaining.icon', panel).hide();
-            $('span.remaining.text', panel).hide();
-          }
+          var item = $(element);
+          var attributes = item.data('attributes');
+          item.data('update').remaining_time(item, attributes.remaining_time);
         });
       });
   body
