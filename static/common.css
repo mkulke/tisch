@@ -503,9 +503,13 @@ li.panel {
   vertical-align: middle;
 }
 
+.header .remaining, .header .done {
+
+  display: none; 
+}
+
 .header img.remaining.icon, .header img.date.icon {
 
-  display: none;
   padding-top: 1px;
   padding-right: 5px;
   padding-left: 5px;
@@ -514,14 +518,12 @@ li.panel {
 
 .header span.remaining.text, .header span.date.text.end {
 
-  display: none;
   border-right: 1px solid white;
   padding-right: 5px;
 }
 
 .header img.done.icon {
 
-  display: none;
   padding-top: 1px;
   padding-left: 5px;
   padding-right: 5px;
