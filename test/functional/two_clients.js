@@ -151,10 +151,12 @@ casper1.then(function() {
 
 casper2.then(function() {
 
+	this.test.assertNotVisible('#' + story1Id + ' .remaining', 'No remaining indicator on story 1 visible.');
+	this.test.assertNotVisible('#' + story1Id + ' .done', 'No done indictor on story 1 visible.');
 	this.waitForOtherClient();
 });
 
-// Create Task and Open it.
+// Create Task and check the calculation.
 
 casper1.then(function() {
 
@@ -162,8 +164,32 @@ casper1.then(function() {
 
 	this.click('#add-button');
 
-	this.waitForResource(story1Url);
+	this.waitForResource(story1Url, function (){
+
+		this.done();
+	});
 });
+
+casper1.then(function() {
+
+	this.waitForOtherClient();
+});
+
+casper2.then(function() {
+
+	this.waitForOtherClient();
+});
+
+casper2.then(function() {
+
+	this.test.assertVisible('#' + story1Id + ' .remaining', 'Remaining indicator on story 1 visible.');
+	this.test.assertEquals(this.getHTML('#' + story1Id + ' span.remaining.text'), '1', 'Remaining time of story 1 is 1.');
+	this.test.assertNotVisible('#' + story1Id + ' .done', 'No done indictor on story 1 visible.');
+
+	this.done();
+});
+
+// Open Task
 
 casper1.then(function() {
 

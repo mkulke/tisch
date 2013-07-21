@@ -5,7 +5,9 @@ var storyId, firstId, secondId, secondUrl, storyUrl;
 
 var indexUrl = 'http://localhost:8000/';
 var sprintUrl = indexUrl + 'sprint/51ac972325dfbc3750000001';
-var story1Id, story2Id, story1Url, story2Url, task1Id, task2Id;
+var story1Id, story2Id, story1Url, story2Url, story3Id, story3Url, task1Id, task2Id;
+
+var stories = {};
 
 casper.test.info("Open the sprint test page:");
 
@@ -30,6 +32,9 @@ casper.then(function() {
 
 		story1Id = this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id');
 		story2Id = this.getElementAttribute('#panel-container .panel:nth-child(2)', 'id');
+
+		this.test.assertNotVisible('#' + story1Id + ' .remaining', 'No remaining indictor on story 1 visible.');
+		this.test.assertNotVisible('#' + story1Id + ' .done', 'No done indictor on story 1 visible.');
 	});
 });
 
@@ -104,8 +109,9 @@ casper.then(function() {
 
 casper.then(function() {
 
-  this.test.info('Click the add button 3 times.');
+  this.test.info('Click the add button 4 times:');
 
+	this.click('#add-button');
 	this.click('#add-button');
 	this.click('#add-button');
 	this.click('#add-button');
@@ -114,11 +120,15 @@ casper.then(function() {
 
 		this.test.assertEval(function() {
 
-			return document.querySelectorAll('#panel-container .panel').length == 3;
-		}, '3 task panels are visible.');
+			return document.querySelectorAll('#panel-container .panel').length == 4;
+		}, '4 task panels are visible.');
 
 		task1Id = this.getElementAttribute('#panel-container .panel:nth-child(1)', 'id');
 		task2Id = this.getElementAttribute('#panel-container .panel:nth-child(2)', 'id');
+
+		this.test.assertVisible('#' + task1Id + ' .remaining', 'Remaining indictor on task 1 visible.');
+		this.test.assertEquals(this.getHTML('#' + task1Id + ' span.remaining.text'), '1', 'Remaining time of task 1 is 1.');
+		this.test.assertNotVisible('#' + task1Id + ' .done', 'No done indictor on task 1 visible.');
 	});
 });
 
@@ -176,8 +186,8 @@ casper.then(function() {
 
 		this.test.assertEval(function() {
 
-			return document.querySelectorAll('#panel-container .panel').length == 2;
-		}, '2 task panels are visible.');
+			return document.querySelectorAll('#panel-container .panel').length == 3;
+		}, '3 task panels are visible.');
 	});
 });
 
@@ -234,8 +244,8 @@ casper.then(function(){
 	this.fill('form', {initial_estimation: '', remaining_time: '', time_spent: ''}, false);
 
 	this.sendKeys('.main-panel input[name="initial_estimation"]', '99.99');
-	this.sendKeys('.main-panel input[name="remaining_time"]', '66.6');
-	this.sendKeys('.main-panel input[name="time_spent"]', '33');
+	this.sendKeys('.main-panel input[name="remaining_time"]', '0');
+	this.sendKeys('.main-panel input[name="time_spent"]', '33.3');
 
 	this.wait(1500, function() {
 
@@ -251,8 +261,8 @@ casper.then(function(){
 	this.reload(function() {
 
 		this.test.assertEquals(this.getElementAttribute('.main-panel input[name="initial_estimation"]', 'value'), '99.99', 'Initial estimation is kept.');
-		this.test.assertEquals(this.getElementAttribute('.main-panel input[name="remaining_time"]', 'value'), '66.6', 'Remaining time is kept.');
-		this.test.assertEquals(this.getElementAttribute('.main-panel input[name="time_spent"]', 'value'), '33', 'Time spent is kept.');
+		this.test.assertEquals(this.getElementAttribute('.main-panel input[name="remaining_time"]', 'value'), '0', 'Remaining time is kept.');
+		this.test.assertEquals(this.getElementAttribute('.main-panel input[name="time_spent"]', 'value'), '33.3', 'Time spent is kept.');
 	});
 });
 
@@ -296,8 +306,8 @@ casper.then(function() {
 
 		this.test.assertEval(function() {
 
-			return document.querySelectorAll('#panel-container .panel').length == 1;
-		}, '1 task panel is visible.');
+			return document.querySelectorAll('#panel-container .panel').length == 2;
+		}, '2 task panels are visible.');
   });	
 });
 
@@ -313,6 +323,13 @@ casper.then(function() {
 
 			return document.querySelectorAll('#panel-container .panel').length == 2;
 		}, '2 story panels are visible.');
+
+		this.test.assertVisible('#' + story1Id + ' .remaining', 'Remaining indicator on story 1 visible.');
+		this.test.assertEquals(this.getHTML('#' + story1Id + ' span.remaining.text'), '2', 'Remaining time of story 1 is 2.');
+		this.test.assertNotVisible('#' + story1Id + ' .done', 'No done indictor on story 1 visible.');
+
+		this.test.assertNotVisible('#' + story2Id + ' .remaining', 'No remaining indicator on story 2 visible.');
+		this.test.assertVisible('#' + story2Id + ' .done', 'Done indictor on story 2 visible.');		
 	});
 });
 
@@ -477,6 +494,6 @@ casper.then(function() {
 
 casper.run(function() {
 
-	this.test.done(53);
+	this.test.done(63);
 	this.test.renderResults(true);
 });
