@@ -581,6 +581,7 @@ function processRequest(request, response) {
       query = function() {
 
         var story;
+        var tasks;
 
         return findOne(db, 'story', id)
         .then(function (result) {
@@ -588,10 +589,15 @@ function processRequest(request, response) {
           story = result;
           return find(db, 'task', {story_id: story._id}, {priority: 1});
         })
-        .then(function(result) {
+        .then(function (result) {
 
-          var tasks = result;
-          return {story: story, tasks: tasks}; 
+          tasks = result;
+          return findOne(db, 'sprint', story.sprint_id.toString());  
+        })
+        .then(function (result) {
+
+          var sprint = result;
+          return {story: story, tasks: tasks, sprint: sprint}; 
         });
       };
 
@@ -601,7 +607,7 @@ function processRequest(request, response) {
         
           return Q.fcall(function() {
  
-            var html = story_template({story: result.story, tasks: result.tasks});
+            var html = story_template({story: result.story, tasks: result.tasks, sprint: result.sprint});
             respondWithHtml(html, response);
           });
         };  
@@ -663,7 +669,8 @@ function processRequest(request, response) {
         broadcastToClients('update', request.headers.client_uuid, data);
       });  
     };
-  } else if ((type == 'story') && (request.method == 'PUT')) {
+  }
+  else if ((type == 'story') && (request.method == 'PUT')) {
 
     query = function() {
 
@@ -715,53 +722,88 @@ function processRequest(request, response) {
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
 
-    query = function() {
+    if (id) {
+      
+      query = function() {
 
-      var sprint;
-      var stories;
+        var sprint;
+        var stories;
 
-      return findOne(db, 'sprint', id)
-      .then(function (result) {
+        return findOne(db, 'sprint', id)
+        .then(function (result) {
 
-        sprint = result;
-        return find(db, 'story', {sprint_id: sprint._id}, {priority: 1});
-      })
-      .then(function (result) {
+          sprint = result;
+          return find(db, 'story', {sprint_id: sprint._id}, {priority: 1});
+        })
+        .then(function (result) {
 
-        stories = result;
+          stories = result;
 
-        function buildCalls() {
+          function buildCalls() {
 
-          var calls = [];
-          for (var i in stories) {
+            var calls = [];
+            for (var i in stories) {
 
-            calls.push(getRemainingTime(db, 'task', 'story', stories[i]._id));
+              calls.push(getRemainingTime(db, 'task', 'story', stories[i]._id));
+            }
+
+            return calls;
           }
 
-          return calls;
-        }
+          return Q.all(buildCalls());
+        })
+        .then(function (results) {
 
-        return Q.all(buildCalls());
-      })
-      .then(function (results) {
+          var remaining_time = {};
+          for (var i in results) {
 
-        var remaining_time = {};
-        for (var i in results) {
+            var result = results[i];
+            remaining_time[result.id] = result.value;
+          }
 
-          var result = results[i];
-          remaining_time[result.id] = result.value;
-        }
+          return {sprint: sprint, stories: stories, calculations: {remaining_time: remaining_time}}; 
+        });
+      };
 
-        return {sprint: sprint, stories: stories, calculations: {remaining_time: remaining_time}}; 
-      });
-    };
+      if (html) {
 
-    answer = function(result) {
+        answer = function(result) {
 
-      var html = sprint_template({sprint: result.sprint, stories: result.stories, calculations: result.calculations});
-      respondWithHtml(html, response);
-    };
-  } else if ((type == 'sprint') && (request.method == 'POST')) {
+          var html = sprint_template({sprint: result.sprint, stories: result.stories, calculations: result.calculations});
+          respondWithHtml(html, response);
+        };
+      }
+      else {
+
+        answer = function(result) {
+        
+          return Q.fcall(function() {
+ 
+            // TODO: find stories uncecessary in this case
+            respondWithJson(result.sprint, response);
+          });
+        };        
+      }
+    }
+    else {
+
+      assert.notEqual(true, html, 'Generic sprint GET available only as json.');
+
+      query = function(result) {
+
+        return find(db, 'sprint', {}, {title: 1});
+      };
+
+      answer = function(result) {
+
+        return Q.fcall(function() {
+
+          respondWithJson(result, response);
+        });  
+      };
+    }
+  } 
+  else if ((type == 'sprint') && (request.method == 'POST')) {
 
     assert.ok(id, 'id url part missing.');
     assert.ok(request.headers.rev, 'rev missing in request headers.');
@@ -789,7 +831,7 @@ function processRequest(request, response) {
 
     query = function() {
 
-      return find(db, 'sprint');
+      return find(db, 'sprint', null, {start: 1});
     }
     answer = function(result) {
 

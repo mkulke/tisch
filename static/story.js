@@ -8,6 +8,25 @@ var updateTitle = function(item, text) {
 	}
 }
 
+var updateSprintId = function(item, id) {
+
+  var selector = $('#sprint-selector', item);
+
+  $.ajaxq('client', {
+
+    url: '/sprint/' + id,
+    type: 'GET',
+    dataType: 'json',
+    success: function(data, textStatus, jqXHR) {
+
+      var label = data[selector.data('name')];
+      $('.open span', selector).text(label);
+      selector.data('selected', data);
+    },
+    error: handleServerError
+  });
+};
+
 var updateDescription = function(item, text) {
 
 	var textarea = $('textarea[name="description"]', item);
@@ -19,7 +38,7 @@ var updateDescription = function(item, text) {
 
 var updatePriority = function(item, priority) {
 
-	sortPanels();	
+	sortPanels(sortByPriority);	
 }
 
 var updateEstimation = function(item, text) {
@@ -63,6 +82,30 @@ var updateColor = function(item, color) {
 
 $(document).ready(function() {
 
+  $('#sprint-selector').data('name', 'title');    
+  initPopupSelector($('#sprint-selector'), 'sprint_id', function(fillIn) {
+
+    $.ajax({
+
+      url: '/sprint',
+      type: 'GET',
+      dataType: 'json',
+      success: function(data, textStatus, jqXHR) {
+
+        fillIn(data);
+        $('#sprint-selector .content .line').bind('click', $('.main-panel'), function(event) {
+
+          var story = event.data;
+          var line = $(event.target);
+          var sprintId = line.data('id');
+
+          requestUpdate(story, 'sprint_id', sprintId);
+        });
+      },
+      error: handleServerError
+    });
+  });    
+
   $('#add-button').on('click', function(event) {
    
     event.preventDefault();
@@ -82,7 +125,8 @@ $(document).ready(function() {
 		title: updateTitle,
 		description: updateDescription,
 		estimation: updateEstimation,
-		color: updateColor
+		color: updateColor,
+		sprint_id: updateSprintId
 	});
 
 	$('.panel').data('update', {

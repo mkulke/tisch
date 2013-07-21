@@ -33,6 +33,7 @@ html
       $(document).ready(function() {
 
         attachAttributesToItems(items);
+        $('#sprint-selector').data('selected', !{JSON.stringify(sprint)});
 
         $('#panel-container .panel').each(function(index, element) {
 
@@ -58,6 +59,8 @@ html
           hr
           .line
             mixin time-input(story, 'Time estimation', 'estimation')
+          .line
+            mixin item-selector('Sprint', sprint, 'sprint-selector')
           .line
             mixin color-selector('Color', story.color, 'color-selector')
     ul

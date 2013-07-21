@@ -46,7 +46,7 @@ var updateDescription = function(item, text) {
 
 var updatePriority = function(item, priority) {
 
-	sortPanels();	
+	sortPanels(sortByPriority);	
 }
 
 var updateColor = function(item, color) {

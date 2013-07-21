@@ -184,13 +184,15 @@ function handleServerError(qHXR, textStatus, errorThrown) {
   showErrorPanel(errorMessage);
 }
 
-function sortPanels() {
+var sortByPriority = function (a, b) {
+
+  return $(a).data('attributes').priority - $(b).data('attributes').priority;  
+}
+
+function sortPanels(sortFunction) {
 
   var panels = $('#panel-container li');
-  panels.sort(function(a, b) {
-
-    return $(a).data('attributes').priority - $(b).data('attributes').priority;
-  });
+  panels.sort(sortFunction);
 
   $.each(panels, function(index, panel) {
 
