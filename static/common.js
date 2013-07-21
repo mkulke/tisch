@@ -549,7 +549,7 @@ $(document).ready(function() {
 
   $('input, textarea').data('timer', null);
 
-  $('.panel, .main-panel').on('keyup', ['input', 'textarea'], function(event) {
+  $('.panel, .main-panel').on('keyup', 'input, textarea', function(event) {
 
     if((event.target.localName == 'input') && (event.which == 13)) {
     

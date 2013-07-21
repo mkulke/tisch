@@ -44,8 +44,10 @@ html
 
           var item = $(element);
           var attributes = item.data('attributes');
-          item.data('update').remaining_time(item, calculations.remaining_time[attributes._id]);
-        });       
+          var remainingTime = calculations.remaining_time[attributes._id];
+          item.data('calculations', {remaining_time: remainingTime});
+          item.data('update').remaining_time(item, remainingTime);
+        });
       });
   body
     #error-panel
