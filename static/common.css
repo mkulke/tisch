@@ -1,22 +1,25 @@
 body {
 
-  font-family: Helvetica, Arial, sans-serif;
+  /*font-family: Helvetica, Arial, sans-serif;*/
   font-size: 10pt;
   margin: 0px;
   background-image: url(/squairy_light.png);
   background-repeat: repeat;
 }
 
+body, input, pre.autogrow, textarea, .header span {
+
+  font-family: 'Lucida Grande', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
 /* needed for firefox autogrow */
 input, pre.autogrow {
 
-  font-family: Helvetica, Arial, sans-serif;
-  font-size: 11pt;
+  font-size: 10.5pt;
 }
 
 textarea {
 
-  font-family: Helvetica, Arial, sans-serif;
   font-size: 10pt;
 }
 
@@ -289,9 +292,9 @@ div#panel-container {
 
 .main-panel hr {
 
-  height: 1px;
+  height: 2px;
   border: none;
-  background-color: black;
+  background-color: DimGray;
   margin-top: 0px;
   margin-bottom : 5px;
   margin-left: 5px;
@@ -313,12 +316,11 @@ div#panel-container {
   margin-right: 5px;
   outline: none;
   padding: 0px;
-  font-family: Helvetica, Arial, sans-serif;
   font-size: 10pt;
   border: 0px;
   /*width: 10px;*/
-  border-bottom: 1px DimGray solid;
-  width: 35px;
+  border-bottom: 2px DimGray solid;
+  width: 40px;
   /*text-align: center;*/
 }
 
@@ -500,8 +502,7 @@ div#panel-container {
 
 .header span {
 
-  font-family: Helvetica, Arial, sans-serif;
-  font-size: 11pt;
+  font-size: 10.5pt;
   /*padding-top: 2px;*/
 }
 
@@ -512,7 +513,7 @@ div#panel-container {
   padding: 0px;
   border: 0px;
   color: white;
-  border-right: 1px solid white;
+  border-right: 2px solid white;
 }
 
 .header span, .header img, .header input {
@@ -530,12 +531,12 @@ div#panel-container {
   padding-top: 1px;
   padding-right: 5px;
   padding-left: 5px;
-  border-left: 1px solid white;
+  border-left: 2px solid white;
 }
 
 .header span.remaining.text, .header span.date.text.end {
 
-  border-right: 1px solid white;
+  border-right: 2px solid white;
   padding-right: 5px;
 }
 
@@ -544,21 +545,8 @@ div#panel-container {
   padding-top: 1px;
   padding-left: 5px;
   padding-right: 5px;
-  border-right: 1px solid white;
-  border-left: 1px solid white;
-}
-
-.main-panel .header {
-
-  /*border-left: solid 1px #BBBBBB;
-  border-right: solid 1px #BBBBBB;*/
-}
-
-li.panel .header {
-
-  /*border-top: solid 1px #BBBBBB;
-  border-left: solid 1px #BBBBBB;
-  border-right: solid 1px #BBBBBB;*/
+  border-right: 2px solid white;
+  border-left: 2px solid white;
 }
 
 li.panel .body, .main-panel .body {
@@ -568,23 +556,76 @@ li.panel .body, .main-panel .body {
   border-right: solid 1px #BBBBBB;  
 }
 
-div#panel-container {
+.logo.header {
 
-  border: solid 1px #BBBBBB;
+  min-width: 800px;
+  margin-right: 10px;
+  margin-left: 10px;
+  padding: 0px;
+  height: 50px;
+  background: #ECF0F1;
+  border-bottom: solid 1px #BBBBBB;
+  border-left: solid 1px #BBBBBB;
+  border-right: solid 1px #BBBBBB;  
+}
+
+.logo.background {
+ 
+  margin-left: 9%;
+  height: 50px;
+  overflow: hidden;
+}
+
+.logo.text {
+ 
+  position: relative;
+  top: -7px;
+  font-size: 55px;
+  color: #ECF0F1;
+}
+
+#text1 {
+
+  padding-left: 3px;
+  background-color: #3498DB;
+}
+
+.header span.author {
+
+  color: #2980B9;
+}
+
+/*
+C7DDF3
+73A9E1
+94A9D4
+
+1ABC9C
+16A085
+
+2ECC71
+27AE60
+
+3498DB
+2980B9
+81C0C5
+*/
+
+#text2 {
+
+  background-color: #2980B9;
 }
 
 @-moz-document url-prefix() {
 
   .header input {
 
-    padding-top: 2px;
-    font-size: 11pt;
+    font-size: 10.5pt;
   }
 
   .header span {
 
-    padding-top: 2px;
-    font-size: 11pt;
+    font-size: 10.5pt;
   }
 
   .header img {
