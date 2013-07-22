@@ -51,7 +51,7 @@ casper.then(function() {
 
 		this.waitForResource(sprintUrl, function() {
 
-			this.test.assertNotVisible('#error-panel', 'Error panel is not visible.');
+			this.test.assertNotVisible('#alert-panel', 'Alert panel is not visible.');
 		});
 	});
 });
@@ -141,7 +141,7 @@ casper.then(function() {
 
 	this.wait(2000, function () {
 
-		this.test.assertNotVisible('#error-panel', 'Error panel is not visible.');
+		this.test.assertNotVisible('#alert-panel', 'Alert panel is not visible.');
 	});
 });
 
@@ -250,7 +250,7 @@ casper.then(function(){
 	this.wait(1500, function() {
 
 		this.test.assertNotVisible('.error-popup .content', 'No error popup visible.');
-		this.test.assertNotVisible('#error-panel', 'Error panel not visible.');	
+		this.test.assertNotVisible('#alert-panel', 'Alert panel not visible.');	
 	});
 });
 
