@@ -27,8 +27,8 @@ mixin color-selector(label, color, id)
 mixin time-input(task, label, property)
   span
     =label + ':'
-    span(class='error-popup')
-      .content
+    span.error-popup
+      .content.error
         =label + ' must be specified as a positive number < 100 with not more than two precision digits (e.g. "1" or "99.25").'
     input(type='text', size='5', maxlength='5', name=property, value=task[property]).time
 

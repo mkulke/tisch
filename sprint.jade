@@ -50,7 +50,7 @@ html
         });
       });
   body
-    #error-panel
+    #alert-panel
       .message
       .icons
         a(href='#')
@@ -72,7 +72,7 @@ html
             mixin date-selector('End date', 'length-selector')
     ul
       mixin panel('panel-template', '', '')
-    ul(id='panel-container')
+    ul#panel-container.sortable
 
       each story, i in stories
       

@@ -35,6 +35,7 @@ var updateStart = function(item, dateString) {
   var length = item.data('attributes').length;
   var endDate = new Date(date.getTime() + (length * MS_DAYS_FACTOR));
   $('.header .end', item).html((endDate.getMonth() + 1) + '/' + endDate.getDate() + '/' + endDate.getFullYear().toString().substr(2));
+  sortPanels(sortByStart);
 }
 
 var updateLength = function(item, length) {

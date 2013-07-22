@@ -1,5 +1,5 @@
 mixin panel(id, title, description, color)
-  div(class='panel', id=id)
+  li(id=id).panel
     form(autocomplete='off')
       div(class='header ' + color)
         .left
@@ -40,12 +40,12 @@ html
         });
       });
   body
-    #error-panel
+    #alert-panel
       .message
       .icons
         a(href='#')
           img(class='ok-button', src='/ok.png', alt='ok')
-    div(id='panel-container')
+    ul#panel-container
 
       each sprint, i in sprints
       

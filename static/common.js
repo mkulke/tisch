@@ -156,11 +156,12 @@ function timeParser(value) {
     return result;
   }
 
-function showErrorPanel(message) {
+function showAlertPanel(message, warning) {
 
-  $('#error-panel .message').text(message);
-  $('#error-panel').slideDown(100);
-  $("html, body").animate({scrollTop: $('#error-panel').offset().top}, "fast");
+  $('#alert-panel').removeClass('warn error').addClass(warning ? 'warning' : 'error'); 
+  $('#alert-panel .message').html(message);
+  $('#alert-panel').slideDown(100);
+  $('html, body').animate({scrollTop: $('#alert-panel').offset().top}, "fast");
 }
 
 function handleServerError(qHXR, textStatus, errorThrown) {
@@ -181,7 +182,7 @@ function handleServerError(qHXR, textStatus, errorThrown) {
       errorMessage = 'Operation failed for unknown reasons. Check server logs.';
   }
 
-  showErrorPanel(errorMessage);
+  showAlertPanel(errorMessage);
 }
 
 var sortByPriority = function (a, b) {
@@ -359,12 +360,26 @@ function requestUpdate(item, key, value, undo) {
 
 function remove(id) {
 
-  $('#' + prefix(id)).slideUp(100, function() {      
-  
-    $('#' + prefix(id)).remove();
-  });
+  var mainId = $('.main-panel').data('attributes')._id;
+  if (id == mainId) {
 
-  // TODO: handle case when the gui item is the main-panel?
+    // hide everything but the alert panel.
+
+    $('body > *').not('#alert-panel').hide();
+    showAlertPanel('The current resource has been removed in another session.', true);
+
+    $('#alert-panel img.ok-button').on('click', function(event) {
+
+      window.location.href = '/';
+    });
+  }
+  else {
+
+    $('#' + prefix(id)).slideUp(100, function() {      
+  
+      $('#' + prefix(id)).remove();
+    });
+  }
 }
 
 function requestRemove(id, type, rev) {
@@ -434,7 +449,7 @@ $(document).ready(function() {
   $('.header input').css('min-width', '0px');
 
   // This enables drag and drop on the list items
-  $("ul#panel-container").sortable({
+  $("ul#panel-container.sortable").sortable({
   
     tolerance: 'pointer',
     containment: '#panel-container'
@@ -480,11 +495,11 @@ $(document).ready(function() {
     });
   });
         
-  $('#error-panel').on('click', '.ok-button', function(event) {
+  $('#alert-panel').on('click', '.ok-button', function(event) {
 
     event.preventDefault();
 
-    $('#error-panel').slideUp(100);
+    $('#alert-panel').slideUp(100);
   });
   
   $('.panel, .main-panel').on('click', '.description .string', function(event) {
