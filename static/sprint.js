@@ -46,7 +46,7 @@ var updateDescription = function(item, text) {
 
 var updatePriority = function(item, priority) {
 
-	sortPanels(sortByPriority);	
+	sortPanels();	
 }
 
 var updateColor = function(item, color) {
@@ -85,6 +85,11 @@ $(document).ready(function() {
    
     var parentId = $('.main-panel').data('attributes')._id;
     requestAdd("story", parentId);
+  });
+
+  $('#panel-container').data('sort', function (a, b) {
+
+    return $(a).data('attributes').priority - $(b).data('attributes').priority;  
   });
 
   $('#panel-template').data('type', 'story');

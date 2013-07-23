@@ -38,7 +38,7 @@ var updateDescription = function(item, text) {
 
 var updatePriority = function(item, priority) {
 
-	sortPanels(sortByPriority);	
+	sortPanels();	
 }
 
 var updateEstimation = function(item, text) {
@@ -115,6 +115,11 @@ $(document).ready(function() {
   });
 
   $('#panel-template').data('type', 'task');
+
+  $('#panel-container').data('sort', function (a, b) {
+
+    return $(a).data('attributes').priority - $(b).data('attributes').priority;  
+  });
 
   $('input[name="estimation"]').data('parser', timeParser);
 

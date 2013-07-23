@@ -185,15 +185,10 @@ function handleServerError(qHXR, textStatus, errorThrown) {
   showAlertPanel(errorMessage);
 }
 
-var sortByPriority = function (a, b) {
+function sortPanels() {
 
-  return $(a).data('attributes').priority - $(b).data('attributes').priority;  
-}
-
-function sortPanels(sortFunction) {
-
-  var panels = $('#panel-container li');
-  panels.sort(sortFunction);
+  var panels = $('#panel-container .panel');
+  panels.sort($('#panel-container').data('sort'));
 
   $.each(panels, function(index, panel) {
 
@@ -203,11 +198,11 @@ function sortPanels(sortFunction) {
 
 function add(parent_id, attributes) {
 
-  if ($('.main-panel').data('attributes')._id != parent_id) {
+  if (($('.main-panel').length > 0) && ($('.main-panel').data('attributes')._id != parent_id)) {
 
-    // does not concern this view.
-    return;
-  }
+      // does not concern this view.
+      return;
+  } 
 
   var newPanel = $('#panel-template').clone(true);
 
@@ -360,7 +355,7 @@ function requestUpdate(item, key, value, undo) {
 
 function remove(id) {
 
-  var mainId = $('.main-panel').data('attributes')._id;
+  var mainId = ($('.main-panel').length > 0 ) ? $('.main-panel').data('attributes')._id : null;
   if (id == mainId) {
 
     // hide everything but the alert panel.
@@ -393,7 +388,7 @@ function requestRemove(id, type, rev) {
     headers: {client_uuid: clientUUID},
     beforeSend: function(jqXHR, settings) {
 
-      jqXHR.setRequestHeader('rev', $('#uuid-' + id).data('attributes')._rev);
+      jqXHR.setRequestHeader('rev', $('#' + prefix(id)).data('attributes')._rev);
     },
     success: function(ids, textStatus, jqXHR) {
 
@@ -596,7 +591,8 @@ $(document).ready(function() {
 
       requestUpdate(item, key, value, function() {
 
-        field.val(item.data('attributes')[key]);  
+        field.val(item.data('attributes')[key]);
+        field.trigger('input.autogrow');
       });
     }, 1500));
   });

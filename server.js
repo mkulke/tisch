@@ -127,6 +127,29 @@ function getMaxPriority(db, type, parentType, parentId) {
 
 var insert = function(db, type, parentType, data) {
 
+  var itemId = new ObjectID();
+  data._id = itemId;
+  data._rev = 0;
+
+  if (!parentType) {
+
+    var deferred = Q.defer();
+
+    db.collection(type).insert(data, function(err, result) {
+
+      if (err || (result.length != 1)) {
+
+        deferred.reject(new Error(err ? err : 'Inserting object failed.'));
+      }
+      else {
+
+        deferred.resolve(result[0]);
+      }
+    });
+
+    return deferred.promise;
+  }
+
   // TODO: not exactly atomic, do we need to clean up
   // orphaned items maybe?
 
@@ -135,11 +158,7 @@ var insert = function(db, type, parentType, data) {
     return getMaxPriority(db, type, parentType, data[parentType + '_id'])
     .then(function(result) {
 
-      var itemId = new ObjectID();
       var priority = result;
-
-      data._id = itemId;
-      data._rev = 0;
       data.priority = priority;
     })
     .then(function() {
@@ -153,16 +172,13 @@ var insert = function(db, type, parentType, data) {
 
           return optimisticLoop();
         }
-        else if (err) {
+        else if (err || (result.length != 1)) {
 
-          deferred.reject(new Error(err));
+          deferred.reject(new Error(err ? err : 'Inserting object failed.'));
         }
         else {
 
-          assert.equal(1, result.length);
-          var item = result[0];
-
-          deferred.resolve(item);
+          deferred.resolve(result[0]);
         }
       });
       return deferred.promise;
@@ -193,9 +209,11 @@ function remove(db, type, filter, failOnNoDeletion) {
   return deferred.promise;  
 }
 
-function findAndRemove(db, type, filter, removedIds) {
+function findAndRemove(db, type, filter) {
 
   var deferred = Q.defer();  
+
+  var removedIds = [];
 
   function loop() {
 
@@ -710,14 +728,17 @@ function processRequest(request, response) {
 
         filter = {story_id: ObjectID(id)};
 
-        return findAndRemove(db, 'task', filter, [id]);
+        return findAndRemove(db, 'task', filter);
       });
     };  
 
     answer = function(result) {
 
+      var removedIds = result;
+      removedIds.push(id);
+
       respondWithJson(result, response);
-      broadcastToClients('remove', request.headers.client_uuid, result);
+      broadcastToClients('remove', request.headers.client_uuid, removedIds);
     };
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
@@ -826,7 +847,86 @@ function processRequest(request, response) {
       respondWithJson(data, response);
       broadcastToClients('update', request.headers.client_uuid, data);  
     };
-  } 
+  }
+  else if ((type == 'sprint') && (request.method == 'PUT')) {
+
+    query = function() {
+
+      assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
+
+      var data = {
+      
+        description: 'Sprint description',
+        start: new Date(),
+        length: 14,
+        color: 'blue', 
+        title: 'New Sprint'
+      };
+
+      return insert(db, type, null, data);
+    };
+      
+    answer = function(result) {
+
+      var data = {attributes: result};
+      respondWithJson(data, response);
+      broadcastToClients('add', request.headers.client_uuid, data);
+    };
+  }
+  else if ((type == 'sprint') && (request.method == 'DELETE')) {
+  
+    assert.ok(request.headers.rev, 'rev missing in request headers.');
+    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
+
+    query = function() {
+
+      var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
+      var removedIds = [];
+
+      return remove(db, type, filter, true)
+      .then(function() {
+
+        filter = {sprint_id: ObjectID(id)};
+
+        return findAndRemove(db, 'story', filter);
+      })
+      .then(function (result) {
+
+        removedIds = result;
+
+        function buildCalls() {
+
+          var calls = [];
+          for (var i in removedIds) {
+
+            var storyId = ObjectID(removedIds[i]);
+            filter = {story_id: storyId};
+
+            calls.push(findAndRemove(db, 'task', filter));
+          }
+          return calls;
+        }
+
+        return Q.all(buildCalls());
+      })
+      .then(function (result) {
+
+        for (var i in result) {
+
+          removedIds = removedIds.concat(result[i]);
+        }
+        removedIds.push(id);
+
+        return removedIds;
+      });
+    };
+
+    answer = function(result) {
+
+      respondWithJson(result, response);
+      broadcastToClients('remove', request.headers.client_uuid, result);
+    };
+  }
   else if ((!type) && (request.method == 'GET')) {
 
     query = function() {

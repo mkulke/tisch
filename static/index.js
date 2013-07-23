@@ -22,11 +22,6 @@ var updateDescription = function(item, text) {
   }
 }
 
-var sortByStart = function (a, b) {
-
-  return $(a).data('attributes').start - $(b).data('attributes').start;  
-}
-
 var updateStart = function(item, dateString) {
 
   var date = new Date(dateString);
@@ -35,7 +30,7 @@ var updateStart = function(item, dateString) {
   var length = item.data('attributes').length;
   var endDate = new Date(date.getTime() + (length * MS_DAYS_FACTOR));
   $('.header .end', item).html((endDate.getMonth() + 1) + '/' + endDate.getDate() + '/' + endDate.getFullYear().toString().substr(2));
-  sortPanels(sortByStart);
+  sortPanels();
 }
 
 var updateLength = function(item, length) {
@@ -57,7 +52,12 @@ $(document).ready(function() {
     requestAdd('sprint');
   });
 
-  $('#panel-template').data('type', 'task');
+  $('#panel-template').data('type', 'sprint');
+
+  $('#panel-container').data('sort', function(a, b) {
+
+    return $(a).data('attributes').start - $(b).data('attributes').start;    
+  });
 
 	$('.panel').data('update', {
 

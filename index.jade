@@ -32,7 +32,7 @@ html
       $(document).ready(function() {
 
         attachAttributesToItems(items);
-        $('.panel').each(function() {
+        $('#panel-container .panel').each(function() {
 
           var panel = $(this);
           panel.data('update').start(panel, panel.data('attributes').start);
@@ -51,6 +51,8 @@ html
           ti
         span.logo.text#text2.
           sch
+    ul
+      mixin panel('panel-template')
     ul#panel-container
 
       each sprint, i in sprints
