@@ -205,7 +205,7 @@ casper.then(function() {
 		this.test.assertEquals(this.getHTML('#' + task2Id + ' textarea[name="description"]'), 'Description of task 2.', 'Task description is correct.');
 		this.test.assertEquals(this.getHTML('#story-selector .selected'), 'New Story 1', 'Story assignment is correct.');
 
-		this.test.assert(this.getElementAttribute('.main-panel .header', 'class').split(' ').indexOf('blue') != -1, 'Header color is set to blue.');
+		this.test.assert(this.getElementAttribute('#color-selector .selected', 'class').split(' ').indexOf('blue') != -1, 'Color is set to blue.');
 	});
 });
 
@@ -221,7 +221,7 @@ casper.then(function() {
 
 	casper.waitForResource(task2Url, function() {
 
-		this.test.assert(this.getElementAttribute('.main-panel .header', 'class').split(' ').indexOf('purple') != -1, 'Header color is set to purple.');
+		this.test.assert(this.getElementAttribute('#color-selector .selected', 'class').split(' ').indexOf('purple') != -1, 'Color is set to purple.');
 	});
 });
 
@@ -347,7 +347,7 @@ casper.then(function() {
 
 			return document.querySelectorAll('#panel-container .panel').length == 1;
 		}, '1 task panel is visible.');
-		this.test.assert(this.getElementAttribute('#' + task2Id + ' .header', 'class').split(' ').indexOf('purple') != -1, 'Header color of task 2 is purple.');
+		this.test.assert(this.getElementAttribute('#' + task2Id + ' .stripe', 'class').split(' ').indexOf('purple') != -1, 'Color of task 2 is purple.');
 	});
 });
 
@@ -406,7 +406,7 @@ casper.then(function() {
 
 	casper.waitForResource(sprintUrl, function() {
 
-		this.test.assert(this.getElementAttribute('.main-panel .header', 'class').split(' ').indexOf('red') != -1, 'Header color is set to red.');
+		this.test.assert(this.getElementAttribute('#color-selector .selected', 'class').split(' ').indexOf('red') != -1, 'Color is set to red.');
 	});
 });
 
@@ -466,7 +466,7 @@ casper.then(function() {
 
 	casper.waitForResource(sprintUrl, function() {
 
-		this.test.assert(this.getElementAttribute('.main-panel .header', 'class').split(' ').indexOf('purple') != -1, 'Header color is set to purple.');
+		this.test.assert(this.getElementAttribute('#color-selector .selected', 'class').split(' ').indexOf('purple') != -1, 'Color is set to purple.');
 	});
 });
 

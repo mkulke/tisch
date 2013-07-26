@@ -208,7 +208,7 @@ casper1.then(function() {
 
 casper2.then(function() {
 
-	this.test.assert(this.getElementAttribute('#' + story1Id + ' .header', 'class').split(' ').indexOf('purple') != -1, this.prefix('Header color is set to purple.'));
+	this.test.assert(this.getElementAttribute('#' + story1Id + ' .stripe', 'class').split(' ').indexOf('purple') != -1, this.prefix('Color is set to purple.'));
 
 	this.waitForOtherClient();
 });
