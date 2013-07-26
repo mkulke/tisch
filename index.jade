@@ -1,7 +1,8 @@
 mixin panel(id, title, description, color)
   li(id=id).panel
     form(autocomplete='off')
-      div(class='header ' + color)
+      div(class='stripe ' + color)
+      .header
         .left
           input(type='text', name='title', value=title, class=color, maxlength=32)
         .right
@@ -45,12 +46,23 @@ html
       .icons
         a(href='#')
           img(class='ok-button', src='/ok.png', alt='ok')
-    .logo.header
+    #logo-panel
+      .box.first
+        .stripe.red
+        .spacer
       .logo.background
-        span.logo.text#text1.
+        span.logo.text.orange.part-1.
           ti
-        span.logo.text#text2.
+        span.logo.text.yellow.part-2.
           sch
+      .stripe-container
+        .box.second
+          .stripe.green
+        .box.third
+          .stripe.blue
+        .box.fourth
+          .stripe.purple
+          .spacer
     ul
       mixin panel('panel-template')
     ul#panel-container

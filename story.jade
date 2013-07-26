@@ -1,7 +1,8 @@
 mixin panel(id, summary, description, color, remaining_time)
   li(class='panel', id=id)
     form(autocomplete='off')
-      div(class='header ' + color)
+      div(class='stripe ' + color)
+      .header
         .left
           input(type='text', name='summary', value=summary, class=color, maxlength=32)
         .right

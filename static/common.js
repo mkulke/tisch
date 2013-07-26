@@ -198,11 +198,21 @@ function sortPanels() {
 
 function add(parent_id, attributes) {
 
-  if (($('.main-panel').length > 0) && ($('.main-panel').data('attributes')._id != parent_id)) {
+  if ($('.main-panel').length == 1) {
+
+    if ($('.main-panel').data('attributes')._id != parent_id) {
 
       // does not concern this view.
       return;
-  } 
+    }
+  }
+  else if (parent_id) {
+
+    // if there is no main-panel (index page) *and* a parent_id is supplied, this does not
+    // concern this view.
+
+    return;
+  }
 
   var newPanel = $('#panel-template').clone(true);
 

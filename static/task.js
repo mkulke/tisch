@@ -1,6 +1,6 @@
 var updateColor = function(item, color) {
 
-  $('.header, .header input, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);
+  $('#color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);
 };
 
 var updateStoryId = function(item, id) {

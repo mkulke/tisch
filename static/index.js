@@ -1,6 +1,6 @@
 var updateColor = function(item, color) {
 
-   $('.header, .header input, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);  
+  $('.stripe', item).removeClass(COLORS.join(' ')).addClass(color);  
 }
 
 var updateTitle = function(item, text) {

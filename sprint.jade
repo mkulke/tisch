@@ -1,9 +1,11 @@
 mixin panel(id, title, description, color, remaining_time)
   li(class='panel', id=id)
     form(autocomplete='off')
-      div(class='header ' + color)
+      div(class='stripe '  + color)
+      .header
         .left
-          input(type='text', name='title', value=title, class=color, maxlength=32)
+          //input(type='text', name='title', value=title, class=color, maxlength=32)
+          input(type='text', name='title', value=title, maxlength=32)
         .right
           img(src='/done.png', alt='done').done.icon
           img(src='/clock.png', alt='remaining').remaining.icon
@@ -22,6 +24,7 @@ html
   head
     title Stories
     include common
+    //script(type='text/javascript', src='/Chart.js')
     script(type='text/javascript', src='/sprint.js')
     script(type='text/javascript')
     
@@ -70,6 +73,8 @@ html
             mixin date-selector('Start date', 'start-selector')
           .line
             mixin date-selector('End date', 'length-selector')
+          //hr
+          //canvas#testchart(height='200', width='780')
     ul
       mixin panel('panel-template', '', '')
     ul#panel-container.sortable

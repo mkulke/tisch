@@ -77,7 +77,7 @@ var updateRemainingTime = function(item, remainingTime) {
 
 var updateColor = function(item, color) {
 
-	$('.header, .header input, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);  
+	$('.stripe, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);  
 }
 
 $(document).ready(function() {

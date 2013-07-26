@@ -51,7 +51,7 @@ var updatePriority = function(item, priority) {
 
 var updateColor = function(item, color) {
 
-  $('.header, .header input, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);	
+	$('.stripe, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);  
 }
 
 var updateRemainingTimeCalculation = function(item, remainingTime) {
@@ -76,6 +76,30 @@ var updateRemainingTimeCalculation = function(item, remainingTime) {
 }
 
 $(document).ready(function() {
+
+	/*var ctx = document.getElementById("testchart").getContext("2d");
+
+	var data = {
+		labels : ["January","February","March","April","May","June","July"],
+		datasets : [
+			{
+				fillColor : "rgba(220,220,220,0.5)",
+				strokeColor : "rgba(220,220,220,1)",
+				pointColor : "rgba(220,220,220,1)",
+				pointStrokeColor : "#fff",
+				data : [65,59,90,81,56,55,40]
+			},
+			{
+				fillColor : "rgba(151,187,205,0.5)",
+				strokeColor : "rgba(151,187,205,1)",
+				pointColor : "rgba(151,187,205,1)",
+				pointStrokeColor : "#fff",
+				data : [28,48,40,19,96,27,100]
+			}
+		]
+	}
+
+	new Chart(ctx).Line(data);*/
 
 	initColorSelector();
 
