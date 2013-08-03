@@ -572,12 +572,13 @@ form {
   padding: 0px;
   height: 50px;
   background: #ECF0F1;
-  border-bottom: solid 1px #BBBBBB;
+  /*border-bottom: solid 1px #BBBBBB;*/
 }
 
 #logo-panel .box {
 
   float: left;
+  border-bottom: solid 1px #BBBBBB;
 }
 
 #logo-panel .box.first {
@@ -607,7 +608,7 @@ form {
 
 .box .spacer{
   
-  height: 46px;
+  height: 45px;
 }
 
 .box.first .spacer {

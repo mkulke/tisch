@@ -22,15 +22,15 @@ var index_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), opt
 
 var clients = {};
 
-function broadcastToClients(message, sourceUUID, data) {
+function broadcastToClients(sourceUUID, data) {
 
   for (var key in clients) {
 
     if (key != sourceUUID) {
 
       var client = clients[key];
-      console.log('emit ' + message + ' to ' + key);
-      client.emit(message, data);
+      console.log('emit ' + data.message + ' to ' + key);
+      client.emit('message', data);
     }
   }
 }
@@ -48,7 +48,7 @@ function respondWithHtml(html, response) {
 
 function respondWithJson(json, response) {
 
-  assert(json);
+  //assert(json, 'json cannot be null or undefined.');
       
   var headers = {'Content-Type': 'application/json'};
 
@@ -427,19 +427,25 @@ function processRequest(request, response) {
 
     query = function() {
 
-      var task;
+      if (html) {
+        var task;
 
-      return findOne(db, 'task', id)
-      .then(function (result) {
+        return findOne(db, 'task', id)
+        .then(function (result) {
 
-        task = result;
-        return findOne(db, 'story', task.story_id.toString());
-      })
-      .then(function (result) {
+          task = result;
+          return findOne(db, 'story', task.story_id.toString());
+        })
+        .then(function (result) {
 
-        var story = result;
-        return {task: task, story: story};
-      });
+          var story = result;
+          return {task: task, story: story};
+        });
+      }
+      else {
+
+        return findOne(db, 'task', id);
+      }
     };
 
     // TODO: merge code w/ story part.
@@ -447,22 +453,15 @@ function processRequest(request, response) {
 
       answer = function(result) {
       
-        return Q.fcall(function() {
-
-          var html = task_template({task: result.task, story: result.story});
-          respondWithHtml(html, response);
-        });
+        var html = task_template({task: result.task, story: result.story});
+        respondWithHtml(html, response);
       };  
     }
     else {
 
       answer = function(result) {
-      
-        return Q.fcall(function() {
 
-          // TODO: story find unecessary in this case. 
-          respondWithJson(result.task, response);
-        });
+        respondWithJson(result, response);
       };        
     }
   } 
@@ -472,34 +471,22 @@ function processRequest(request, response) {
     assert.ok(request.headers.rev, 'rev missing in request headers.');
     assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
-    var remainingTimeCalculation;
+    var formerStoryId;
 
     query = function() {
 
       if (request.body.key == 'story_id') {
 
-        return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'story', request.body.value)
-      }
-      else if (request.body.key == 'remaining_time') {
-
-        var task;
-
-        return findAndModify(db, type, id, parseInt(request.headers.rev, 10), 'remaining_time', request.body.value)
+        return findOne(db, type, id)
         .then(function (result) {
 
-          task = result;
-
-          return getRemainingTime(db, 'task', 'story', task.story_id);
-        })
-        .then(function (result) {
-
-          remainingTimeCalculation = result;
-          return task;
-        }); 
+          formerStoryId = result.story_id.toString();
+          return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'story', request.body.value);
+        });
       }
       else {
 
-        return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);  
+        return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);
       }
     };
 
@@ -507,11 +494,20 @@ function processRequest(request, response) {
 
       var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
       
-      respondWithJson(data, response);
-      broadcastToClients('update', request.headers.client_uuid, data);
-      if (request.body.key == 'remaining_time') {
+      respondWithJson(data, response);      
+      broadcastToClients(request.headers.client_uuid, {message: 'update', recipient: id, data: data});
 
-        broadcastToClients('update_calculation', request.headers.client_uuid, remainingTimeCalculation);
+      if (request.body.key == 'story_id') {
+
+        // remove from old story view and add to new one, and trigger calculation updates.
+        broadcastToClients(request.headers.client_uuid, {message: 'deassign', recipient: id, data: id});
+        broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: formerStoryId, data: formerStoryId});
+        broadcastToClients(request.headers.client_uuid, {message: 'assign', recipient: result.story_id, data: result});
+        broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
+      }  
+      else if (request.body.key == 'remaining_time') {
+
+        broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
       }
     };
   } 
@@ -519,8 +515,6 @@ function processRequest(request, response) {
 
     assert.ok(request.headers.parent_id, 'parent_id header missing in request.');
     assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
-
-    var remainingTimeCalculation;
 
     query = function() {
 
@@ -535,28 +529,14 @@ function processRequest(request, response) {
         story_id: ObjectID(request.headers.parent_id)
       };
 
-      var task;
-
-      return insert(db, 'task', 'story', data)
-      .then(function (result) {
-
-        task = result;
-
-        return getRemainingTime(db, 'task', 'story', task.story_id);
-      })
-      .then(function (result) {
-
-        remainingTimeCalculation = result;
-        return task;
-      });    
+      return insert(db, 'task', 'story', data);
     };
       
     answer = function(result) {
 
-      var data = {parent_id: request.headers.parent_id, attributes: result};
-      respondWithJson(data, response);
-      broadcastToClients('add', request.headers.client_uuid, data);
-      broadcastToClients('update_calculation', request.headers.client_uuid, remainingTimeCalculation);
+      respondWithJson(result, response);
+      broadcastToClients(request.headers.client_uuid, {message: 'add', recipient: request.headers.parent_id, data: result});
+      broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
     };
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
@@ -564,32 +544,18 @@ function processRequest(request, response) {
     assert.ok(request.headers.rev, 'rev header missing in request.');
     assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
-    var remainingTimeCalculation;
-
     query = function() {
 
       var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
 
-      var task;
-
-      return remove(db, 'task', filter, true)
-      .then(function (result) {
-
-        task = result;
-        return getRemainingTime(db, 'task', 'story', task.story_id);
-      })
-      .then(function (result) {
-
-        remainingTimeCalculation = result;
-      });
+      return remove(db, 'task', filter, true);
     };
       
-    answer = function() {
+    answer = function(result) {
 
-      var data = [id];
-      respondWithJson(data, response);
-      broadcastToClients('remove', request.headers.client_uuid, data);
-      broadcastToClients('update_calculation', request.headers.client_uuid, remainingTimeCalculation);
+      respondWithJson(id, response);
+      broadcastToClients(request.headers.client_uuid, {message: 'remove', recipient: id, data: id});
+      broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
     };
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
@@ -679,13 +645,17 @@ function processRequest(request, response) {
 
     answer = function(result) {
 
-      return Q.fcall(function() {
+      var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
+      
+      respondWithJson(data, response);
+      broadcastToClients(request.headers.client_uuid, {message: 'update', recipient: id, data: data});
+      
+      if (request.body.key == 'sprint_id') {
 
-        var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
-        
-        respondWithJson(data, response);
-        broadcastToClients('update', request.headers.client_uuid, data);
-      });  
+      // remove from old story view and add to new one.
+        broadcastToClients(request.headers.client_uuid, {message: 'deassign', recipient: id, data: id});
+        broadcastToClients(request.headers.client_uuid, {message: 'assign', recipient: result.sprint_id, data: result});
+      }
     };
   }
   else if ((type == 'story') && (request.method == 'PUT')) {
@@ -709,9 +679,8 @@ function processRequest(request, response) {
       
     answer = function(result) {
 
-      var data = {parent_id: request.headers.parent_id, attributes: result};
-      respondWithJson(data, response);
-      broadcastToClients('add', request.headers.client_uuid, data);
+      respondWithJson(result, response);
+      broadcastToClients(request.headers.client_uuid, {message: 'add', recipient: request.headers.parent_id, data: result});
     };
   } 
   else if ((type == 'story') && (request.method == 'DELETE')) {
@@ -729,16 +698,24 @@ function processRequest(request, response) {
         filter = {story_id: ObjectID(id)};
 
         return findAndRemove(db, 'task', filter);
+      })
+      .then(function(result) {
+
+        var removedIds = result;
+        removedIds.push(id);
+        return removedIds;
       });
     };  
 
     answer = function(result) {
 
-      var removedIds = result;
-      removedIds.push(id);
+      // ajax response is only the requested id.
+      respondWithJson(id, response);
+      for (var i in result) {
 
-      respondWithJson(result, response);
-      broadcastToClients('remove', request.headers.client_uuid, removedIds);
+        var removedId = result[i];
+        broadcastToClients(request.headers.client_uuid, {message: 'remove', recipient: removedId, data: removedId});
+      }
     };
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
@@ -747,43 +724,50 @@ function processRequest(request, response) {
       
       query = function() {
 
-        var sprint;
-        var stories;
+        if (html) {
 
-        return findOne(db, 'sprint', id)
-        .then(function (result) {
+          var sprint;
+          var stories;
 
-          sprint = result;
-          return find(db, 'story', {sprint_id: sprint._id}, {priority: 1});
-        })
-        .then(function (result) {
+          return findOne(db, 'sprint', id)
+          .then(function (result) {
 
-          stories = result;
+            sprint = result;
+            return find(db, 'story', {sprint_id: sprint._id}, {priority: 1});
+          })
+          .then(function (result) {
 
-          function buildCalls() {
+            stories = result;
 
-            var calls = [];
-            for (var i in stories) {
+            function buildCalls() {
 
-              calls.push(getRemainingTime(db, 'task', 'story', stories[i]._id));
+              var calls = [];
+              for (var i in stories) {
+
+                calls.push(getRemainingTime(db, 'task', 'story', stories[i]._id));
+              }
+
+              return calls;
             }
 
-            return calls;
-          }
+            return Q.all(buildCalls());
+          })
+          .then(function (results) {
 
-          return Q.all(buildCalls());
-        })
-        .then(function (results) {
+            var remaining_time = {};
+            for (var i in results) {
 
-          var remaining_time = {};
-          for (var i in results) {
+              var result = results[i];
+              remaining_time[result.id] = result.value;
+            }
 
-            var result = results[i];
-            remaining_time[result.id] = result.value;
-          }
+            return {sprint: sprint, stories: stories, calculations: {remaining_time: remaining_time}}; 
+          });
+        }
+        else {
 
-          return {sprint: sprint, stories: stories, calculations: {remaining_time: remaining_time}}; 
-        });
+          return findOne(db, 'sprint', id); 
+        }
       };
 
       if (html) {
@@ -797,12 +781,8 @@ function processRequest(request, response) {
       else {
 
         answer = function(result) {
-        
-          return Q.fcall(function() {
- 
-            // TODO: find stories uncecessary in this case
-            respondWithJson(result.sprint, response);
-          });
+         
+          respondWithJson(result, response);
         };        
       }
     }
@@ -817,10 +797,7 @@ function processRequest(request, response) {
 
       answer = function(result) {
 
-        return Q.fcall(function() {
-
-          respondWithJson(result, response);
-        });  
+        respondWithJson(result, response);
       };
     }
   } 
@@ -845,7 +822,7 @@ function processRequest(request, response) {
       var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
       
       respondWithJson(data, response);
-      broadcastToClients('update', request.headers.client_uuid, data);  
+      broadcastToClients(request.headers.client_uuid, {message: 'update', recipient: id, data: data});  
     };
   }
   else if ((type == 'sprint') && (request.method == 'PUT')) {
@@ -868,9 +845,8 @@ function processRequest(request, response) {
       
     answer = function(result) {
 
-      var data = {attributes: result};
-      respondWithJson(data, response);
-      broadcastToClients('add', request.headers.client_uuid, data);
+      respondWithJson(result, response);
+      broadcastToClients(request.headers.client_uuid, {message: 'add', recipient: request.headers.parent_id, data: result});
     };
   }
   else if ((type == 'sprint') && (request.method == 'DELETE')) {
@@ -923,8 +899,13 @@ function processRequest(request, response) {
 
     answer = function(result) {
 
-      respondWithJson(result, response);
-      broadcastToClients('remove', request.headers.client_uuid, result);
+      // ajax response is only the requested id.
+      respondWithJson(id, response);
+      for (var i in result) {
+
+        var removedId = result[i];
+        broadcastToClients(request.headers.client_uuid, {message: 'remove', recipient: removedId, data: removedId});
+      }
     };
   }
   else if ((!type) && (request.method == 'GET')) {
@@ -937,6 +918,21 @@ function processRequest(request, response) {
 
       var html = index_template({sprints: result});
       respondWithHtml(html, response);
+    };
+  }
+  else if ((type == 'remaining_time_calculation') && (request.method == 'GET')) {
+
+    query = function() {
+
+      assert.ok(id, 'Story id is missing in the request\'s url');
+
+      return getRemainingTime(db, 'task', 'story', ObjectID(id));
+    }
+    answer = function(result) {
+
+      assert.notEqual(true, html, 'Remaining time calculation available only as json.');
+
+      respondWithJson(result.value, response);
     };
   }
   else {

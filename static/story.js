@@ -55,7 +55,8 @@ var updateSummary = function(item, text) {
 	var input = $('input[name="summary"]', item);
 	if (isUpdateOk(input, text)) {
 
-		input.val(text);	
+		input.val(text);
+		input.trigger('input.autogrow');
 	}
 }
 
@@ -110,8 +111,7 @@ $(document).ready(function() {
    
     event.preventDefault();
    
-    var parentId = $('.main-panel').data('attributes')._id;
-    requestAdd("task", parentId);
+    requestAdd_test($('.main-panel'));
   });
 
   $('#panel-template').data('type', 'task');
@@ -125,6 +125,10 @@ $(document).ready(function() {
 
   initColorSelector();
   
+  $('.main-panel').data('socketio_handlers').add = add_test;
+  $('.main-panel').data('socketio_handlers').assign = add_test;
+  $('.panel').data('socketio_handlers').deassign = remove;
+
 	$('.main-panel').data('update', {
 
 		title: updateTitle,

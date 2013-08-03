@@ -75,6 +75,21 @@ var updateRemainingTimeCalculation = function(item, remainingTime) {
 	}
 }
 
+var requestRemainingTimeCalculation = function(id) {
+
+  $.ajaxq('client', {
+
+    url: '/remaining_time_calculation/' + id,
+    type: 'GET',
+    dataType: 'json',
+    success: function(data, textStatus, jqXHR) {
+
+    	updateRemainingTimeCalculation($('#' + prefix(id)), data);
+    },
+    error: handleServerError
+  });
+}
+
 $(document).ready(function() {
 
 	/*var ctx = document.getElementById("testchart").getContext("2d");
@@ -106,9 +121,7 @@ $(document).ready(function() {
   $('#add-button').on('click', function(event) {
    
     event.preventDefault();
-   
-    var parentId = $('.main-panel').data('attributes')._id;
-    requestAdd("story", parentId);
+   	requestAdd_test($('.main-panel'));
   });
 
   $('#panel-container').data('sort', function (a, b) {
@@ -201,6 +214,15 @@ $(document).ready(function() {
 		$('#length-selector .content').datepicker('option', 'minDate', $('.main-panel').data('attributes').start);
 		$('#length-selector .content').css('visibility', 'visible');    
 	});
+
+
+  $('.main-panel').data('socketio_handlers').add = add_test;
+  $('.main-panel').data('socketio_handlers').assign = add_test;
+  $('.panel').each(function() {
+
+  	$(this).data('socketio_handlers').deassign = remove;
+  	$(this).data('socketio_handlers').update_remaining_time = requestRemainingTimeCalculation;
+  });
 
   $('.main-panel').data('update', {
 

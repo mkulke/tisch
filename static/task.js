@@ -30,7 +30,7 @@ $(document).ready(function() {
 
     var sprint_id = $('#story-selector').data('selected').sprint_id;
 
-    $.ajax({
+    $.ajaxq('client', {
 
       url: '/story',
       type: 'GET',

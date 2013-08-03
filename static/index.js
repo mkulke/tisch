@@ -45,11 +45,20 @@ var updateLength = function(item, length) {
 
 $(document).ready(function() {
 
+  var body = $('body');
+  body.data('attributes', {_id: 'index'});
+  body.data('type', '');
+  body.data('socketio_handlers', {add: add_test});
+  body.data('socketio_handlers').assign = add_test;
+  $('.panel').data('socketio_handlers').deassign = remove;
+
   $('#add-button').on('click', function(event) {
    
     event.preventDefault();
    
-    requestAdd('sprint');
+    requestAdd_test(body);
+    //requestAdd_test.bind(body)();
+    //requestAdd('sprint');
   });
 
   $('#panel-template').data('type', 'sprint');

@@ -20,7 +20,7 @@ function unPrefix(prefixedId) {
 
 function isUpdateOk(item, text) {
 
-  return ((item.data('timer') === null) && (item.val() != text))
+  return ((item.data('timer') === null) && (item.val() != text));
 }
 
 function attachAttributesToItems(map) {
@@ -175,7 +175,7 @@ function handleServerError(qHXR, textStatus, errorThrown) {
       break;
     case 'error':
     
-      errorMessage = 'Operation failed: ' + ((errorThrown != '') ? errorThrown : 'Unknown server error.');
+      errorMessage = 'Operation failed: ' + ((errorThrown !== '') ? errorThrown : 'Unknown server error.');
       break;
     default:
     
@@ -196,7 +196,7 @@ function sortPanels() {
   });
 }
 
-function add(parent_id, attributes) {
+/*function add(parent_id, attributes) {
 
   if ($('.main-panel').length == 1) {
 
@@ -261,9 +261,57 @@ function requestAdd(type, parent_id) {
       handleServerError(data, textStatus, jqXHR);
     }
   });
+}*/
+
+var add_test = function(attributes) {
+
+  var newPanel = $('#panel-template').clone(true);
+
+  newPanel.data('attributes', attributes);
+
+  newPanel.attr('id', prefix(attributes._id));
+
+  for (var key in attributes) {
+
+    if (newPanel.data('update')[key]) {
+
+      newPanel.data('update')[key](newPanel, attributes[key]);      
+    }
+  }
+
+  $('#panel-container').append(newPanel);
+  sortPanels();    
+
+  $('.header', newPanel).addClass(attributes.color);
+  // hack: it seems the autogrow stuff is not correctly cloned, 
+  // hence we need to re-add it here.
+  $('.header input', newPanel).autoGrow({comfortZone: AUTOGROW_COMFORT_ZONE});
+
+  $('html, body').animate({ scrollTop: $(document).height() }, "slow");  
+};
+
+// This is bound to the main-panel or the body?
+function requestAdd_test(parent) {
+
+  var headers = {client_uuid: clientUUID, parent_id: parent.data('attributes')._id};
+
+  $.ajaxq('client', {
+  
+    url: '/' + $('#panel-template').data('type'),
+    headers: headers,
+    type: 'PUT',
+    success: function(data, textStatus, jqXHR) {
+
+      add_test(data);
+    },
+    error: function(data, textStatus, jqXHR) {
+
+      handleServerError(data, textStatus, jqXHR);
+    }
+  });
 }
 
-function update(id, rev, key, value) {
+/*function update(id, rev, key, value) {
 
   var item = $('#' + prefix(id));
   var mainPanel = $('.main-panel');
@@ -308,6 +356,22 @@ function update(id, rev, key, value) {
       }
     }
   }
+}*/
+
+function update_test(data) {
+
+  var id = data.id;
+  var rev = data.rev;
+  var key = data.key;
+  var value = data.value;
+
+  var item = $('#' + prefix(id));
+  item.data('attributes')._rev = rev;
+  item.data('attributes')[key] = value;
+  if (item.data('update')[key]) {
+
+    item.data('update')[key](item, value);
+  }
 }
 
 function updateCalculation(id, key, value) {
@@ -350,7 +414,8 @@ function requestUpdate(item, key, value, undo) {
     },
     success: function(data, textStatus, jqXHR) {
 
-      update(data.id, data.rev, data.key, data.value);
+      update_test(data);
+      //update_test(data.id, data.rev, data.key, data.value);
     },
     error: function(data, textStatus, jqXHR) {
 
@@ -363,7 +428,16 @@ function requestUpdate(item, key, value, undo) {
   });
 }
 
-function remove(id) {
+var deassign = function(id) {
+
+  // item is not the main-panel
+  if ($('.main-panel#' + prefix(id).length == 0)) {
+
+    remove(id);
+  }
+}
+
+var remove = function(id) {
 
   var mainId = ($('.main-panel').length > 0 ) ? $('.main-panel').data('attributes')._id : null;
   if (id == mainId) {
@@ -385,9 +459,34 @@ function remove(id) {
       $('#' + prefix(id)).remove();
     });
   }
+};
+
+function requestRemove_test(item) {
+
+  // TODO: i18n?
+  if (!confirm('Do you want to remove the ' + item.data('type') + ' and its assigned objects?')) return;
+
+  $.ajaxq('client', {
+  
+    url: '/' + item.data('type') + '/' + item.data('attributes')._id,
+    type: 'DELETE',
+    headers: {client_uuid: clientUUID},
+    beforeSend: function(jqXHR, settings) {
+
+      jqXHR.setRequestHeader('rev', item.data('attributes')._rev);
+    },
+    success: function(data, textStatus, jqXHR) {
+
+      remove(data);
+    },
+    error: function(data, textStatus, jqXHR) {
+
+      handleServerError(data, textStatus, jqXHR);
+    }
+  });
 }
 
-function requestRemove(id, type, rev) {
+/*function requestRemove(id, type, rev) {
 
   if (!confirm('Do you want to remove the item and its assigned objects?')) return;
 
@@ -412,11 +511,11 @@ function requestRemove(id, type, rev) {
       handleServerError(data, textStatus, jqXHR);
     }
   });
-}
+}*/
 
 $(document).ready(function() {
 
-  var socket = io.connect('http://localhost'); 
+  var socket = io.connect('http://' + window.location.hostname); 
 
   socket.on('connect', function() {
 
@@ -426,7 +525,7 @@ $(document).ready(function() {
     });    
   });
 
-  socket.on('remove', function (ids) {
+  /*socket.on('remove', function (ids) {
 
     for (var i in ids) {
 
@@ -447,7 +546,31 @@ $(document).ready(function() {
   socket.on('update_calculation', function (data) {
 
     updateCalculation(data.id, data.key, data.value);
+  });*/
+
+  // TEST BEGIN
+  
+  socket.on('message', function(data) {
+
+    var recipient = $('#' + prefix(data.recipient));
+    if (recipient.length == 1) {
+
+      var message = data.message;
+      if (message in recipient.data('socketio_handlers')) {
+
+        recipient.data('socketio_handlers')[message](data.data);
+      }
+    }
   });
+
+  // set handlers for socket.io updates.
+
+  $('.panel, .main-panel').each(function() {
+
+    $(this).data('socketio_handlers', {remove: remove, update: update_test});
+  });
+
+  // TEST END
 
   // This makes the header input grow automatically with its value.
   $('.header input').autoGrow({comfortZone: AUTOGROW_COMFORT_ZONE});
@@ -468,12 +591,7 @@ $(document).ready(function() {
     event.preventDefault();
   
     var item = $(event.delegateTarget);
-    var dbAttributes = item.data('attributes');
-    var id = dbAttributes._id;
-    var rev = dbAttributes._rev;
-    var type = item.data('type');
-
-    requestRemove(id, type, rev);
+    requestRemove_test(item);
   });
 
   $('.panel').on('click', '.hide.button', function(event) {
@@ -604,6 +722,7 @@ $(document).ready(function() {
         field.val(item.data('attributes')[key]);
         field.trigger('input.autogrow');
       });
+      field.data('timer', null);
     }, 1500));
   });
 });
@@ -611,8 +730,8 @@ $(document).ready(function() {
 // this makes safari reload a page when using the back button.
 
 window.onpageshow = function(event) {
-    if (event.persisted) {
+  if (event.persisted) {
 
-        window.location.reload();
-    }
+    window.location.reload();
+  }
 };
