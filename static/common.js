@@ -196,74 +196,7 @@ function sortPanels() {
   });
 }
 
-/*function add(parent_id, attributes) {
-
-  if ($('.main-panel').length == 1) {
-
-    if ($('.main-panel').data('attributes')._id != parent_id) {
-
-      // does not concern this view.
-      return;
-    }
-  }
-  else if (parent_id) {
-
-    // if there is no main-panel (index page) *and* a parent_id is supplied, this does not
-    // concern this view.
-
-    return;
-  }
-
-  var newPanel = $('#panel-template').clone(true);
-
-  newPanel.data('attributes', attributes);
-
-  newPanel.attr('id', prefix(attributes._id));
-
-  for (var key in attributes) {
-
-    if (newPanel.data('update')[key]) {
-
-      newPanel.data('update')[key](newPanel, attributes[key]);      
-    }
-  }
-
-  $('#panel-container').append(newPanel);
-  sortPanels();    
-
-  $('.header', newPanel).addClass(attributes.color);
-  // hack: it seems the autogrow stuff is not correctly cloned, 
-  // hence we need to re-add it here.
-  $('.header input', newPanel).autoGrow({comfortZone: AUTOGROW_COMFORT_ZONE});
-
-  $("html, body").animate({ scrollTop: $(document).height() }, "slow");  
-}
-
-function requestAdd(type, parent_id) {
-
-  var headers = {client_uuid: clientUUID};
-  if (parent_id) {
-
-    headers.parent_id = parent_id;
-  }
-
-  $.ajaxq('client', {
-  
-    url: '/' + type,
-    headers: headers,
-    type: 'PUT',
-    success: function(data, textStatus, jqXHR) {
-
-      add(data.parent_id, data.attributes);
-    },
-    error: function(data, textStatus, jqXHR) {
-
-      handleServerError(data, textStatus, jqXHR);
-    }
-  });
-}*/
-
-var add_test = function(attributes) {
+var add = function(attributes) {
 
   var newPanel = $('#panel-template').clone(true);
 
@@ -291,7 +224,7 @@ var add_test = function(attributes) {
 };
 
 // This is bound to the main-panel or the body?
-function requestAdd_test(parent) {
+function requestAdd(parent) {
 
   var headers = {client_uuid: clientUUID, parent_id: parent.data('attributes')._id};
 
@@ -302,7 +235,7 @@ function requestAdd_test(parent) {
     type: 'PUT',
     success: function(data, textStatus, jqXHR) {
 
-      add_test(data);
+      add(data);
     },
     error: function(data, textStatus, jqXHR) {
 
@@ -311,54 +244,7 @@ function requestAdd_test(parent) {
   });
 }
 
-/*function update(id, rev, key, value) {
-
-  var item = $('#' + prefix(id));
-  var mainPanel = $('.main-panel');
-  var parentType = mainPanel.length > 0 ? mainPanel.data('type') : null;
-  var parentId = mainPanel.length > 0 ? mainPanel.data('attributes')._id : null;
-
-  // item not present?
-  if (item.length != 1) {
-
-    // assignment changed to main item?
-    if ((key == parentType + '_id') && (value == parentId)) {
-
-      var type = $('#panel-template').data('type'); 
-      $.ajaxq('client', {
-
-        url: '/' + type + '/' + id,
-        type: 'GET',
-        dataType: 'json',
-        success: function(data, textStatus, jqXHR) {
-
-          add(parentId, data);
-        },
-        error: handleServerError
-      });  
-    }
-  }
-  // item present
-  else {
-
-    // assignment removed from main item?
-    if ((key == parentType + '_id') && (value != parentId)) {
-
-      remove(id);  
-    }
-    else {
-
-      item.data('attributes')._rev = rev;
-      item.data('attributes')[key] = value;
-      if (item.data('update')[key]) {
-
-        item.data('update')[key](item, value);
-      }
-    }
-  }
-}*/
-
-function update_test(data) {
+function update(data) {
 
   var id = data.id;
   var rev = data.rev;
@@ -414,8 +300,7 @@ function requestUpdate(item, key, value, undo) {
     },
     success: function(data, textStatus, jqXHR) {
 
-      update_test(data);
-      //update_test(data.id, data.rev, data.key, data.value);
+      update(data);
     },
     error: function(data, textStatus, jqXHR) {
 
@@ -461,7 +346,7 @@ var remove = function(id) {
   }
 };
 
-function requestRemove_test(item) {
+function requestRemove(item) {
 
   // TODO: i18n?
   if (!confirm('Do you want to remove the ' + item.data('type') + ' and its assigned objects?')) return;
@@ -485,33 +370,6 @@ function requestRemove_test(item) {
     }
   });
 }
-
-/*function requestRemove(id, type, rev) {
-
-  if (!confirm('Do you want to remove the item and its assigned objects?')) return;
-
-  $.ajaxq('client', {
-  
-    url: '/' + type + '/' + id,
-    type: 'DELETE',
-    headers: {client_uuid: clientUUID},
-    beforeSend: function(jqXHR, settings) {
-
-      jqXHR.setRequestHeader('rev', $('#' + prefix(id)).data('attributes')._rev);
-    },
-    success: function(ids, textStatus, jqXHR) {
-
-      for (var i in ids) {
-
-        remove(ids[i]);
-      }
-    },
-    error: function(data, textStatus, jqXHR) {
-
-      handleServerError(data, textStatus, jqXHR);
-    }
-  });
-}*/
 
 $(document).ready(function() {
 
@@ -542,7 +400,7 @@ $(document).ready(function() {
 
   $('.panel, .main-panel').each(function() {
 
-    $(this).data('socketio_handlers', {remove: remove, update: update_test});
+    $(this).data('socketio_handlers', {remove: remove, update: update});
   });
 
   // This makes the header input grow automatically with its value.
@@ -564,7 +422,7 @@ $(document).ready(function() {
     event.preventDefault();
   
     var item = $(event.delegateTarget);
-    requestRemove_test(item);
+    requestRemove(item);
   });
 
   $('.panel').on('click', '.hide.button', function(event) {

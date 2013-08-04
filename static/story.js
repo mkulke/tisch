@@ -112,7 +112,7 @@ $(document).ready(function() {
    
     event.preventDefault();
    
-    requestAdd_test($('.main-panel'));
+    requestAdd($('.main-panel'));
   });
 
   $('#panel-template').data('type', 'task');
@@ -126,8 +126,8 @@ $(document).ready(function() {
 
   initColorSelector();
   
-  $('.main-panel').data('socketio_handlers').add = add_test;
-  $('.main-panel').data('socketio_handlers').assign = add_test;
+  $('.main-panel').data('socketio_handlers').add = add;
+  $('.main-panel').data('socketio_handlers').assign = add;
   $('.panel').data('socketio_handlers').deassign = remove;
 
     // make sure story title changes are reflected in the view.

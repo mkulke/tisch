@@ -121,7 +121,8 @@ $(document).ready(function() {
   $('#add-button').on('click', function(event) {
    
     event.preventDefault();
-   	requestAdd_test($('.main-panel'));
+
+   	requestAdd($('.main-panel'));
   });
 
   $('#panel-container').data('sort', function (a, b) {
@@ -216,8 +217,8 @@ $(document).ready(function() {
 	});
 
 
-  $('.main-panel').data('socketio_handlers').add = add_test;
-  $('.main-panel').data('socketio_handlers').assign = add_test;
+  $('.main-panel').data('socketio_handlers').add = add;
+  $('.main-panel').data('socketio_handlers').assign = add;
   $('.panel').each(function() {
 
   	$(this).data('socketio_handlers').deassign = remove;

@@ -48,17 +48,15 @@ $(document).ready(function() {
   var body = $('body');
   body.data('attributes', {_id: 'index'});
   body.data('type', '');
-  body.data('socketio_handlers', {add: add_test});
-  body.data('socketio_handlers').assign = add_test;
+  body.data('socketio_handlers', {add: add});
+  body.data('socketio_handlers').assign = add;
   $('.panel').data('socketio_handlers').deassign = remove;
 
   $('#add-button').on('click', function(event) {
    
     event.preventDefault();
    
-    requestAdd_test(body);
-    //requestAdd_test.bind(body)();
-    //requestAdd('sprint');
+    requestAdd(body);
   });
 
   $('#panel-template').data('type', 'sprint');
