@@ -1,23 +1,74 @@
-
 var casper = require('casper').create();
 
 var storyId, firstId, secondId, secondUrl, storyUrl;
 
 var indexUrl = 'http://localhost:8000/';
-var sprintUrl = indexUrl + 'sprint/51ac972325dfbc3750000001';
-var story1Id, story2Id, story1Url, story2Url, story3Id, story3Url, task1Id, task2Id;
+//var sprintUrl = indexUrl + 'sprint/51ac972325dfbc3750000001';
+var sprintId, sprintUrl, story1Id, story2Id, story1Url, story2Url, story3Id, story3Url, task1Id, task2Id;
 
 var stories = {};
+var sprintIds = [];
 
-casper.test.info("Open the sprint test page:");
+function buildIdList() {
 
-casper.start(sprintUrl);
+	var panels = $('#panel-container li.panel');
+  var ids = [];
+
+  panels.each(function() {
+
+  	ids.push($(this).attr('id'));
+  });
+  return ids;	
+}
+
+casper.test.info("Open the index page:");
+
+casper.start(indexUrl);
 
 casper.viewport(1024, 768);
 
 casper.then(function() {
 
-	this.test.assertDoesntExist('#panel-container .panel', 'No story visible.');
+	this.test.assertDoesntExist('.main-panel', 'No main panel visible.');
+	this.test.assertExist('#logo-panel', 'Logo panel visible.');
+
+	sprintIds = this.evaluate(buildIdList);
+
+	this.test.info('There are ' + sprintIds.length + ' sprints visible, click the add button:');
+
+	this.click('#add-button');
+
+	this.waitForResource(indexUrl, function() {
+
+		var newSprintIds = casper.evaluate(buildIdList);
+
+		this.test.assertEquals(newSprintIds.length, sprintIds.length + 1,  'A new sprint panel appeared.');
+
+		for (var i in newSprintIds) {
+
+			if (!(i in sprintIds)) {
+
+				sprintId = newSprintIds[i];
+			}
+		}
+	});
+});
+
+casper.then(function() {
+
+	casper.test.info("Double-click on the header of test sprint:");
+
+	this.mouseEvent('dblclick', '#' + sprintId + ' .header');
+
+	sprintUrl = 'http://localhost:8000/sprint/' + sprintId.substr('uuid-'.length);
+
+	casper.waitForResource(sprintUrl, function() {
+
+		this.test.assertDoesntExist('#panel-container .panel', 'No story visible.');
+	});
+});
+
+casper.then(function() {
 
 	casper.test.info("Click the add button 2 times:");
 
@@ -412,25 +463,58 @@ casper.then(function() {
 
 casper.then(function() {
 
+	var startDay = this.fetchText('#start-selector span.selected').split('/')[1];
+	var startMonth = this.fetchText('#start-selector span.selected').split('/')[0];
+	var startYear = this.fetchText('#start-selector span.selected').split('/')[2];
+
 	this.test.info("Click on start date:");
 
 	this.click('#start-selector .selected');
 
   this.test.assertVisible('#start-selector .content', 'Datepicker popup appeared.');
 
-	this.test.info("Click on Jan 2nd 2013:");
+  var newStartDay = '2';
+  if (startDay == '2') {
 
-	this.click('#start-selector .content tr:nth-child(1) td:nth-child(4)');
+		newStartDay = '3';
+  }
+
+	this.test.info('Click on day ' + newStartDay + ':');
+
+	var row = 1;
+	var column = 1;
+	while(true) {
+
+		var day = this.fetchText('#start-selector .content tr:nth-of-type(' + row + ') td:nth-of-type(' + column + ') a');
+		if (day == newStartDay) {
+
+			break;
+		}
+		if (column == 7) {
+
+			column = 0;
+			row++;
+		}
+		column++;
+	}
+
+	this.click('#start-selector .content tr:nth-of-type(' + row + ') td:nth-child(' + column + ')');
 
 	casper.waitForResource(sprintUrl, function() {
 
 		this.test.assertNotVisible('#start-selector .content', 'Datepicker popup disappeared.');
-		this.test.assertSelectorHasText('#start-selector span.selected', '1/2/13', 'Start date is set to Jan 2nd 2013.');
-		this.test.assertSelectorHasText('#length-selector span.selected', '1/15/13', 'End date has been moved to Jan 15th 2013.');
+		var newStartDate = startMonth + '/' + newStartDay + '/' + startYear;
+		var newEndDate = startMonth + '/' + (parseInt(newStartDay, 10) + 14) + '/' + startYear;
+		this.test.assertSelectorHasText('#start-selector span.selected', newStartDate, 'Start date is set to ' + newStartDate + '.');
+		this.test.assertSelectorHasText('#length-selector span.selected', newEndDate, 'End date has been moved to ' + newEndDate + '.');
 	});
 });
 
 casper.then(function() {
+
+	var endDay = this.fetchText('#length-selector span.selected').split('/')[1];
+	var endMonth = this.fetchText('#length-selector span.selected').split('/')[0];
+	var endYear = this.fetchText('#length-selector span.selected').split('/')[2];
 
 	this.test.info("Click on end date:");
 
@@ -438,20 +522,54 @@ casper.then(function() {
 
   this.test.assertVisible('#length-selector .content', 'Datepicker popup appeared.');
 
-	this.test.info("Click on Jan 1st 2013 (illegal b/c before start date):");
+	this.test.info("Click on day 1 (illegal b/c before start date):");
 
-	this.click('#length-selector .content tr:nth-child(1) td:nth-child(3)');
+	var column = 1;
+	while(true) {
+
+		var day = this.evaluate(function(column) {
+
+			return $('#length-selector .content tbody tr:first td:nth-of-type(' + column + ')').text();
+		}, column);
+		if (day == '1') {
+
+			break;
+		}
+		column++;
+	}
+
+	this.click('#length-selector .content tr:nth-of-type(1) td:nth-child(' + column + ')');
 
   this.test.assertVisible('#length-selector .content', 'Datepicker popup did not disappear.');
 
-	this.test.info("Click on Jan 13th 2013:");
+	this.test.info("Click on day 10:");
 
-	this.click('#length-selector .content tr:nth-child(3) td:nth-child(1)');
+	var row = 1;
+	column = 1;
+	while(true) {
+
+		var day = this.fetchText('#length-selector .content tr:nth-of-type(' + row + ') td:nth-of-type(' + column + ')');
+		if (day == '10') {
+
+			break;
+		}
+		if (column == 7) {
+
+			column = 0;
+			row++;
+		}
+		column++;
+	}
+
+	this.click('#length-selector .content tr:nth-of-type(' + row + ') td:nth-child(' + column + ')');
 
 	casper.waitForResource(sprintUrl, function() {
 
+		this.capture('test.png');
+
 		this.test.assertNotVisible('#length-selector .content', 'Datepicker popup disappeared.');
-		this.test.assertSelectorHasText('#length-selector span.selected', '1/13/13', 'End date is set to Jan 13th 2013.');
+		var newEndDate = endMonth + '/10/' + endYear;
+		this.test.assertSelectorHasText('#length-selector span.selected', newEndDate, 'End date is set to ' + newEndDate + '.');
 	});
 });
 
@@ -459,41 +577,32 @@ casper.then(function() {
 
 casper.then(function() {
 
-	this.test.info("Reset sprint to default values:");
+  casper.test.info('Go back:');
 
-	this.click('#color-selector .selected');
-	this.click('#color-selector .purple');
+  this.back();
 
-	casper.waitForResource(sprintUrl, function() {
+	casper.waitForResource(indexUrl, function() {
 
-		this.test.assert(this.getElementAttribute('#color-selector .selected', 'class').split(' ').indexOf('purple') != -1, 'Color is set to purple.');
+		this.test.assertVisible('#logo-panel', 'Logo panel visible.');	
 	});
 });
 
 casper.then(function() {
 
-	this.click('#start-selector .selected');
-	this.click('#start-selector .content tr:nth-child(1) td:nth-child(3)');
+  casper.test.info("Click the remove button on test sprint:");
 
-	casper.waitForResource(sprintUrl, function() {
+  this.click('#' + sprintId + ' .remove.button');
+  
+  this.waitForResource(indexUrl, function() {
 
-		this.test.assertSelectorHasText('#start-selector span.selected', '1/1/13', 'Start date is set to Jan 1st 2013.');
-	});
-});
-
-casper.then(function() {
-
-	this.click('#length-selector .selected');
-	this.click('#length-selector .content tr:nth-child(3) td:nth-child(2)');
-
-	casper.waitForResource(sprintUrl, function() {
-
-		this.test.assertSelectorHasText('#length-selector span.selected', '1/14/13', 'End date is set to Jan 14th 2013.');
+		this.test.assertDoesntExist('#' + sprintId, 'Panel for test sprint disappeared.');
+		var newSprintIds = this.evaluate(buildIdList);
+		this.test.assertEquals(newSprintIds.length, sprintIds.length, 'There are ' + sprintIds.length + ' sprints visible.');
 	});
 });
 
 casper.run(function() {
 
-	this.test.done(63);
+	this.test.done(66);
 	this.test.renderResults(true);
 });

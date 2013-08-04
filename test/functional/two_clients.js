@@ -3,16 +3,28 @@ var casper1 = require('casper').create();
 var casper2 = require('casper').create();
 
 var indexUrl = 'http://localhost:8000/';
-var sprintUrl = indexUrl + 'sprint/51ac972325dfbc3750000001';
-var story1Id, story2Id, story1Url, story2Url, task1Id, task2Id;
+//var sprintUrl = indexUrl + 'sprint/51ac972325dfbc3750000001';
+var sprintId, sprintUrl, story1Id, story2Id, story1Url, story2Url, task1Id, task2Id;
 
 casper1.test.info("Open the sprint test page on 2 clients.");
 
-casper1.start(sprintUrl);
+casper1.start(indexUrl);
 casper1.viewport(1024, 768);
 
-casper2.start(sprintUrl);
+casper2.start(indexUrl);
 casper2.viewport(1024, 768);
+
+function buildIdList() {
+
+	var panels = $('#panel-container li.panel');
+  var ids = [];
+
+  panels.each(function() {
+
+  	ids.push($(this).attr('id'));
+  });
+  return ids;	
+}
 
 function makePrefix(i) {
 
@@ -58,7 +70,71 @@ for (var i in clients) {
 	client.waitForOtherClient = makeWaitForOtherClient(i);
 }
 
-// Create
+// Create sprint
+
+casper2.then(function() {
+
+	this.waitForOtherClient();
+});
+
+casper1.then(function() {
+
+	var sprintIds = this.evaluate(buildIdList);
+
+  this.test.info(this.prefix("Click the add button:"));
+
+	this.click('#add-button');
+
+	this.waitForResource(indexUrl, function() {
+
+		var newSprintIds = this.evaluate(buildIdList);
+
+		this.test.assertEquals(newSprintIds.length, sprintIds.length + 1,  'A new sprint panel appeared.');
+
+		for (var i in newSprintIds) {
+
+			if (!(i in sprintIds)) {
+
+				sprintId = newSprintIds[i];
+			}
+		}
+	});
+});
+
+casper1.then(function() {
+
+	sprintUrl = indexUrl + 'sprint/' + sprintId.substr('uuid-'.length);
+
+	this.test.info(this.prefix('Double-click on the header of new sprint.'));
+
+	this.mouseEvent('dblclick', '#' + sprintId + ' .header');
+
+	this.waitForResource(sprintUrl, function() {
+
+		this.done();
+	});
+});
+
+casper1.then(function() {
+
+	this.waitForOtherClient();
+});
+
+casper2.then(function() {
+
+	this.test.assertVisible('#' + sprintId, this.prefix('New sprint appeared.'));
+
+	this.test.info(this.prefix('Double-click on the header of new sprint.'));
+
+	this.mouseEvent('dblclick', '#' + sprintId + ' .header');
+
+	this.waitForResource(sprintUrl, function() {
+
+		this.done();
+	});
+});
+
+// Create stories
 
 casper1.then(function() {
 
@@ -69,7 +145,7 @@ casper1.then(function() {
 	this.click('#add-button');
 	this.click('#add-button');
 
-	this.waitForResource(sprintUrl, function() {
+	this.waitForResource(indexUrl, function() {
 
 		this.done();
 	});
@@ -80,7 +156,7 @@ casper2.then(function() {
 	this.waitForOtherClient();
 });
 
-// Edit
+// Edit stories
 
 casper2.then(function() {
 
@@ -131,7 +207,7 @@ casper1.then(function() {
 
 	this.mouseEvent('dblclick', '#' + story1Id + ' .header');
 
-	story1Url = 'http://localhost:8000/story/' + story1Id.substr('uuid-'.length);
+	story1Url = indexUrl + 'story/' + story1Id.substr('uuid-'.length);
 
 	this.waitForResource(story1Url);
 });
@@ -199,7 +275,7 @@ casper1.then(function() {
 
 	this.mouseEvent('dblclick', '#' + taskId + ' .header');
 
-	taskUrl = 'http://localhost:8000/task/' + taskId.substr('uuid-'.length);
+	taskUrl = indexUrl + 'task/' + taskId.substr('uuid-'.length);
 	this.waitForResource(taskUrl, function() {
 
 		this.done();
@@ -221,7 +297,7 @@ casper2.then(function() {
 
 	this.mouseEvent('dblclick', '#' + story2Id + ' .header');
 
-	story2Url = 'http://localhost:8000/story/' + story2Id.substr('uuid-'.length);
+	story2Url = indexUrl + 'story/' + story2Id.substr('uuid-'.length);
 	this.waitForResource(story2Url, function() {
 
 		this.done();
@@ -392,17 +468,12 @@ casper1.then(function() {
 
 casper1.then(function() {
 
-	this.test.info(this.prefix('Go back to sprint view.'));
-
-	this.back();
-});
-
-casper1.then(function() {
-
 	this.test.assertEval(function() {
 
 		return document.querySelectorAll('#panel-container .panel').length === 0;
 	}, this.prefix('No story panel is visible.'));
+
+	this.capture('test.png');
 
 	this.done();
 });
@@ -410,6 +481,46 @@ casper1.then(function() {
 casper2.then(function() {
 
 	this.waitForOtherClient();
+});
+
+// Remove sprint
+
+casper1.then(function() {
+
+	this.waitForOtherClient();
+});
+
+casper2.then(function() {
+
+	this.test.info(this.prefix('Go back to the index page.'));
+
+	this.back();
+});
+
+casper2.then(function() {
+
+	this.test.assertVisible('#' + sprintId, this.prefix('Test sprint is visible.'));
+
+	this.test.info(this.prefix('Click the remove button on the test sprint.'));
+
+	this.click('#' + sprintId + ' .remove.button');
+
+	this.waitForResource(indexUrl, function() {
+
+		this.done();
+		this.waitForOtherClient();
+	});
+});
+
+casper1.then(function() {
+
+	this.waitForResource(sprintUrl, function() {
+
+		this.test.assertVisible('#alert-panel', this.prefix('Alert panel appeared.'));
+		this.test.assertNotVisible('.main-panel', this.prefix('Main panel disappeared.'));
+
+		this.done();
+	});
 });
 
 casper1.run();
