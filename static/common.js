@@ -524,31 +524,6 @@ $(document).ready(function() {
       client_uuid: clientUUID
     });    
   });
-
-  /*socket.on('remove', function (ids) {
-
-    for (var i in ids) {
-
-      remove(ids[i]);
-    }
-  });
-
-  socket.on('add', function (data) {
-
-    add(data.parent_id, data.attributes);
-  });
-
-  socket.on('update', function (data) {
-
-    update(data.id, data.rev, data.key, data.value);
-  });
-
-  socket.on('update_calculation', function (data) {
-
-    updateCalculation(data.id, data.key, data.value);
-  });*/
-
-  // TEST BEGIN
   
   socket.on('message', function(data) {
 
@@ -569,8 +544,6 @@ $(document).ready(function() {
 
     $(this).data('socketio_handlers', {remove: remove, update: update_test});
   });
-
-  // TEST END
 
   // This makes the header input grow automatically with its value.
   $('.header input').autoGrow({comfortZone: AUTOGROW_COMFORT_ZONE});

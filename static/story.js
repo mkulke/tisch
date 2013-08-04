@@ -20,7 +20,8 @@ var updateSprintId = function(item, id) {
     success: function(data, textStatus, jqXHR) {
 
       var label = data[selector.data('name')];
-      $('.open span', selector).text(label);
+      $('span.selected', selector).text(label);
+      $('span.selected', selector).attr('id', prefix(data._id));
       selector.data('selected', data);
     },
     error: handleServerError
@@ -128,6 +129,15 @@ $(document).ready(function() {
   $('.main-panel').data('socketio_handlers').add = add_test;
   $('.main-panel').data('socketio_handlers').assign = add_test;
   $('.panel').data('socketio_handlers').deassign = remove;
+
+    // make sure story title changes are reflected in the view.
+  $('#sprint-selector span.selected').data('socketio_handlers', { update: function(data) { 
+
+    if (data.key == 'title') {
+
+      $('#sprint-selector span.selected').text(data.value);     
+    }
+  }});
 
 	$('.main-panel').data('update', {
 

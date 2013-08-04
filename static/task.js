@@ -15,7 +15,8 @@ var updateStoryId = function(item, id) {
     success: function(data, textStatus, jqXHR) {
 
       var label = data[selector.data('name')];
-      $('.open span', selector).text(label);
+      $('span.selected', selector).text(label);
+      $('span.selected', selector).attr('id', prefix(data._id));
       selector.data('selected', data);
     },
     error: handleServerError
@@ -53,6 +54,15 @@ $(document).ready(function() {
   });    
   
   initColorSelector();
+
+  // make sure story title changes are reflected in the view.
+  $('#story-selector span.selected').data('socketio_handlers', { update: function(data) { 
+
+    if (data.key == 'title') {
+
+      $('#story-selector span.selected').text(data.value);     
+    }
+  }});
 
   $('input[name="initial_estimation"], input[name="remaining_time"], input[name="time_spent"]').data('parser', timeParser);
 
