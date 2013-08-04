@@ -16,8 +16,8 @@ var updateStoryId = function(item, id) {
 
       var label = data[selector.data('name')];
       $('span.selected', selector).text(label);
+      $('span.selected', selector).data('attributes', data);
       $('span.selected', selector).attr('id', prefix(data._id));
-      selector.data('selected', data);
     },
     error: handleServerError
   });
@@ -29,7 +29,7 @@ $(document).ready(function() {
   $('#story-selector').data('name', 'title');    
   initPopupSelector($('#story-selector'), 'story_id', function(fillIn) {
 
-    var sprint_id = $('#story-selector').data('selected').sprint_id;
+    var sprint_id = $('#story-selector span.selected').data('attributes').sprint_id;
 
     $.ajaxq('client', {
 
@@ -60,6 +60,7 @@ $(document).ready(function() {
 
     if (data.key == 'title') {
 
+      $('#story-selector span.selected').data('attributes').title = data.value;     
       $('#story-selector span.selected').text(data.value);     
     }
   }});

@@ -11,7 +11,7 @@ html
       $(document).ready(function() {
 
         attachAttributesToItems(items);
-        $('#story-selector').data('selected', !{JSON.stringify(story)});
+        $('#story-selector .selected').data('attributes', !{JSON.stringify(story)});
       });
   body
     #alert-panel

@@ -21,8 +21,8 @@ var updateSprintId = function(item, id) {
 
       var label = data[selector.data('name')];
       $('span.selected', selector).text(label);
+      $('span.selected', selector).data('attributes', data);
       $('span.selected', selector).attr('id', prefix(data._id));
-      selector.data('selected', data);
     },
     error: handleServerError
   });
@@ -135,6 +135,7 @@ $(document).ready(function() {
 
     if (data.key == 'title') {
 
+      $('#sprint-selector span.selected').data('attributes').title = data.value;     
       $('#sprint-selector span.selected').text(data.value);     
     }
   }});

@@ -34,7 +34,7 @@ html
       $(document).ready(function() {
 
         attachAttributesToItems(items);
-        $('#sprint-selector').data('selected', !{JSON.stringify(sprint)});
+        $('#sprint-selector .selected').data('attributes', !{JSON.stringify(sprint)});
 
         $('#panel-container .panel').each(function(index, element) {
 
