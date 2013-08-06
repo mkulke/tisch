@@ -48,9 +48,9 @@ $(document).ready(function() {
   var body = $('body');
   body.data('attributes', {_id: 'index'});
   body.data('type', '');
-  body.data('socketio_handlers', {add: add});
-  body.data('socketio_handlers').assign = add;
-  $('.panel').data('socketio_handlers').deassign = remove;
+  body.data('gui_handlers', {add: add});
+  body.data('gui_handlers').assign = add;
+  $('.panel').data('gui_handlers').deassign = remove;
 
   $('#add-button').on('click', function(event) {
    

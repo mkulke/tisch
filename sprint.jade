@@ -24,8 +24,8 @@ html
   head
     title Stories
     include common
-    //script(type='text/javascript', src='/Chart.js')
     script(type='text/javascript', src='/sprint.js')
+
     script(type='text/javascript')
     
       var sprint = !{JSON.stringify(sprint)};
@@ -73,8 +73,21 @@ html
             mixin date-selector('Start date', 'start-selector')
           .line
             mixin date-selector('End date', 'length-selector')
-          //hr
-          //canvas#testchart(height='200', width='780')
+          hr
+          .line
+            span.
+              Time estimation:&nbsp;
+            span#time-estimation
+              - var estimation = 0;
+              - for (var i in stories) {
+              -   estimation += stories[i].estimation;
+              - }
+              =estimation
+          .line
+            span.
+              Remaining time:&nbsp;
+            span#remaining-time.
+              0
     ul
       mixin panel('panel-template', '', '')
     ul#panel-container.sortable

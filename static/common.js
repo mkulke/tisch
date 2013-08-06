@@ -235,7 +235,7 @@ function requestAdd(parent) {
     type: 'PUT',
     success: function(data, textStatus, jqXHR) {
 
-      add(data);
+      parent.data('gui_handlers').add(data);
     },
     error: function(data, textStatus, jqXHR) {
 
@@ -300,7 +300,7 @@ function requestUpdate(item, key, value, undo) {
     },
     success: function(data, textStatus, jqXHR) {
 
-      update(data);
+      item.data('gui_handlers').update(data);
     },
     error: function(data, textStatus, jqXHR) {
 
@@ -362,7 +362,7 @@ function requestRemove(item) {
     },
     success: function(data, textStatus, jqXHR) {
 
-      remove(data);
+      item.data('gui_handlers').remove(data);
     },
     error: function(data, textStatus, jqXHR) {
 
@@ -389,9 +389,9 @@ $(document).ready(function() {
     if (recipient.length == 1) {
 
       var message = data.message;
-      if (message in recipient.data('socketio_handlers')) {
+      if (message in recipient.data('gui_handlers')) {
 
-        recipient.data('socketio_handlers')[message](data.data);
+        recipient.data('gui_handlers')[message](data.data);
       }
     }
   });
@@ -400,7 +400,7 @@ $(document).ready(function() {
 
   $('.panel, .main-panel').each(function() {
 
-    $(this).data('socketio_handlers', {remove: remove, update: update});
+    $(this).data('gui_handlers', {remove: remove, update: update});
   });
 
   // This makes the header input grow automatically with its value.

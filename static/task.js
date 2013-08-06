@@ -56,7 +56,7 @@ $(document).ready(function() {
   initColorSelector();
 
   // make sure story title changes are reflected in the view.
-  $('#story-selector span.selected').data('socketio_handlers', { update: function(data) { 
+  $('#story-selector span.selected').data('gui_handlers', { update: function(data) { 
 
     if (data.key == 'title') {
 

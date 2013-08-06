@@ -126,12 +126,12 @@ $(document).ready(function() {
 
   initColorSelector();
   
-  $('.main-panel').data('socketio_handlers').add = add;
-  $('.main-panel').data('socketio_handlers').assign = add;
-  $('.panel').data('socketio_handlers').deassign = remove;
+  $('.main-panel').data('gui_handlers').add = add;
+  $('.main-panel').data('gui_handlers').assign = add;
+  $('.panel').data('gui_handlers').deassign = remove;
 
     // make sure story title changes are reflected in the view.
-  $('#sprint-selector span.selected').data('socketio_handlers', { update: function(data) { 
+  $('#sprint-selector span.selected').data('gui_handlers', { update: function(data) { 
 
     if (data.key == 'title') {
 

@@ -54,6 +54,21 @@ var updateColor = function(item, color) {
 	$('.stripe, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);  
 }
 
+function buildEstimation(panels) {
+
+	var estimation = 0;
+	panels.each(function() {
+
+		estimation += $(this).data('attributes').estimation;
+	});
+	return estimation;	
+}
+
+var updateEstimation = function(item, remainingTime) {
+
+	$('.main-panel span#time-estimation').html(buildEstimation($('#panel-container .panels')));
+}
+
 var updateRemainingTimeCalculation = function(item, remainingTime) {
 
 	$('.header span.remaining.text', item).html(remainingTime);
@@ -73,7 +88,31 @@ var updateRemainingTimeCalculation = function(item, remainingTime) {
 		$('.header .remaining', item).show();
 		$('.header .done', item).hide();
 	}
-}
+
+	item.data('remaining_time', remainingTime);
+
+	var allRemainingTime = 0;
+
+	$('#panel-container .panel').each(function() {
+
+		allRemainingTime += $(this).data('remaining_time');
+	})
+
+	$('.main-panel #remaining-time').html(allRemainingTime);
+};
+
+var addStory = function(data) {
+
+	add(data);
+	$('.main-panel span#time-estimation').html(buildEstimation($('#panel-container .panel')));
+};
+
+var removeStory = function(data) {
+
+	remove(data);
+	// as the remove is async (100ms animation), we have to exclude it manually.
+	$('.main-panel span#time-estimation').html(buildEstimation($('#panel-container .panel').not('#' + prefix(data))));
+};
 
 var requestRemainingTimeCalculation = function(id) {
 
@@ -88,33 +127,9 @@ var requestRemainingTimeCalculation = function(id) {
     },
     error: handleServerError
   });
-}
+};
 
 $(document).ready(function() {
-
-	/*var ctx = document.getElementById("testchart").getContext("2d");
-
-	var data = {
-		labels : ["January","February","March","April","May","June","July"],
-		datasets : [
-			{
-				fillColor : "rgba(220,220,220,0.5)",
-				strokeColor : "rgba(220,220,220,1)",
-				pointColor : "rgba(220,220,220,1)",
-				pointStrokeColor : "#fff",
-				data : [65,59,90,81,56,55,40]
-			},
-			{
-				fillColor : "rgba(151,187,205,0.5)",
-				strokeColor : "rgba(151,187,205,1)",
-				pointColor : "rgba(151,187,205,1)",
-				pointStrokeColor : "#fff",
-				data : [28,48,40,19,96,27,100]
-			}
-		]
-	}
-
-	new Chart(ctx).Line(data);*/
 
 	initColorSelector();
 
@@ -217,12 +232,13 @@ $(document).ready(function() {
 	});
 
 
-  $('.main-panel').data('socketio_handlers').add = add;
-  $('.main-panel').data('socketio_handlers').assign = add;
+  $('.main-panel').data('gui_handlers').add = addStory;
+  $('.main-panel').data('gui_handlers').assign = addStory;
   $('.panel').each(function() {
 
-  	$(this).data('socketio_handlers').deassign = remove;
-  	$(this).data('socketio_handlers').update_remaining_time = requestRemainingTimeCalculation;
+  	 $(this).data('gui_handlers').remove = removeStory;
+  	$(this).data('gui_handlers').deassign = removeStory;
+  	$(this).data('gui_handlers').update_remaining_time = requestRemainingTimeCalculation;
   });
 
   $('.main-panel').data('update', {
@@ -240,6 +256,7 @@ $(document).ready(function() {
 		description: updateDescription, 
 		priority: updatePriority,
 		color: updateColor,
+		estimation: updateEstimation,
 		remaining_time: updateRemainingTimeCalculation
 	});
 });
