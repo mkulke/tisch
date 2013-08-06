@@ -64,6 +64,18 @@ function buildEstimation(panels) {
 	return estimation;	
 }
 
+function buildRemainingTime(panels) {
+
+	var allRemainingTime = 0;
+
+	panels.each(function() {
+
+		allRemainingTime += $(this).data('remaining_time');
+	})
+
+	return allRemainingTime;
+}
+
 var updateEstimation = function(item, remainingTime) {
 
 	$('.main-panel span#time-estimation').html(buildEstimation($('#panel-container .panels')));
@@ -91,14 +103,7 @@ var updateRemainingTimeCalculation = function(item, remainingTime) {
 
 	item.data('remaining_time', remainingTime);
 
-	var allRemainingTime = 0;
-
-	$('#panel-container .panel').each(function() {
-
-		allRemainingTime += $(this).data('remaining_time');
-	})
-
-	$('.main-panel #remaining-time').html(allRemainingTime);
+	$('.main-panel #remaining-time').html(buildRemainingTime($('#panel-container .panel')));
 };
 
 var addStory = function(data) {
@@ -111,7 +116,9 @@ var removeStory = function(data) {
 
 	remove(data);
 	// as the remove is async (100ms animation), we have to exclude it manually.
-	$('.main-panel span#time-estimation').html(buildEstimation($('#panel-container .panel').not('#' + prefix(data))));
+	var panels = $('#panel-container .panel').not('#' + prefix(data));
+	$('.main-panel span#time-estimation').html(buildEstimation(panels));
+	$('.main-panel #remaining-time').html(buildRemainingTime(panels));
 };
 
 var requestRemainingTimeCalculation = function(id) {
@@ -236,7 +243,7 @@ $(document).ready(function() {
   $('.main-panel').data('gui_handlers').assign = addStory;
   $('.panel').each(function() {
 
-  	 $(this).data('gui_handlers').remove = removeStory;
+  	$(this).data('gui_handlers').remove = removeStory;
   	$(this).data('gui_handlers').deassign = removeStory;
   	$(this).data('gui_handlers').update_remaining_time = requestRemainingTimeCalculation;
   });
