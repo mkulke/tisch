@@ -89,7 +89,7 @@ casper1.then(function() {
 
 		var newSprintIds = this.evaluate(buildIdList);
 
-		this.test.assertEquals(newSprintIds.length, sprintIds.length + 1,  'A new sprint panel appeared.');
+		this.test.assertEquals(newSprintIds.length, sprintIds.length + 1,  this.prefix('A new sprint panel appeared.'));
 
 		for (var i in newSprintIds) {
 
@@ -227,8 +227,8 @@ casper1.then(function() {
 
 casper2.then(function() {
 
-	this.test.assertNotVisible('#' + story1Id + ' .remaining', 'No remaining indicator on story 1 visible.');
-	this.test.assertNotVisible('#' + story1Id + ' .done', 'No done indictor on story 1 visible.');
+	this.test.assertNotVisible('#' + story1Id + ' .remaining', this.prefix('No remaining indicator on story 1 visible.'));
+	this.test.assertNotVisible('#' + story1Id + ' .done', this.prefix('No done indicator on story 1 visible.'));
 	this.waitForOtherClient();
 });
 
@@ -258,9 +258,9 @@ casper2.then(function() {
 
 casper2.then(function() {
 
-	this.test.assertVisible('#' + story1Id + ' .remaining', 'Remaining indicator on story 1 visible.');
-	this.test.assertEquals(this.getHTML('#' + story1Id + ' span.remaining.text'), '1', 'Remaining time of story 1 is 1.');
-	this.test.assertNotVisible('#' + story1Id + ' .done', 'No done indictor on story 1 visible.');
+	this.test.assertVisible('#' + story1Id + ' .remaining', this.prefix('Remaining indicator on story 1 visible.'));
+	this.test.assertEquals(this.getHTML('#' + story1Id + ' span.remaining.text'), '1', this.prefix('Remaining time of story 1 is 1.'));
+	this.test.assertNotVisible('#' + story1Id + ' .done', this.prefix('No done indicator on story 1 visible.'));
 
 	this.done();
 });
