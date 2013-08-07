@@ -23,8 +23,85 @@ var updateStoryId = function(item, id) {
   });
 };
 
+function initDateSelector(selector) {
+
+  var id = selector.attr('id');
+
+  // position popup, TODO: adjust the arrow pointing according to css
+  var left = $('.open', selector).offset().left - 17;
+  var offset = $('a > .content', selector).offset();
+  offset.left = left;
+  $('a > .content', selector).offset(offset);
+
+  var closeHandler = function(event) {
+
+    if (($(event.target).parents('#' + id).length < 1) && (($(event.target).parents('.ui-datepicker-header').length < 1))) {    
+  
+      $('.content', selector).css("visibility", "hidden");
+      $(document).unbind('click', closeHandler);
+    }
+  };
+
+  $('.content', selector).datepicker({  
+
+    inline: true,  
+    showOtherMonths: true,  
+    dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+    nextText: '<img src="/right.png" alt="next">',
+    prevText: '<img src="/left.png" alt="prev">',
+    dateFormat: $.datepicker.ISO_8601,
+    gotoCurrent: true,
+    onSelect: function(dateText, inst) { 
+
+      $('.content', selector).css("visibility", "hidden");
+      $(document).unbind('click', closeHandler);
+      
+      var date = new Date(dateText);
+      var item = $('.main-panel');
+
+      if (value == 'start') {
+
+        requestUpdate(item, 'start', date.toString());  
+      }
+      else {
+
+        var startDate = item.data('attributes').start;
+        // TODO: sanity check
+        var dayDelta = (date - startDate) / MS_DAYS_FACTOR;
+
+        requestUpdate(item, 'length', dayDelta);  
+      }
+    }
+  });
+
+  $('.selected', selector).bind('click', function(event) {
+
+    var sprint_id = $('#story-selector span.selected').data('attributes').sprint_id;
+
+    $.ajaxq('client', {
+
+      url: '/sprint/' + sprint_id,
+      type: 'GET',
+      dataType: 'json',
+      success: function(data, textStatus, jqXHR) {
+
+        var minDate = new Date(data.start);
+        var maxDate = new Date(minDate.getTime() + (data.length * MS_DAYS_FACTOR));
+        $('.content', selector).datepicker('option', 'minDate', minDate);
+        $('.content', selector).datepicker('option', 'maxDate', maxDate);
+        $(document).bind('click', closeHandler);
+        $('.content', selector).css('visibility', 'visible');
+      },
+      error: handleServerError
+    });
+  });    
+}
+
 $(document).ready(function() {
   
+  $('#date-selector span.selected').html('today');
+  initDateSelector($('#date-selector'));
+
   // TODO: make that generic?
   $('#story-selector').data('name', 'title');    
   initPopupSelector($('#story-selector'), 'story_id', function(fillIn) {

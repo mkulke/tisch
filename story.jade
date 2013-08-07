@@ -59,11 +59,11 @@ html
             =story.description
           hr
           .line
-            mixin time-input(story, 'Time estimation', 'estimation')
+            mixin time-input(story, 'Time estimation:', 'estimation')
           .line
-            mixin item-selector('Sprint', sprint, 'sprint-selector')
+            mixin item-selector('Sprint:', sprint, 'sprint-selector')
           .line
-            mixin color-selector('Color', story.color, 'color-selector')
+            mixin color-selector('Color:', story.color, 'color-selector')
     ul
       mixin panel('panel-template')
     ul#panel-container.sortable

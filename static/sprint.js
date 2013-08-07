@@ -156,8 +156,8 @@ $(document).ready(function() {
 
 	$.each(['start', 'length'], function(index, value) {
 
-		var id = '#' + value + '-selector';
-		var selector = $(id);
+		var selector = $('#' + value + '-selector');
+		var id = selector.attr('id');
 
 	  // position popup, TODO: adjust the arrow pointing according to css
 	  var left = $('.open', selector).offset().left - 17;
@@ -167,7 +167,7 @@ $(document).ready(function() {
 
 	  var closeHandler = function(event) {
 
-	    if (($(event.target).parents(id + '.popup-selector').length < 1) && (($(event.target).parents('.ui-datepicker-header').length < 1))) {    
+	    if (($(event.target).parents('#' + id).length < 1) && (($(event.target).parents('.ui-datepicker-header').length < 1))) {    
 	  
 	      $('.content', selector).css("visibility", "hidden");
 	      $(document).unbind('click', closeHandler);
@@ -222,10 +222,10 @@ $(document).ready(function() {
 		content.css('visibility', 'visible');
 	});
 
-	$('.ui-datepicker').on('click', function(event) {
+	/*$('.ui-datepicker').on('click', function(event) {
 
 		event.preventDefault();
-	});
+	});*/
 
 	$('#length-selector .selected').bind('click', function(event) {
 

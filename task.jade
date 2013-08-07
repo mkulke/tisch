@@ -29,10 +29,15 @@ html
             =task.description
           hr
           .line
-            mixin time-input(task, 'Initial estimation', 'initial_estimation')
-            mixin time-input(task, 'Remaining Time', 'remaining_time')
-            mixin time-input(task, 'Spent time', 'time_spent')
+            mixin time-input(task, 'Initial estimation:', 'initial_estimation')
           .line
-            mixin item-selector('Story', story, 'story-selector')
+            .status-date
+              mixin date-selector('Status ', 'date-selector')
+              | :&nbsp;
+            .status-values
+              mixin time-input(task, 'Remaining time:', 'remaining_time')
+              mixin time-input(task, 'Spent time:', 'time_spent')
           .line
-            mixin color-selector('Color', task.color, 'color-selector')
+            mixin item-selector('Story:', story, 'story-selector')
+          .line
+            mixin color-selector('Color:', task.color, 'color-selector')

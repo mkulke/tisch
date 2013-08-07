@@ -1,5 +1,6 @@
 mixin item-selector(label, item, id)
-  =label + ': '
+  =label
+  &nbsp;
   span(class='popup-selector', id=id)
     a(class='open', href='#')
       span(id='uuid-' + item._id).selected
@@ -9,14 +10,15 @@ mixin item-selector(label, item, id)
       .content
 
 mixin date-selector(label, id)
-  =label + ': '
+  =label
   span(class='popup-selector', id=id)
     a(class='open')
       span.selected
       .content
 
 mixin color-selector(label, color, id)
-  =label + ': '
+  =label
+  &nbsp;
   span(class='popup-selector', id=id)
     a(class='open', href='#')
       div(class='selected '+color)
@@ -26,7 +28,7 @@ mixin color-selector(label, color, id)
 
 mixin time-input(task, label, property)
   span
-    =label + ':'
+    =label
     span.error-popup
       .content.error
         =label + ' must be specified as a positive number < 100 with not more than two precision digits (e.g. "1" or "99.25").'

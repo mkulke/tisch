@@ -673,6 +673,21 @@ C7DDF3
   height: 4px;
 }
 
+.status-date {
+
+  float: left;
+}
+
+.status-values {
+
+  display: inline-block;
+}
+
+.status-values > span {
+
+  display: block;
+}
+
 @-moz-document url-prefix() {
 
   .header input {

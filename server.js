@@ -438,8 +438,7 @@ function processRequest(request, response) {
         })
         .then(function (result) {
 
-          var story = result;
-          return {task: task, story: story};
+          return {task: task, story: result};
         });
       }
       else {
