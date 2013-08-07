@@ -111,6 +111,87 @@ function initPopupSelector(selector, name, updatePopup) {
   });  
 }
 
+function initDateSelector(selector, onSelect) {
+
+  /*var id = selector.attr('id');
+
+  // position popup, TODO: adjust the arrow pointing according to css
+  var left = $('.open', selector).offset().left - 17;
+  var offset = $('a > .content', selector).offset();
+  offset.left = left;
+  $('a > .content', selector).offset(offset);
+
+  var closeHandler = function(event) {
+
+    if (($(event.target).parents('#' + id).length < 1) && (($(event.target).parents('.ui-datepicker-header').length < 1))) {    
+  
+      $('.content', selector).css("visibility", "hidden");
+      $(document).unbind('click', closeHandler);
+    }
+  };
+
+  $('.content', selector).datepicker({  
+
+    inline: true,  
+    showOtherMonths: true,  
+    dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+    nextText: '<img src="/right.png" alt="next">',
+    prevText: '<img src="/left.png" alt="prev">',
+    dateFormat: $.datepicker.ISO_8601,
+    gotoCurrent: true,
+    onSelect: onSelect
+  });
+
+  $('.selected', selector).bind('click', function(event) {
+
+    event.preventDefault();
+
+    $(document).bind('click', closeHandler);
+  });*/
+
+  //var selector = $('#' + value + '-selector');
+  var id = selector.attr('id');
+
+  // position popup, TODO: adjust the arrow pointing according to css
+  var left = $('.open', selector).offset().left - 17;
+  var offset = $('a > .content', selector).offset();
+  offset.left = left;
+  $('a > .content', selector).offset(offset);
+
+  var closeHandler = function(event) {
+
+    if (($(event.target).parents('#' + id).length < 1) && (($(event.target).parents('.ui-datepicker-header').length < 1))) {    
+  
+      $('.content', selector).css("visibility", "hidden");
+      $(document).unbind('click', closeHandler);
+    }
+  };
+
+  $('.content', selector).datepicker({  
+
+    inline: true,  
+    showOtherMonths: true,  
+    dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+    nextText: '<img src="/right.png" alt="next">',
+    prevText: '<img src="/left.png" alt="prev">',
+    dateFormat: $.datepicker.ISO_8601,
+    gotoCurrent: true,
+    onSelect: function(dateText, inst) {
+
+      $('.content', selector).css("visibility", "hidden");
+      $(document).unbind('click', closeHandler);
+      onSelect(dateText, inst);
+    }
+  });
+
+  $('.selected', selector).bind('click', function(event) {
+
+    event.preventDefault();
+
+    $(document).bind('click', closeHandler);
+  });
+}
+
 function initColorSelector() {
 
   initPopupSelector($('#color-selector'), 'color', function(fillIn) {

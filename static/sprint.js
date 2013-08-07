@@ -154,65 +154,25 @@ $(document).ready(function() {
 
   $('#panel-template').data('type', 'story');
 
-	$.each(['start', 'length'], function(index, value) {
+  initDateSelector($('#start-selector'), function(dateText, inst) {
+  	
+    var date = new Date(dateText);
+    var item = $('.main-panel');
 
-		var selector = $('#' + value + '-selector');
-		var id = selector.attr('id');
+    requestUpdate(item, 'start', date.toString());	
+  });
 
-	  // position popup, TODO: adjust the arrow pointing according to css
-	  var left = $('.open', selector).offset().left - 17;
-	  var offset = $('a > .content', selector).offset();
-	  offset.left = left;
-	  $('a > .content', selector).offset(offset);
+  initDateSelector($('#length-selector'), function(dateText, inst) {
+  	
+    var date = new Date(dateText);
+    var item = $('.main-panel');
 
-	  var closeHandler = function(event) {
+	  var startDate = item.data('attributes').start;
+  	// TODO: sanity check
+  	var dayDelta = (date - startDate) / MS_DAYS_FACTOR;
 
-	    if (($(event.target).parents('#' + id).length < 1) && (($(event.target).parents('.ui-datepicker-header').length < 1))) {    
-	  
-	      $('.content', selector).css("visibility", "hidden");
-	      $(document).unbind('click', closeHandler);
-	    }
-  	};
-
-		$('.content', selector).datepicker({  
-
-		  inline: true,  
-		  showOtherMonths: true,  
-		  dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-		  nextText: '<img src="/right.png" alt="next">',
-		  prevText: '<img src="/left.png" alt="prev">',
-		  dateFormat: $.datepicker.ISO_8601,
-		  gotoCurrent: true,
-		  onSelect: function(dateText, inst) { 
-
-		  	$('.content', selector).css("visibility", "hidden");
-	      $(document).unbind('click', closeHandler);
-		  	
-	      var date = new Date(dateText);
-	      var item = $('.main-panel');
-
-	      if (value == 'start') {
-
-	      	requestUpdate(item, 'start', date.toString());	
-	      }
-	      else {
-
-	      	var startDate = item.data('attributes').start;
-	      	// TODO: sanity check
-	      	var dayDelta = (date - startDate) / MS_DAYS_FACTOR;
-
-	      	requestUpdate(item, 'length', dayDelta);  
-	      }
-		  }
-		});
-
-  	$('.selected', selector).bind('click', function(event) {
-
-  		event.preventDefault();
-
-      $(document).bind('click', closeHandler);
-    });
-	});
+  	requestUpdate(item, 'length', dayDelta);
+  });
 
 	$('#start-selector .selected').bind('click', function(event) {
 
@@ -221,11 +181,6 @@ $(document).ready(function() {
 		content.datepicker('setDate', date);
 		content.css('visibility', 'visible');
 	});
-
-	/*$('.ui-datepicker').on('click', function(event) {
-
-		event.preventDefault();
-	});*/
 
 	$('#length-selector .selected').bind('click', function(event) {
 
