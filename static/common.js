@@ -597,6 +597,12 @@ $(document).ready(function() {
 
   $('input, textarea').data('timer', null);
 
+  $('.panel, .main-panel').on('keydown', 'input, textarea', function(event) {
+
+    var field = $(event.target);
+    clearTimeout(field.data('timer'));
+  });
+
   $('.panel, .main-panel').on('keyup', 'input, textarea', function(event) {
 
     if((event.target.localName == 'input') && (event.which == 13)) {
@@ -611,6 +617,7 @@ $(document).ready(function() {
     var value = field.val(); 
     
     clearTimeout(field.data('timer'));
+
     field.data('timer', setTimeout(function() { 
 
       var parseValue = field.data('parser');
