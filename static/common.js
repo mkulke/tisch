@@ -113,43 +113,6 @@ function initPopupSelector(selector, name, updatePopup) {
 
 function initDateSelector(selector, onSelect) {
 
-  /*var id = selector.attr('id');
-
-  // position popup, TODO: adjust the arrow pointing according to css
-  var left = $('.open', selector).offset().left - 17;
-  var offset = $('a > .content', selector).offset();
-  offset.left = left;
-  $('a > .content', selector).offset(offset);
-
-  var closeHandler = function(event) {
-
-    if (($(event.target).parents('#' + id).length < 1) && (($(event.target).parents('.ui-datepicker-header').length < 1))) {    
-  
-      $('.content', selector).css("visibility", "hidden");
-      $(document).unbind('click', closeHandler);
-    }
-  };
-
-  $('.content', selector).datepicker({  
-
-    inline: true,  
-    showOtherMonths: true,  
-    dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-    nextText: '<img src="/right.png" alt="next">',
-    prevText: '<img src="/left.png" alt="prev">',
-    dateFormat: $.datepicker.ISO_8601,
-    gotoCurrent: true,
-    onSelect: onSelect
-  });
-
-  $('.selected', selector).bind('click', function(event) {
-
-    event.preventDefault();
-
-    $(document).bind('click', closeHandler);
-  });*/
-
-  //var selector = $('#' + value + '-selector');
   var id = selector.attr('id');
 
   // position popup, TODO: adjust the arrow pointing according to css
@@ -454,6 +417,27 @@ function requestRemove(item) {
 
 $(document).ready(function() {
 
+  // cookies
+
+  $.cookie.json = true;
+  if (!$.cookie('tisch-hidden_panels')) {
+
+    $.cookie('tisch-hidden_panels', []);
+  }
+  else {
+
+    var hiddenPanels = $.cookie('tisch-hidden_panels');
+    for (var i in hiddenPanels) {
+
+      var item = $('#' + hiddenPanels[i]);
+      $('.body', item).hide();
+      $('.hide.button', item).hide();
+      $('.show.button', item).show();
+    }
+  }
+
+  // socket io 
+
   var socket = io.connect('http://' + window.location.hostname); 
 
   socket.on('connect', function() {
@@ -515,6 +499,10 @@ $(document).ready(function() {
     
       $('.hide.button', item).hide();
       $('.show.button', item).show();
+
+      var hiddenPanels = $.cookie('tisch-hidden_panels');
+      hiddenPanels.push(item.attr('id'));
+      $.cookie('tisch-hidden_panels', hiddenPanels);
     });
   });
     
@@ -527,6 +515,14 @@ $(document).ready(function() {
     
       $('.show.button', item).hide();
       $('.hide.button', item).show();
+
+      var hiddenPanels = $.cookie('tisch-hidden_panels');
+      var index = $.inArray(item.attr('id'),hiddenPanels);
+      if (index != -1) {
+
+        hiddenPanels.splice(index, 1);
+      }
+      $.cookie('tisch-hidden_panels', hiddenPanels);
     });
   });
         
