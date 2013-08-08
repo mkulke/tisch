@@ -429,7 +429,7 @@ $(document).ready(function() {
     var hiddenPanels = $.cookie('tisch-hidden_panels');
     for (var i in hiddenPanels) {
 
-      var item = $('#' + hiddenPanels[i]);
+      var item = $('.panel#' + hiddenPanels[i]);
       $('.body', item).hide();
       $('.hide.button', item).hide();
       $('.show.button', item).show();
