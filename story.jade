@@ -64,6 +64,25 @@ html
             mixin item-selector('Sprint:', sprint, 'sprint-selector')
           .line
             mixin color-selector('Color:', story.color, 'color-selector')
+          hr
+          .line
+            span.
+              Remaining time:&nbsp;
+            span#remaining-time
+              - var remaining = 0;
+              - for (var i in tasks) {
+              -   remaining += tasks[i].remaining_time;
+              - }
+              =remaining
+          .line
+            span.
+              Spent time:&nbsp;
+            span#spent-time
+              - var spent = 0;
+              - for (var i in tasks) {
+              -   spent += tasks[i].time_spent;
+              - }
+              =spent
     ul
       mixin panel('panel-template')
     ul#panel-container.sortable

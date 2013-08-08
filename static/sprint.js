@@ -193,7 +193,6 @@ $(document).ready(function() {
 		$('#length-selector .content').css('visibility', 'visible');    
 	});
 
-
   $('.main-panel').data('gui_handlers').add = addStory;
   $('.main-panel').data('gui_handlers').assign = addStory;
   $('.panel').each(function() {

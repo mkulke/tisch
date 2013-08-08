@@ -82,6 +82,43 @@ var updateColor = function(item, color) {
 	$('.stripe, #color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);  
 }
 
+function buildSpentTime(panels) {
+
+	var allSpentTime = 0;
+	panels.each(function() {
+
+		allSpentTime += $(this).data('attributes').time_spent;
+	});
+	return allSpentTime;	
+}
+
+function buildRemainingTime(panels) {
+
+	var allRemainingTime = 0;
+
+	panels.each(function() {
+
+		allRemainingTime += $(this).data('attributes').remaining_time;
+	})
+
+	return allRemainingTime;
+}
+
+var addTask = function(data) {
+
+	add(data);
+	$('.main-panel span#remaining-time').html(buildRemainingTime($('#panel-container .panel')));
+};
+
+var removeTask = function(data) {
+
+	remove(data);
+	// as the remove is async (100ms animation), we have to exclude it manually.
+	var panels = $('#panel-container .panel').not('#' + prefix(data));
+	$('.main-panel span#remaining-time').html(buildRemainingTime(panels));
+	$('.main-panel span#spent-time').html(buildSpentTime(panels));
+};
+
 $(document).ready(function() {
 
   $('#sprint-selector').data('name', 'title');    
@@ -126,9 +163,13 @@ $(document).ready(function() {
 
   initColorSelector();
   
-  $('.main-panel').data('gui_handlers').add = add;
-  $('.main-panel').data('gui_handlers').assign = add;
-  $('.panel').data('gui_handlers').deassign = remove;
+  $('.main-panel').data('gui_handlers').add = addTask;
+  $('.main-panel').data('gui_handlers').assign = addTask;
+  $('.panel').each(function() {
+
+  	$(this).data('gui_handlers').remove = removeTask;
+  	$(this).data('gui_handlers').deassign = removeTask;
+  });
 
     // make sure story title changes are reflected in the view.
   $('#sprint-selector span.selected').data('gui_handlers', { update: function(data) { 
