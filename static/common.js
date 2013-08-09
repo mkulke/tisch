@@ -360,11 +360,11 @@ function requestUpdate(item, key, value, undo) {
 var deassign = function(id) {
 
   // item is not the main-panel
-  if ($('.main-panel#' + prefix(id).length == 0)) {
+  if ($('.main-panel#' + prefix(id).length < 1)) {
 
     remove(id);
   }
-}
+};
 
 var remove = function(id) {
 
@@ -603,42 +603,56 @@ $(document).ready(function() {
     clearTimeout(field.data('timer'));
   });
 
+  var onFieldTypingDone = function(field, item) {
+
+    var key = field.attr('name');
+    var value = field.val(); 
+
+    var parseValue = field.data('parser');
+    if (parseValue) {
+
+      value = parseValue(value);
+      if (value === null) {
+
+        field.siblings('.error-popup').find('.content').show();
+        return false;
+      }
+      field.siblings('.error-popup').find('.content').hide();
+    }
+
+    requestUpdate(item, key, value, function() {
+
+      field.val(item.data('attributes')[key]);
+      field.trigger('input.autogrow');
+      field.data('timer', null);
+    });
+  };
+
   $('.panel, .main-panel').on('keyup', 'input, textarea', function(event) {
 
+    var field = $(event.target);
+    var item = $(event.delegateTarget);
+
+    // ignore returns for input elements
     if((event.target.localName == 'input') && (event.which == 13)) {
     
       event.preventDefault();
       return false;
-    }  
+    }
+
+    field.data('timer', setTimeout(function() {
+
+      onFieldTypingDone(field, item);
+    }, 1500));
+  });
+
+  $('.panel, .main-panel').on('focusout', 'input, textarea', function(event) {
 
     var field = $(event.target);
-    var key = field.attr('name');
     var item = $(event.delegateTarget);
-    var value = field.val(); 
-    
-    clearTimeout(field.data('timer'));
 
-    field.data('timer', setTimeout(function() { 
-
-      var parseValue = field.data('parser');
-      if (parseValue) {
-
-        value = parseValue(value);
-        if (value === null) {
-
-          field.siblings('.error-popup').find('.content').show();
-          return false;
-        }
-        field.siblings('.error-popup').find('.content').hide();
-      }
-
-      requestUpdate(item, key, value, function() {
-
-        field.val(item.data('attributes')[key]);
-        field.trigger('input.autogrow');
-      });
-      field.data('timer', null);
-    }, 1500));
+    field.data('timer', null);
+    onFieldTypingDone(field, item);
   });
 });
 

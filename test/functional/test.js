@@ -54,6 +54,37 @@ casper.then(function() {
 	});
 });
 
+// Edit Sprint panel
+
+casper.then(function() {
+
+  casper.test.info("Edit title & description of test sprint 1 (and wait 2s):");
+
+  this.sendKeys('#' + sprintId + ' input[name="title"]', ' 1');
+  this.sendKeys('#' + sprintId + ' textarea[name="description"]', '1 ');
+
+	this.wait(2000, function () {
+
+		this.waitForResource(indexUrl, function() {
+
+			this.test.assertNotVisible('#alert-panel', 'Alert panel is not visible.');
+		});
+	});
+});
+
+casper.then(function() {
+
+	casper.test.info("Reload the page:");
+
+	this.reload(function() {
+
+		this.test.assertEquals(this.getElementAttribute('#' + sprintId + ' input[name="title"]', 'value'), 'New Sprint 1', 'Sprint title changes are kept.');
+		this.test.assertEquals(this.getHTML('#' + sprintId + ' textarea[name="description"]'), '1 Sprint description', 'Sprint description changes are kept.');
+	});
+});
+
+// Open Sprint
+
 casper.then(function() {
 
 	casper.test.info("Double-click on the header of test sprint:");
@@ -97,8 +128,6 @@ casper.then(function() {
   this.sendKeys('#' + story1Id + ' input[name="title"]', ' 1');
 
 	this.wait(2000, function () {
-
-		this.capture('test.png');
 
 		this.waitForResource(sprintUrl, function() {
 
@@ -565,8 +594,6 @@ casper.then(function() {
 
 	casper.waitForResource(sprintUrl, function() {
 
-		this.capture('test.png');
-
 		this.test.assertNotVisible('#length-selector .content', 'Datepicker popup disappeared.');
 		var newEndDate = endMonth + '/10/' + endYear;
 		this.test.assertSelectorHasText('#length-selector span.selected', newEndDate, 'End date is set to ' + newEndDate + '.');
@@ -603,6 +630,6 @@ casper.then(function() {
 
 casper.run(function() {
 
-	this.test.done(66);
+	this.test.done(69);
 	this.test.renderResults(true);
 });
