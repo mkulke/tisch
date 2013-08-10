@@ -1,0 +1,10 @@
+{
+
+	"name": "tisch",
+	"version": "0.1.1",
+	"author": "Magnus Kulke <mkulke@gmail.com>",
+	"scripts": {
+
+		"test": "grunt test"
+	}
+}
