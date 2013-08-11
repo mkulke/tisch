@@ -473,8 +473,6 @@ casper1.then(function() {
 		return document.querySelectorAll('#panel-container .panel').length === 0;
 	}, this.prefix('No story panel is visible.'));
 
-	this.capture('test.png');
-
 	this.done();
 });
 
