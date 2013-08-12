@@ -17,7 +17,7 @@ before_script:
   - mongo test --eval 'db.createCollection("sprint");'
   - mongo test --eval 'db.createCollection("story");'
   - mongo test --eval 'db.createCollection("task");'
-  - mongo test --eval 'db.task.ensureIndex({story_id: 1, priority: 1}, {unique: true});'
-  - mongo test --eval 'db.story.ensureIndex({sprint_id: 1, priority: 1}, {unique: true});'
+  - "mongo test --eval 'db.task.ensureIndex({story_id: 1, priority: 1}, {unique: true});'"
+  - "mongo test --eval 'db.story.ensureIndex({sprint_id: 1, priority: 1}, {unique: true});'"
   - phantomjs --version
   - casperjs --version
