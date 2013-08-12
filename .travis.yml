@@ -1,4 +1,6 @@
 language: node_js
+services:
+  - mongodb
 node_js:
   - "0.11"
   - "0.10"
@@ -12,5 +14,10 @@ before_install:
   - export PATH=$PATH:`pwd`/bin
   - cd -
 before_script:
+  - mongo test --eval 'db.createCollection("sprint");'
+  - mongo test --eval 'db.createCollection("story");'
+  - mongo test --eval 'db.createCollection("task");'
+  - mongo test --eval 'db.task.ensureIndex({story_id: 1, priority: 1}, {unique: true});'
+  - mongo test --eval 'db.story.ensureIndex({sprint_id: 1, priority: 1}, {unique: true});'
   - phantomjs --version
   - casperjs --version

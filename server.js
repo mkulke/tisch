@@ -960,8 +960,7 @@ var app = connect()
   .use(connect.bodyParser())
   .use(processRequest);
 
-module.exports = app;
-if (!module.parent) {
+app.start = function() {
 
   var server = http.createServer(app).listen(8000, function() {
   
@@ -992,4 +991,11 @@ if (!module.parent) {
       console.log(key + ' disconnected. ' + Object.keys(clients).length + ' clients connected now.');
     });
   });
+}
+
+module.exports = app;
+
+if (!module.parent) {
+
+  app.start();
 }
