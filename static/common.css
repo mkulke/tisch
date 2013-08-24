@@ -289,6 +289,7 @@ div#panel-container {
   -moz-box-shadow: 5px 5px 15px #999;*/
   background-color: #FFFFFF;
   border-bottom: solid 1px #BBBBBB;
+  border-top: solid 1px #BBBBBB;
 }
 
 .main-panel hr {
@@ -397,7 +398,8 @@ form {
 
 .panel .header .remove.button {
 
-  margin-left: 5px;
+  padding-left: 5px;
+  border-left: 2px solid #858585;
 }
 
 .panel .header .remaining-text {
@@ -541,7 +543,6 @@ form {
 
 .header span.remaining.text, .header span.date.text.end {
 
-  border-right: 2px solid #858585;
   padding-right: 5px;
 }
 
@@ -554,7 +555,6 @@ form {
 
   padding-left: 5px;
   padding-right: 5px;
-  border-right: 2px solid #858585;
   border-left: 2px solid #858585;
 }
 
@@ -662,11 +662,6 @@ C7DDF3
 81C0C5
 */
 
-#text2 {
-
-  /*background-color: #2980B9;*/
-}
-
 .stripe {
 
   width: 100%;
@@ -686,6 +681,38 @@ C7DDF3
 .status-values > span {
 
   display: block;
+}
+
+#breadcrumbs {
+
+  margin: 0px 10px 10px 10px;
+  padding: 1px 5px 1px 5px;
+  background-color: white;
+  border-left: solid 1px #BBBBBB;
+  border-right: solid 1px #BBBBBB;
+  border-bottom: solid 1px #BBBBBB;
+  font-weight: 600;
+}
+
+#breadcrumbs > img {
+
+  padding-left: 3px;
+  padding-right: 3px;
+}
+
+#breadcrumbs > a {
+
+  text-decoration: none;
+}
+
+#breadcrumbs > a:link, #breadcrumbs > a:visited {
+
+  color: black;
+}
+
+#breadcrumbs > a:hover {
+
+  color: DimGray;
 }
 
 @-moz-document url-prefix() {

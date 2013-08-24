@@ -14,6 +14,15 @@ html
         $('#story-selector .selected').data('attributes', !{JSON.stringify(story)});
       });
   body
+    #breadcrumbs
+      a(href='/').index.
+        Index
+      img(src='/right.png', alt='down')
+      a(href='/sprint/' + sprint._id).sprint
+        =sprint.title
+      img(src='/right.png', alt='down')
+      a(href='/story/' + story._id).story
+        =story.title
     #alert-panel
       .message
       .icons
@@ -29,14 +38,19 @@ html
             =task.description
           hr
           .line
-            mixin time-input(task, 'Initial estimation:', 'initial_estimation')
+            mixin time-input(task, 'Initial estimation:', 'initial_estimation', task.initial_estimation)
           .line
             .status-date
               mixin date-selector('Status ', 'date-selector')
               | :&nbsp;
             .status-values
-              mixin time-input(task, 'Remaining time:', 'remaining_time')
-              mixin time-input(task, 'Spent time:', 'time_spent')
+              - var value = 0;
+              - if (task.remaining_time.length == 0) {
+              -   
+              -   value = 1;
+              - }
+              mixin time-input(task, 'Remaining time:', 'remaining_time', 1)
+              mixin time-input(task, 'Spent time:', 'time_spent', 0)
           .line
             mixin item-selector('Story:', story, 'story-selector')
           .line

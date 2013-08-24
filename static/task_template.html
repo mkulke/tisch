@@ -1,0 +1,31 @@
+<form>
+	<p>
+  	<span>Summary:</span>
+		<input on-keypress="keypress_ignore_return" on-focusout="focusout" id="summary" value="{{task.summary}}"/>
+	</p>
+	<p>
+		<span>Description:</span>
+		<textarea on-keypress="keypress" on-focusout="focusout" id="description" value="{{task.description}}"/>
+	</p>
+	<p>
+		<span>Color:</span>
+		<select id="color" value="{{task.color}}">
+		  {{#COLORS}}
+		    <option value="{{.}}">{{.}}</option>
+		  {{/COLORS}}
+		</select>
+	</p>
+	<p>
+		<span>Story:</span>
+		<select on-focus="select_focus" id="story_id" value="{{task.story_id}}">
+		  {{#stories}}
+		    <option value="{{_id}}">{{title}}</option>
+		  {{/stories}}
+		</select>
+	</p>
+	<p>
+		<span>Initial estimation:</span>
+		<input on-keypress="keypress_ignore_return" on-focusout="focusout" id="initial_estimation" value="{{task.initial_estimation}}"/>
+		<span style="display: none;">Invalid</span>
+	</p>
+</form>

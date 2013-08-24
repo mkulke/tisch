@@ -1,4 +1,4 @@
-var updateColor = function(item, color) {
+/*var updateColor = function(item, color) {
 
   $('#color-selector .selected', item).removeClass(COLORS.join(' ')).addClass(color);
 };
@@ -116,4 +116,115 @@ $(document).ready(function() {
     };
   });
   $('.main-panel').data('update', updateFunctions);
+});*/
+
+var COLORS = ['yellow', 'orange', 'red', 'purple', 'blue', 'green'];
+
+var clientUUID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+
+  var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+  return v.toString(16);
+});
+
+var keyboardTimer;
+
+var ractive;
+
+taskView = function() {
+
+
+}();
+
+function requestUpdate(key, value, successCb, undoCb) {
+
+  var id = task._id;
+
+  $.ajaxq('client', {
+    
+    url: '/task/' + id,
+    type: 'POST',
+    headers: {client_uuid: clientUUID},
+    contentType: 'application/json',
+    data: JSON.stringify({key: key, value: value}),
+    beforeSend: function(jqXHR, settings) {
+
+      jqXHR.setRequestHeader('rev', task._rev);
+    },
+    success: function(data, textStatus, jqXHR) {
+
+      ractive.set('task._rev', data.rev);
+      ractive.set('task.' + key, data.value);
+      if (successCb) {
+
+        successCb(data.value);
+      }
+    },
+    error: function(data, textStatus, jqXHR) {
+
+      alert('error!');
+      if (undoCb) {
+
+        undoCb();
+      }
+    }
+  });
+}
+
+var commitUserInput = function() {
+
+  if ($(this).data('validation')) {
+
+    if (!$(this).data('validation')($(this).val())) {
+
+      task[this.id] = $(this).data('confirmed_value');
+      $(this).next().show();
+      return false;
+    }
+    else {
+
+      $(this).next().hide();      
+    }
+  }
+
+  var key = this.id;
+  var value = task[key];
+
+  requestUpdate(key, value, function(value) {
+
+    $(this).data('confirmed_value', value);
+  }, function() {
+
+    ractive.set('task.' + this.id, $(this).data('confirmed_value'));
+  });
+}
+
+var startUpdateTimer = function(event) {
+
+  clearTimeout(keyboardTimer);
+  keyboardTimer = setTimeout(commitUserInput.bind(event.node), 1500);
+};
+
+$(document).ready(function() {
+
+  var socket = io.connect('http://' + window.location.hostname); 
+
+  socket.on('connect', function() {
+
+    socket.emit('register', {
+
+      client_uuid: clientUUID
+    });    
+  });
+  
+  socket.on('message', function(data) {
+
+    if (data.recipient == task._id) {
+
+      if (data.message == 'update') {
+
+        ractive.set('task._rev', data.data._rev);
+        ractive.set('task.' + data.data.key, data.data.value);
+      }  
+    }
+  });
 });

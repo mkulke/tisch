@@ -15,7 +15,7 @@ var options = { pretty: false, filename: 'sprint.jade' };
 var sprint_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'story.jade';
 var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
-options.filename = 'task.jade';
+options.filename = 'task_ractive.jade';
 var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'index.jade';
 var index_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
@@ -429,6 +429,7 @@ function processRequest(request, response) {
 
       if (html) {
         var task;
+        var story;
 
         return findOne(db, 'task', id)
         .then(function (result) {
@@ -438,7 +439,12 @@ function processRequest(request, response) {
         })
         .then(function (result) {
 
-          return {task: task, story: result};
+          story = result;
+          return findOne(db, 'sprint', story.sprint_id.toString());
+        })
+        .then(function (result) {
+
+          return {task: task, story: story, sprint: result};
         });
       }
       else {
@@ -452,7 +458,7 @@ function processRequest(request, response) {
 
       answer = function(result) {
       
-        var html = task_template({task: result.task, story: result.story});
+        var html = task_template({task: result.task, story: result.story, sprint: result.sprint});
         respondWithHtml(html, response);
       };  
     }
@@ -482,6 +488,16 @@ function processRequest(request, response) {
           formerStoryId = result.story_id.toString();
           return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'story', request.body.value);
         });
+      }
+      else if (request.body.key == 'remaining_time') {
+
+        console.log('remaining_time modify request');
+        return findOne(db, 'task', id);         
+      }
+      else if (request.body.key == 'time_spent') {
+
+        console.log('time_spent modify request');
+        return findOne(db, 'task', id);         
       }
       else {
 
@@ -521,8 +537,8 @@ function processRequest(request, response) {
   
         description: "", 
         initial_estimation: 1,
-        remaining_time: 1,
-        time_spent: 0, 
+        remaining_time: {initial: 1},
+        time_spent: {initial: 0}, 
         summary: 'New Task',
         color: 'blue',
         story_id: ObjectID(request.headers.parent_id)

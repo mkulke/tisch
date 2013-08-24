@@ -1,4 +1,4 @@
-var updateColor = function(item, color) {
+var updateColor = function (item, color) {
 
   $('.stripe', item).removeClass(COLORS.join(' ')).addClass(color);  
 }

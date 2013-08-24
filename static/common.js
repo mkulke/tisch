@@ -186,19 +186,19 @@ function initColorSelector() {
 
 function timeParser(value) {
 
-    var result = value.match(/^\d{1,2}(\.\d{1,2}){0,1}$/);
-    if (result === null) {
+  var result = value.match(/^\d{1,2}(\.\d{1,2}){0,1}$/);
+  if (result === null) {
 
-      return null;
-    }
-    result = parseFloat(value);
-    if (isNaN(result)) { // should not happen but anyway
-
-      return null;
-    }
-
-    return result;
+    return null;
   }
+  result = parseFloat(value);
+  if (isNaN(result)) { // should not happen but anyway
+
+    return null;
+  }
+
+  return result;
+}
 
 function showAlertPanel(message, warning) {
 
@@ -581,17 +581,18 @@ $(document).ready(function() {
     var panel = $(element);
     var header = $('.header', panel);
 
-    panel.on('dblclick', '.header', function(event) {
+    panel.on('click', '.header', function(event) {
   
       var panel = $(event.delegateTarget);
+      if (panel.is('.ui-draggable-dragging') || $(event.target).parents().is('.left') || $(event.target).parents().is('.right')) {
+        
+        event.preventDefault();
+        return false;
+      }
+
       var id = panel.data('attributes')._id;
       var type = panel.data('type');
       window.location.href = '/' + type + '/' + id;
-    });
-
-    $('.button, input', header).on('dblclick', function(event) {
-      
-      return false;
     });
   });
 
