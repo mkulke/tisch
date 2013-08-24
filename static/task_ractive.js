@@ -204,6 +204,74 @@ var startUpdateTimer = function(event) {
   keyboardTimer = setTimeout(commitUserInput.bind(event.node), 1500);
 };
 
+var init = function(template) {
+
+  ractive = new Ractive({
+
+    el: 'output',
+    template: template,
+    data: { 
+
+      task: task,
+      COLORS: COLORS,
+      stories: [story],
+    }
+  });
+
+  ractive.on({
+
+    keypress: startUpdateTimer,
+    keypress_ignore_return: function (event) {
+
+      if (event.original.which == 13) {
+      
+        event.original.preventDefault();
+      }
+      startUpdateTimer(event);
+    },
+    focusout: function(event) {
+
+      clearTimeout(keyboardTimer);
+      commitUserInput.call(event.node);
+    },
+    select_focus: function(event) {
+
+      var sprint_id = $.map(ractive.get('stories'), function(story) {
+
+        return (story._id == task.story_id) ? story.sprint_id : null;
+      })[0];
+
+      $.ajaxq('client', {
+
+        url: '/story',
+        type: 'GET',
+        headers: {parent_id: sprint_id},
+        dataType: 'json',
+        success: function(data, textStatus, jqXHR) {
+
+          ractive.set('stories', data);
+        },
+        error: function(data, textStatus, jqXHR) {
+
+          alert('error!');
+        }
+      });
+    },
+  });
+
+  ractive.observe('task.color', commitUserInput.bind($('#color').get(0)), {init: false});
+  ractive.observe('task.story_id', commitUserInput.bind($('#story_id').get(0)), {init: false});
+
+  $('input, textarea, select').each(function() {
+
+    $(this).data('confirmed_value', task[this.id]);
+  });
+  $('#initial_estimation').data('validation', function(value) {
+
+    return (value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0);
+  });
+};
+
 $(document).ready(function() {
 
   var socket = io.connect('http://' + window.location.hostname); 
