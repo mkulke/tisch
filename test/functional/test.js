@@ -89,7 +89,7 @@ casper.then(function() {
 
 	casper.test.info("Double-click on the header of test sprint:");
 
-	this.mouseEvent('dblclick', '#' + sprintId + ' .header');
+	this.mouseEvent('click', '#' + sprintId + ' .header');
 
 	sprintUrl = 'http://localhost:8000/sprint/' + sprintId.substr('uuid-'.length);
 
@@ -172,7 +172,7 @@ casper.then(function() {
 
 	casper.test.info("Double-click on the header of story 1:");
 
-	this.mouseEvent('dblclick', '#' + story1Id + ' .header');
+	this.mouseEvent('click', '#' + story1Id + ' .header');
 
 	story1Url = 'http://localhost:8000/story/' + story1Id.substr('uuid-'.length);
 
@@ -275,7 +275,7 @@ casper.then(function() {
 
 	casper.test.info("Double-click on the header of task 2:");
 
-	this.mouseEvent('dblclick', '#' + task2Id + ' .header');
+	this.mouseEvent('click', '#' + task2Id + ' .header');
 
 	task2Url = 'http://localhost:8000/task/' + task2Id.substr('uuid-'.length);
 
@@ -417,7 +417,7 @@ casper.then(function() {
 
 	casper.test.info("Double-click on the header of story 2:");
 
-	this.mouseEvent('dblclick', '#' + story2Id + ' .header');
+	this.mouseEvent('click', '#' + story2Id + ' .header');
 
 	story2Url = 'http://localhost:8000/story/' + story2Id.substr('uuid-'.length);
 
