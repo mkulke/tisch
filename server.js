@@ -970,9 +970,10 @@ function processRequest(request, response) {
 }
 
 var app = connect()
-  .use(connect.logger("dev"))
+  .use(connect.logger('dev'))
   .use(connect.favicon())
-  .use(connect.static("static"))
+  .use(connect.static('static'))
+  .use(connect.static('coffee'))
   .use(connect.bodyParser())
   .use(processRequest);
 

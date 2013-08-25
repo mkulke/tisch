@@ -29,13 +29,13 @@ module.exports = function(grunt) {
 		    },
 		    files: {
 
-		      'static/whack.js': 'static/task.coffee'
+		      'coffee/whack.js': 'coffee/task.coffee'
 		    }
   		},
 		},
 		watch: {
 		  coffee: {
-		    files: ['static/*.coffee'],
+		    files: ['coffee/*.coffee'],
 		    tasks: 'coffee'
 		  }
 		}
