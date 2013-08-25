@@ -1,18 +1,16 @@
 html
 	head
 		title Task details
-		script(type='text/javascript')
-
-			var task = !{JSON.stringify(task)};
-			var story = !{JSON.stringify(story)};
 		script(type='text/javascript', src='/jquery-dev.js')
 		script(type='text/javascript', src='/ajaxq.js')
 		script(type='text/javascript', src='/socket.io/socket.io.js')
 		script(type='text/javascript', src='/task_ractive.js')
+		script(type='text/javascript', src='/whack.js')
 	body
 		#output
 		script(type='text/javascript', src='/Ractive.js')
 		script(type='text/javascript')
 			
-			$.get('/task_template.html').then(init);
+			taskView.init(!{JSON.stringify(task)}, !{JSON.stringify(story)});
+			$.get('/task_template.html').then(ractive.init);
 			

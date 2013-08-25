@@ -118,181 +118,193 @@ $(document).ready(function() {
   $('.main-panel').data('update', updateFunctions);
 });*/
 
-var COLORS = ['yellow', 'orange', 'red', 'purple', 'blue', 'green'];
+/*common = function() {
 
-var clientUUID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  var COLORS = ['yellow', 'orange', 'red', 'purple', 'blue', 'green'];
 
-  var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-  return v.toString(16);
-});
+  var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
 
-var keyboardTimer;
-
-var ractive;
-
-taskView = function() {
-
-
-}();
-
-function requestUpdate(key, value, successCb, undoCb) {
-
-  var id = task._id;
-
-  $.ajaxq('client', {
-    
-    url: '/task/' + id,
-    type: 'POST',
-    headers: {client_uuid: clientUUID},
-    contentType: 'application/json',
-    data: JSON.stringify({key: key, value: value}),
-    beforeSend: function(jqXHR, settings) {
-
-      jqXHR.setRequestHeader('rev', task._rev);
-    },
-    success: function(data, textStatus, jqXHR) {
-
-      ractive.set('task._rev', data.rev);
-      ractive.set('task.' + key, data.value);
-      if (successCb) {
-
-        successCb(data.value);
-      }
-    },
-    error: function(data, textStatus, jqXHR) {
-
-      alert('error!');
-      if (undoCb) {
-
-        undoCb();
-      }
-    }
-  });
-}
-
-var commitUserInput = function() {
-
-  if ($(this).data('validation')) {
-
-    if (!$(this).data('validation')($(this).val())) {
-
-      task[this.id] = $(this).data('confirmed_value');
-      $(this).next().show();
-      return false;
-    }
-    else {
-
-      $(this).next().hide();      
-    }
-  }
-
-  var key = this.id;
-  var value = task[key];
-
-  requestUpdate(key, value, function(value) {
-
-    $(this).data('confirmed_value', value);
-  }, function() {
-
-    ractive.set('task.' + this.id, $(this).data('confirmed_value'));
-  });
-}
-
-var startUpdateTimer = function(event) {
-
-  clearTimeout(keyboardTimer);
-  keyboardTimer = setTimeout(commitUserInput.bind(event.node), 1500);
-};
-
-var init = function(template) {
-
-  ractive = new Ractive({
-
-    el: 'output',
-    template: template,
-    data: { 
-
-      task: task,
-      COLORS: COLORS,
-      stories: [story],
-    }
+    var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+    return v.toString(16);
   });
 
-  ractive.on({
+  return {COLORS: COLORS, uuid: uuid};
+}();*/
 
-    keypress: startUpdateTimer,
-    keypress_ignore_return: function (event) {
+/*ractive = function() {
 
-      if (event.original.which == 13) {
-      
-        event.original.preventDefault();
+  var keyboardTimer;
+  var ractive;
+
+  var init = function (template) {
+
+    ractive = new Ractive({
+
+      el: 'output',
+      template: template,
+      data: { 
+
+        task: taskView.objects().task,
+        COLORS: common.COLORS,
+        stories: [taskView.objects().story],
       }
-      startUpdateTimer(event);
-    },
-    focusout: function(event) {
+    });
 
-      clearTimeout(keyboardTimer);
-      commitUserInput.call(event.node);
-    },
-    select_focus: function(event) {
+    ractive.on({
 
-      var sprint_id = $.map(ractive.get('stories'), function(story) {
+      keypress: startUpdateTimer,
+      keypress_ignore_return: function (event) {
 
-        return (story._id == task.story_id) ? story.sprint_id : null;
-      })[0];
-
-      $.ajaxq('client', {
-
-        url: '/story',
-        type: 'GET',
-        headers: {parent_id: sprint_id},
-        dataType: 'json',
-        success: function(data, textStatus, jqXHR) {
-
-          ractive.set('stories', data);
-        },
-        error: function(data, textStatus, jqXHR) {
-
-          alert('error!');
+        if (event.original.which == 13) {
+        
+          event.original.preventDefault();
         }
-      });
-    },
-  });
+        startUpdateTimer(event);
+      },
+      focusout: function(event) {
 
-  ractive.observe('task.color', commitUserInput.bind($('#color').get(0)), {init: false});
-  ractive.observe('task.story_id', commitUserInput.bind($('#story_id').get(0)), {init: false});
+        clearTimeout(keyboardTimer);
+        taskView.commitUserInput.call(event.node);
+      },
+      select_focus: taskView.populateStorySelector
+    });
 
-  $('input, textarea, select').each(function() {
+    ractive.observe('task.color', taskView.commitUserInput.bind($('#color').get(0)), {init: false});
+    ractive.observe('task.story_id', taskView.commitUserInput.bind($('#story_id').get(0)), {init: false});
 
-    $(this).data('confirmed_value', task[this.id]);
-  });
-  $('#initial_estimation').data('validation', function(value) {
+    $('input, textarea, select').each(function() {
 
-    return (value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0);
-  });
-};
+      $(this).data('confirmed_value', taskView.objects().task[this.id]);
+    });
+    $('#initial_estimation').data('validation', function(value) {
 
-$(document).ready(function() {
+      return (value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) === 0);
+    });
+  };
 
-  var socket = io.connect('http://' + window.location.hostname); 
+  var startUpdateTimer = function(event) {
 
-  socket.on('connect', function() {
+    clearTimeout(keyboardTimer);
+    keyboardTimer = setTimeout(taskView.commitUserInput.bind(event.node), 1500);
+  };
 
-    socket.emit('register', {
+  var set = function(keypath, value) {
 
-      client_uuid: clientUUID
-    });    
-  });
-  
-  socket.on('message', function(data) {
+    ractive.set(keypath, value);
+  };
 
-    if (data.recipient == task._id) {
+  var get = function(keypath) {
 
-      if (data.message == 'update') {
+    return ractive.get(keypath);
+  };
 
-        ractive.set('task._rev', data.data._rev);
-        ractive.set('task.' + data.data.key, data.data.value);
-      }  
+  return {init: init, set: set, get: get};
+}();*/
+
+/*taskView = function() {
+
+  var task;
+  var story;
+
+  var init = function(aTask, aStory) {
+
+    task = aTask;
+    story = aStory;
+  };
+
+  var populateStorySelector = function() {
+
+    var sprint_id = $.map(ractive.get('stories'), function(story) {
+
+      return (story._id == task.story_id) ? story.sprint_id : null;
+    })[0];
+
+    $.ajaxq('client', {
+
+      url: '/story',
+      type: 'GET',
+      headers: {parent_id: sprint_id},
+      dataType: 'json',
+      success: function(data, textStatus, jqXHR) {
+
+        ractive.set('stories', data);
+      },
+      error: function(data, textStatus, jqXHR) {
+
+        alert('error!');
+      }
+    });
+  };
+
+  var commitUserInput = function() {
+
+    if ($(this).data('validation')) {
+
+      if (!$(this).data('validation')($(this).val())) {
+
+        task[this.id] = $(this).data('confirmed_value');
+        $(this).next().show();
+        return false;
+      }
+      else {
+
+        $(this).next().hide();      
+      }
     }
-  });
-});
+
+    var key = this.id;
+    var value = task[key];
+
+    requestUpdate(key, value, function(value) {
+
+      $(this).data('confirmed_value', value);
+    }, function() {
+
+      ractive.set('task.' + this.id, $(this).data('confirmed_value'));
+    });
+  };
+
+  var requestUpdate = function(key, value, successCb, undoCb) {
+
+    var id = task._id;
+
+    $.ajaxq('client', {
+      
+      url: '/task/' + id,
+      type: 'POST',
+      headers: {client_uuid: common.uuid},
+      contentType: 'application/json',
+      data: JSON.stringify({key: key, value: value}),
+      beforeSend: function(jqXHR, settings) {
+
+        jqXHR.setRequestHeader('rev', task._rev);
+      },
+      success: function(data, textStatus, jqXHR) {
+
+        ractive.set('task._rev', data.rev);
+        ractive.set('task.' + key, data.value);
+        if (successCb) {
+
+          successCb(data.value);
+        }
+      },
+      error: function(data, textStatus, jqXHR) {
+
+        alert('error!');
+        if (undoCb) {
+
+          undoCb();
+        }
+      }
+    });
+  };
+
+  var objects = function() {
+
+    return {task: task, story: story};
+  };
+
+  return {init: init, commitUserInput: commitUserInput, populateStorySelector: populateStorySelector, objects: objects};
+}();*/
+
+
