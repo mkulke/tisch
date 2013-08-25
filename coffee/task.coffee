@@ -13,16 +13,16 @@ socketio = (->
 
   init = ->
 
-    socket = io.connect 'http://' + window.location.hostname
+    socket = io.connect "http://#{window.location.hostname}"
     socket.on 'connect', -> socket.emit 'register', {client_uuid: common.uuid}
-    socket.on 'message', ->
+    socket.on 'message', (data) ->
 
-      if data.recipient == task._id
+      if data.recipient == taskView.objects().task._id
 
         if data.message == 'update'
 
           ractive.set 'task._rev', data.data._rev
-          ractive.set 'task.' + data.data.key, data.data.value
+          ractive.set "task.#{data.data.key}", data.data.value
   {init: init}
 )()
 socketio.init()
