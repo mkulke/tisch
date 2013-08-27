@@ -29,6 +29,8 @@ socketio.init()
 
 ractive = (->
 
+  keyboardTimer = null
+
   init = (template) ->
 
     ractive = new Ractive
@@ -40,15 +42,11 @@ ractive = (->
         task: taskView.objects().task
         COLORS: common.COLORS
         stories: [taskView.objects().story]
+        remaining_time: taskView.objects().task.remaining_time.initial
+        time_spent: taskView.objects().task.time_spent.initial
     ractive.on
 
-      keypress: startUpdateTimer,
-      keypress_ignore_return: (event) ->
-
-        if event.original.which == 13
-
-          event.original.preventDefault()
-        startUpdateTimer event
+      keypress: triggerUpdateTimer
       focusout: (event) ->
 
         clearTimeout keyboardTimer
@@ -58,12 +56,15 @@ ractive = (->
     ractive.observe 'task.color', taskView.commitUserInput.bind($('#color').get(0)), {init: false}
     ractive.observe 'task.story_id', taskView.commitUserInput.bind($('#story_id').get(0)), {init: false}
 
-    $('input, textarea, select').each -> $(this).data 'confirmed_value', taskView.objects().task[this.id]
+    $('input, textarea, select').each -> $(this).data 'confirmed_value', ractive.get(this.id)
     $('#initial_estimation').data 'validation', (value) -> value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
-  startUpdateTimer = (event) ->
+  triggerUpdateTimer = (event) ->
 
+    if (event.node.localName == 'input') && (event.original.which == 13)
+
+      event.original.preventDefault()
     clearTimeout keyboardTimer
-    keyboardTimer = setTimeout taskView.commitUserInput.bind event.node, 1500
+    keyboardTimer = setTimeout taskView.commitUserInput.bind(event.node), 1500
   set = (keypath, value) ->
 
     ractive.set keypath, value
@@ -81,7 +82,6 @@ taskView = ( ->
 
     task = aTask
     story = aStory
-
   populateStorySelector = ->
 
     sprint_id = story.sprint_id for story in ractive.get('stories') when story._id == task.story_id
@@ -106,24 +106,32 @@ taskView = ( ->
 
         task[this.id] = $(this).data('confirmed_value')
         $(this).next().show()
-        false
+        return false
       else
 
         $(this).next().hide()
     key = this.id
-    value = task[key]
+
+    if this.id == 'remaining_time' || this.id == 'time_spent'
+
+      value = task[key]
+      index = $(this).prev().val()
+      value[index] = ractive.get(this.id)
+    else
+      
+      value = task[key]
 
     requestUpdate key, value, (value) ->
 
       $(this).data 'confirmed_value', value
     , ->
 
-      ractive.set "task.#{ this.id }", $(this).data('confirmed_value')      
+      ractive.set "task.#{this.id}", $(this).data('confirmed_value')      
   requestUpdate = (key, value, successCb, undoCb) ->
 
     $.ajaxq 'client', 
 
-      url: "/task/#{ task._id }"
+      url: "/task/#{task._id}"
       type: 'POST'
       headers: {client_uuid: common.uuid}
       contentType: 'application/json'
@@ -134,7 +142,7 @@ taskView = ( ->
       success: (data, textStatus, jqXHR) ->
 
         ractive.set 'task._rev', data.rev
-        ractive.set "task.#{ key }", data.value
+        ractive.set "task.#{key}", data.value
         if successCb?
 
           successCb data.value
@@ -144,10 +152,10 @@ taskView = ( ->
         if undoCb?
 
           undoCb()
-
   objects = ->
 
     {task: task, story: story}
-
   {init: init, commitUserInput: commitUserInput, populateStorySelector: populateStorySelector, objects: objects};
 )()
+
+extract = (value) -> "hello"

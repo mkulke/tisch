@@ -489,16 +489,6 @@ function processRequest(request, response) {
           return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'story', request.body.value);
         });
       }
-      else if (request.body.key == 'remaining_time') {
-
-        console.log('remaining_time modify request');
-        return findOne(db, 'task', id);         
-      }
-      else if (request.body.key == 'time_spent') {
-
-        console.log('time_spent modify request');
-        return findOne(db, 'task', id);         
-      }
       else {
 
         return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);

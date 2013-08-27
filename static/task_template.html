@@ -1,7 +1,7 @@
 <form>
 	<p>
   	<span>Summary:</span>
-		<input on-keypress="keypress_ignore_return" on-focusout="focusout" id="summary" value="{{task.summary}}"/>
+		<input on-keypress="keypress" on-focusout="focusout" id="summary" value="{{task.summary}}"/>
 	</p>
 	<p>
 		<span>Description:</span>
@@ -25,7 +25,19 @@
 	</p>
 	<p>
 		<span>Initial estimation:</span>
-		<input on-keypress="keypress_ignore_return" on-focusout="focusout" id="initial_estimation" value="{{task.initial_estimation}}"/>
+		<input on-keypress="keypress" on-focusout="focusout" id="initial_estimation" value="{{task.initial_estimation}}"/>
+		<span style="display: none;">Invalid</span>
+	</p>
+	<p>
+		<span>Remaining time:</span>
+		<input id="date" value="initial"/>
+		<input id="remaining_time" on-keypress="keypress" on-focusout="focusout" value="{{remaining_time}}"/>
+		<span style="display: none;">Invalid</span>
+	</p>
+	<p>
+		<span>Time spent:</span>
+		<input id="date2" value="initial"/>
+		<input id="time_spent" on-keypress="keypress" on-focusout="focusout" value="{{time_spent}}"/>
 		<span style="display: none;">Invalid</span>
 	</p>
 </form>
