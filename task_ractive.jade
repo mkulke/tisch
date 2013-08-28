@@ -4,13 +4,12 @@ html
 		script(type='text/javascript', src='/jquery-dev.js')
 		script(type='text/javascript', src='/ajaxq.js')
 		script(type='text/javascript', src='/socket.io/socket.io.js')
-		script(type='text/javascript', src='/task_ractive.js')
-		script(type='text/javascript', src='/whack.js')
+		script(type='text/javascript', src='/task.coffee.js')
 	body
 		#output
 		script(type='text/javascript', src='/Ractive.js')
 		script(type='text/javascript')
 			
-			taskView.init(!{JSON.stringify(task)}, !{JSON.stringify(story)});
-			$.get('/task_template.html').then(ractive.init);
+			model.init(!{JSON.stringify(task)}, !{JSON.stringify(story)});
+			$.get('/task_template.html').then(view.init);
 			

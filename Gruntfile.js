@@ -29,7 +29,7 @@ module.exports = function(grunt) {
 		    },
 		    files: {
 
-		      'coffee/whack.js': 'coffee/task.coffee'
+		      'coffee/task.coffee.js': 'coffee/task.coffee'
 		    }
   		},
 		},
