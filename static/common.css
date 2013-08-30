@@ -198,8 +198,6 @@ textarea {
 
 .red {
 
-  /*background: linear-gradient(#C2214D, #E2416D);
-  background: -webkit-linear-gradient(#C2214D, #E2416D);*/
   background-color: #D2315D;
 }
 
@@ -210,16 +208,11 @@ textarea {
 
 .yellow {
 
-  /*background: linear-gradient(#EFBC56, #FFDC76);
-  background: -webkit-linear-gradient(#EFBC56, #FFDC76);*/
-  /*background-color: #FFCC66;*/
   background-color: #F1C40F;
 }
 
 .orange {
 
-  /*background: linear-gradient(#D97803, #F99823);
-  background: -webkit-linear-gradient(#D97803, #F99823);*/
   background-color: #E98813;
 }
 

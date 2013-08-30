@@ -1,43 +1,63 @@
+ <div class="breadcrumb-bar">
+  <a class="breadcrumb index">Index</a>
+  <a class="breadcrumb sprint">My Sprint</a>
+  <a class="breadcrumb sprint">My Story</a>
+  <a class="breadcrumb task selected">{{task.summary}}</a>
+</div>
 <form>
 	<p>
-  	<span>Summary:</span>
-		<input on-keypress="keypress" on-focusout="focusout" id="summary" value="{{task.summary}}"/>
+		<input on-keyup="keyup" on-focusout="focusout" id="summary" value="{{task.summary}}"/>
 	</p>
 	<p>
-		<span>Description:</span>
-		<textarea on-keypress="keypress" on-focusout="focusout" id="description" value="{{task.description}}"/>
+		<textarea on-keyup="keyup" on-focusout="focusout" id="description" value="{{task.description}}"/>
 	</p>
-	<p>
-		<span>Color:</span>
-		<select id="color" value="{{task.color}}">
-		  {{#COLORS}}
-		    <option value="{{.}}">{{.}}</option>
-		  {{/COLORS}}
-		</select>
+	<p class="attribute">
+		<span class="label">{{constants.en_US.COLOR}}:&nbsp;</span>
+		<span id="color-selector" class="popup-selector">
+			<a href="#" class="open">
+				<div on-tap="tapped_color_selector" class="selected {{task.color}}"/>
+				<div class="content">
+				{{#COLORS:i}}
+					<div on-tap="tapped_color_item" data-color="{{.}}" class="color {{.}} box-{{i}}"/>
+				{{/COLORS}}
+				</div>
+			</a>
+		</span>
 	</p>
-	<p>
-		<span>Story:</span>
-		<select on-focus="select_focus" id="story_id" value="{{task.story_id}}">
-		  {{#stories}}
-		    <option value="{{_id}}">{{title}}</option>
-		  {{/stories}}
-		</select>
+	<p class="attribute">
+		<span class="label">{{constants.en_US.STORY}}:&nbsp;</span>
+		<span id="story-selector" class="popup-selector">
+			<a href="#" class="open">
+				<span on-tap="tapped_story_selector" data-id="{{story._id}}" class="selected">{{story.title}}</span>
+				<div class="content">
+				{{#stories}}
+					<div on-tap="tapped_story_item" data-id="{{_id}}" class="line">{{title}}</div>
+				{{/stories}}
+				</div>
+			</a>
+		</span>
 	</p>
-	<p>
-		<span>Initial estimation:</span>
-		<input id="initial_estimation" on-keypress="keypress" on-focusout="focusout" value="{{task.initial_estimation}}"/>
-		<span style="display: none;">Invalid</span>
+	<p class="attribute">
+		<span class="label">{{constants.en_US.INITIAL_ESTIMATION}}:&nbsp;</span>
+		<input id="initial_estimation" on-keyup="keyup" on-focusout="focusout" value="{{task.initial_estimation}}"/>
+		<span class="error-popup">
+			<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
+		</span>
 	</p>
-	<p>
-		<span>Remaining time:</span>
+	<p class="attribute">
+		<span class="label">{{constants.en_US.REMAINING_TIME}} (<a href="#" class="open">{{constants.en_US.TODAY}}</a>):&nbsp;</span>
 		<input id="date" value="initial"/>
-		<input id="remaining_time" on-keypress="keypress" on-focusout="focusout" value="{{remaining_time}}"/>
-		<span style="display: none;">Invalid</span>
+		<input id="remaining_time" on-keyup="keyup" on-focusout="focusout" value="{{remaining_time}}"/>
+		<span class="error-popup">
+			<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
+		</span>
 	</p>
-	<p>
-		<span>Time spent:</span>
-		<input id="date2" value="initial"/>
-		<input id="time_spent" on-keypress="keypress" on-focusout="focusout" value="{{time_spent}}"/>
-		<span style="display: none;">Invalid</span>
+	<p class="attribute">
+		<span class="label">{{constants.en_US.TIME_SPENT}}:&nbsp;</span>
+		<input id="date" value="initial"/>
+		<input id="time_spent" on-keyup="keyup" on-focusout="focusout" value="{{time_spent}}"/>
+		<span class="error-popup">
+			<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
+		</span>
 	</p>
 </form>
