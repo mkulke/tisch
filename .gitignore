@@ -2,8 +2,9 @@
 static/.DS_Store
 
 coffee/*.js.map
-
 coffee/*.js
+test/unit/*.js.map
+test/unit/*.js
 
 .DS_Store
 

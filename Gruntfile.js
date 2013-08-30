@@ -29,18 +29,26 @@ module.exports = function(grunt) {
 		    },
 		    files: {
 
-		      'coffee/task.coffee.js': 'coffee/task.coffee'
+		      'coffee/task.coffee.js': 'coffee/task.coffee',
+		      'test/unit/task.coffee.js': 'test/unit/task.coffee'
 		    }
   		},
 		},
 		watch: {
+
 		  coffee: {
-		    files: ['coffee/*.coffee'],
+
+		    files: ['coffee/*.coffee', 'test/unit/*.coffee'],
 		    tasks: 'coffee'
 		  }
+		},
+		mocha_phantomjs: {
+
+			all: ['test/unit/*.html']
 		}
 	});
 
+	grunt.loadNpmTasks('grunt-mocha-phantomjs');
 	grunt.loadNpmTasks('grunt-contrib-watch');
 	grunt.loadNpmTasks('grunt-contrib-coffee');
 	grunt.loadNpmTasks('grunt-ghost');
@@ -49,5 +57,6 @@ module.exports = function(grunt) {
   	grunt.log.writeln('Starting tisch server.');
   	require('./server.js').start();
 	});
-	grunt.registerTask('test', ['coffee', 'server', 'ghost']);
+	//grunt.registerTask('test', ['coffee', 'server', 'ghost']);
+	grunt.registerTask('test', ['mocha_phantomjs']);
 };
