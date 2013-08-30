@@ -58,5 +58,5 @@ module.exports = function(grunt) {
   	require('./server.js').start();
 	});
 	//grunt.registerTask('test', ['coffee', 'server', 'ghost']);
-	grunt.registerTask('test', ['mocha_phantomjs']);
+	grunt.registerTask('test', ['coffee', 'mocha_phantomjs']);
 };
