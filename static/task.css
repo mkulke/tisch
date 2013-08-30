@@ -1,0 +1,299 @@
+/* TODO: move stuff to common */
+
+.error {
+
+  background-color: #F47E7D;
+}
+
+.warning {
+
+  background-color: #FFCC33;
+}
+
+.red {
+
+  background-color: #D2315D;
+}
+
+.green {
+
+  background-color: #88C134;
+}
+
+.yellow {
+
+  background-color: #F1C40F;
+}
+
+.orange {
+
+  background-color: #E98813;
+}
+
+.purple {
+
+  background-color: #8767A6;
+}
+
+.blue {
+
+  background-color: #3498DB;
+}
+
+.error-popup {
+
+  top: 3px;
+  left: -116px;
+  position: relative;
+  cursor: pointer;
+  text-decoration: none;
+  color: white;
+  display: inline-block;
+  font-weight: 400;
+  /*border-bottom: 1px DimGray solid;*/
+  display: none;
+}
+
+.error-popup > .content {
+
+  width: 266px;
+  font-weight: 300;
+  background-clip: padding-box;
+  border: solid 1px #E46E6D;
+  box-shadow: 0px 0px 15px #999;
+  -webkit-box-shadow: 0px 0px 15px #999;
+  -moz-box-shadow: 0px 0px 15px #999;
+  position: absolute;
+  padding: 5px;
+  top: 25px;
+  margin-bottom: 15px;
+  z-index: 2;
+  border-radius: 3px;
+	-moz-border-radius: 3px;
+}
+
+.error-popup > .content:before, .error-popup .content:after {
+
+  content: "";
+  position: absolute;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  bottom: 100%;
+  /*top: 100%;*/
+  left: 20px;
+  margin-left: -10px;
+}
+
+.error-popup > .content:before {
+
+  border-bottom: 10px solid #E46E6D;
+  margin-bottom: 0px;
+}
+
+.error-popup > .content:after {
+
+  border-bottom: 10px solid #F47E7D;
+  margin-bottom: -1px;
+  z-index: 2;
+}
+
+.popup-selector a {
+
+	position: relative;
+}
+
+a {
+
+	font-weight: 400;
+  text-decoration: none;
+}
+
+a:visited {
+
+	color: black;
+}
+
+a:link {
+
+	color: black;
+}
+
+#popup-selector span.selected {
+
+  color: black;
+	font-weight: 400;
+}
+
+.popup-selector a > .content {
+
+	background: #ffffff;
+	background-clip: padding-box;
+  border: solid 1px #bbbbbb;
+  box-shadow: 0px 0px 15px #999;
+  -webkit-box-shadow: 0px 0px 15px #999;
+  -moz-box-shadow: 0px 0px 15px #999;
+  border-radius: 3px;
+	-moz-border-radius: 3px;
+	position: absolute;
+	padding: 5px;
+	left: -13px;
+	top: 29px;
+	display: none;
+	z-index: 2;
+}
+
+.popup-selector a > .content:before, a > .content:after {
+
+	content: "";
+	position: absolute;
+	border-left: 10px solid transparent;
+	border-right: 10px solid transparent;
+	bottom: 100%;
+	/*top: 100%;*/
+	left: 20px;
+	margin-left: -10px;
+}
+
+.popup-selector a > .content:before {
+
+	border-bottom: 10px solid #bbbbbb;
+	margin-bottom: 0px;
+}
+
+.popup-selector a > .content:after {
+
+	border-bottom: 10px solid #ffffff;
+	margin-bottom: -1px;
+	z-index: 2;
+}
+
+.popup-selector .line {
+
+  padding: 5px;
+  white-space: nowrap;
+}
+
+.popup-selector .line:hover {
+
+	color: #333333;
+  background-color: #dcdcdc;
+}
+
+#color-selector a > .content {
+
+  height: 75px;
+  width: 110px;
+  padding: 0px;
+}
+
+#color-selector .color {
+
+  width: 30px;
+  height: 30px;
+  margin: 5px;
+}
+
+#color-selector .box-2, #color-selector .box-3 {
+
+  position: relative;
+  top: -70px;
+  left: 35px;
+}
+
+#color-selector .box-4, #color-selector .box-5 {
+
+  position: relative;
+  top: -140px;
+  left: 70px;
+}
+
+body {
+
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: 16px;
+	margin: 0px;
+	background-color: #dcdcdc;
+}
+
+input {
+
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: 16px;
+	outline: none;
+  border: 0px;
+	background-color: #dcdcdc;
+}
+
+textarea#description {
+
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: 16px;
+	outline: none;
+  resize: none;
+  border-top: 0px;
+  border-left: 0px;
+  border-right: 0px;
+  border-bottom: 1px solid #bbbbbb;
+  margin: 0px;
+  width: 100%;
+  padding: 10px;
+  height: 200px;
+  -moz-box-shadow: inset 0 15px 15px -15px #000000;
+  -webkit-box-shadow: inset 0 15px 15px -15px #000000;
+  box-shadow: inset 0 15px 15px -15px #000000;
+}
+
+.attribute {
+
+	margin-left: 10px;
+}
+
+.attribute input {
+
+	width: 100px;
+}
+
+.attribute > .label {
+
+	color: #333333;
+	font-weight: 300;
+}
+
+#color-selector .selected {
+
+	vertical-align: text-bottom;
+	display: inline-block;
+	height: 18px;
+	width: 18px;
+}
+
+#summary {
+
+	font-size: 36px;
+	font-weight: 400;
+	margin-left: 10px;
+}
+
+.breadcrumb-bar {
+
+	background-color: #333333;
+	color: #999999;
+	font-weight: 300;
+}
+
+.breadcrumb {
+
+	display: inline-block;
+	padding: 10px;
+}
+
+.breadcrumb:hover {
+
+	color: #ffffff;
+}
+
+.breadcrumb.selected {
+
+	background-color: #000000;
+	color: #ffffff;
+}
