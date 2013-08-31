@@ -40,10 +40,10 @@ socketio = (->
 model = (->
 
   init = (@task, @story) ->
-  {init: init, task: this.task, story: this.story, test: -> 3 + 5}
+  {init: init, task: this.task, story: this.story}
 )()
 
-view = (->
+ractive = (->
 
   init = (template) =>
 
@@ -62,33 +62,38 @@ view = (->
         time_spent: model.task.time_spent.initial
     @ractive.on
 
-      keyup: triggerUpdateTimer
-      focusout: (event) =>
+      keyup: view.triggerUpdateTimer
+      focusout: (event) ->
 
-        clearTimeout @keyboardTimer
-        commitUserInput event.node
+        view.abortUpdateTimer
+        view.commitUserInput event.node
       select_focus: controller.populateStorySelector
-      tapped_color_selector: (event) -> $(event.node).next().show()  
+      tapped_color_selector: (event) -> view.showPopup 'color-selector'
       tapped_story_selector: (event) ->
 
         controller.populateStorySelector()
-        $(event.node).next().show()
+        view.showPopup 'story-selector'
       tapped_color_item: (event) -> 
 
-        $(event.node).parent('.content').hide()
+        view.hidePopup 'color-selector'
         controller.requestUpdate 'color', $(event.node).data('color')
       tapped_story_item: (event) -> 
 
-        $(event.node).parent('.content').hide()
+        view.hidePopup 'story-selector'
         controller.requestUpdate 'story_id', $(event.node).data('id'), (data) -> controller.reloadStory data
-    @ractive.observe 'task.color', (-> commitUserInput $('#color').get(0)), {init: false}
-    @ractive.observe 'task.story_id',(-> commitUserInput $('#story_id').get(0)), {init: false}
+    @ractive.observe 'task.color', (-> view.commitUserInput $('#color').get(0)), {init: false}
+    @ractive.observe 'task.story_id',(-> view.commitUserInput $('#story_id').get(0)), {init: false}
+  set = (keypath, value) => @ractive.set keypath, value
+  get = (keypath) => @ractive.get keypath
+  {init: init, set: set, get: get} 
+)()
+
+view = (->
+
+  init = ->
 
     $('.popup-selector a.open').click (event) -> event.preventDefault()
-    that = this
-    $('input, textarea, select').each -> 
-
-      $(this).data 'confirmed_value', that.ractive.get(this.id)
+    $('input, textarea, select').each -> $(this).data 'confirmed_value', ractive.get(this.id)
     $('#initial_estimation, #remaining_time, #time_spent').data 'validation', (value) -> value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
 
     $('#story-selector, #color-selector').each ->
@@ -107,6 +112,9 @@ view = (->
       event.original.preventDefault()
     clearTimeout @keyboardTimer
     @keyboardTimer = setTimeout (-> commitUserInput event.node), 1500
+  abortUpdateTimer = => clearTimeout @keyboardTimer
+  showPopup = (id) -> $('#{id} .content').show()
+  hidePopup = (id) -> $('#{id} .content').hide()
   commitUserInput = (element) =>
 
     if $(element).data('validation')?
@@ -125,7 +133,7 @@ view = (->
 
       value = model.task[key]
       index = $(element).prev().val()
-      value[index] = @ractive.get(element.id)
+      value[index] = ractive.get(element.id)
     else
       
       value = model.task[key]
@@ -135,14 +143,19 @@ view = (->
       $(element).data 'confirmed_value', value
     , ->
 
-      @ractive.set "task.#{element.id}", $(element).data('confirmed_value') 
-  set = (keypath, value) =>
-
-    @ractive.set keypath, value
-  get = (keypath) =>
-
-    @ractive.get keypath
-  {init: init, set: set, get: get}
+      ractive.set "task.#{element.id}", $(element).data('confirmed_value') 
+  set = (keypath, value) => ractive.set keypath, value
+  get = (keypath) => ractive.get keypath
+  {
+    init: init
+    set: set
+    get: get
+    abortUpdateTimer: abortUpdateTimer
+    showPopup: showPopup
+    hidePopup: hidePopup
+    triggerUpdateTimer: triggerUpdateTimer
+    commitUserInput: commitUserInput
+  }
 )()
 
 controller = ( ->

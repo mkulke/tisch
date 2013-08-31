@@ -100,3 +100,29 @@ describe 'controller.populateStorySelector', ->
     sinon.stub view, 'set'
     @requests[0].respond 200, {'Content-Type': 'application/json'}, '[{"_id":"a"},{"_id":"b"},{"_id":"c"}]'
     assert view.set.calledWith('stories', [{_id: 'a'}, {_id: 'b'}, {_id: 'c'}]), 'stories not set (correctly)'
+
+describe 'view.triggerUpdateTimer, view.commitUserInput', ->
+
+  before ->
+
+    model.init {summary: 'xyz'}, {}
+    @event = {
+
+      node: {localName: 'input', id: 'summary'}
+      original: {which: 13, preventDefault: ->}
+    }
+    sinon.stub @event.original, 'preventDefault'
+    @clock = sinon.useFakeTimers()
+  after -> 
+
+    @event.original.preventDefault.restore()
+    @clock.restore()
+    controller.requestUpdate.restore()
+  it 'should prevent a submit action on input fields when return is pressed', ->
+
+    sinon.stub controller, 'requestUpdate'
+    view.triggerUpdateTimer(@event)
+    assert view.set.calledOnce, 'preventDefault not called'
+  it 'should call commitUserInput (and thus controller.requestUpdate) after 1500ms', ->
+    @clock.tick 1500
+    assert controller.requestUpdate.calledWith('summary', 'xyz'), 'requestUpdate not called after 1500ms with the correct arguments'

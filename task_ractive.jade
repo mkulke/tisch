@@ -12,6 +12,7 @@ html
 		script(type='text/javascript')
 			
 			model.init(!{JSON.stringify(task)}, !{JSON.stringify(story)});
-			$.get('/task_template.html').then(view.init);
+			$.get('/task_template.html').then(ractive.init);
 			socketio.init()
+			view.init()
 			
