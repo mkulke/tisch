@@ -66,7 +66,7 @@ view = (->
       focusout: (event) =>
 
         clearTimeout @keyboardTimer
-        controller.commitUserInput.call event.node
+        commitUserInput event.node
       select_focus: controller.populateStorySelector
       tapped_color_selector: (event) -> $(event.node).next().show()  
       tapped_story_selector: (event) ->
@@ -81,8 +81,8 @@ view = (->
 
         $(event.node).parent('.content').hide()
         controller.requestUpdate 'story_id', $(event.node).data('id'), (data) -> controller.reloadStory data
-    @ractive.observe 'task.color', controller.commitUserInput.bind($('#color').get(0)), {init: false}
-    @ractive.observe 'task.story_id', controller.commitUserInput.bind($('#story_id').get(0)), {init: false}
+    @ractive.observe 'task.color', (-> commitUserInput $('#color').get(0)), {init: false}
+    @ractive.observe 'task.story_id',(-> commitUserInput $('#story_id').get(0)), {init: false}
 
     $('.popup-selector a.open').click (event) -> event.preventDefault()
     that = this
@@ -106,7 +106,36 @@ view = (->
 
       event.original.preventDefault()
     clearTimeout @keyboardTimer
-    @keyboardTimer = setTimeout controller.commitUserInput.bind(event.node), 1500
+    @keyboardTimer = setTimeout (-> commitUserInput event.node), 1500
+  commitUserInput = (element) =>
+
+    if $(element).data('validation')?
+
+      if !$(element).data('validation') $(element).val()
+
+        model.task[element.id] = $(element).data('confirmed_value')
+        $(element).next().show()
+        return false
+      else
+
+        $(element).next().hide()
+    key = element.id
+
+    if element.id == 'remaining_time' || element.id == 'time_spent'
+
+      value = model.task[key]
+      index = $(element).prev().val()
+      value[index] = @ractive.get(element.id)
+    else
+      
+      value = model.task[key]
+
+    controller.requestUpdate key, value, (value) ->
+
+      $(element).data 'confirmed_value', value
+    , ->
+
+      @ractive.set "task.#{element.id}", $(element).data('confirmed_value') 
   set = (keypath, value) =>
 
     @ractive.set keypath, value
@@ -128,7 +157,9 @@ controller = ( ->
       success: (data, textStatus, jqXHR) -> 
 
         view.set 'story', data
-      error: (data, textStatus, jqXHR) -> alert 'error!'
+      error: (data, textStatus, jqXHR) -> 
+
+        console.log 'error: #{data}'
   populateStorySelector = ->
 
     sprint_id = story.sprint_id for story in view.get('stories') when story._id == model.task.story_id
@@ -139,37 +170,12 @@ controller = ( ->
       type: 'GET'
       headers: {parent_id: sprint_id}
       dataType: 'json'
-      success: (data, textStatus, jqXHR) -> view.set 'stories', data
-      error: (data, textStatus, jqXHR) -> alert 'error!'
-  commitUserInput = ->
+      success: (data, textStatus, jqXHR) -> 
 
-    if $(this).data('validation')?
+        view.set 'stories', data
+      error: (data, textStatus, jqXHR) ->
 
-      if !$(this).data('validation') $(this).val()
-
-        model.task[this.id] = $(this).data('confirmed_value')
-        $(this).next().show()
-        return false
-      else
-
-        $(this).next().hide()
-    key = this.id
-
-    if this.id == 'remaining_time' || this.id == 'time_spent'
-
-      value = model.task[key]
-      index = $(this).prev().val()
-      value[index] = view.get(this.id)
-    else
-      
-      value = model.task[key]
-
-    requestUpdate key, value, (value) ->
-
-      $(this).data 'confirmed_value', value
-    , ->
-
-      view.set "task.#{this.id}", $(this).data('confirmed_value')      
+       console.log 'error: #{data}'     
   requestUpdate = (key, value, successCb, undoCb) ->
 
     $.ajaxq 'client', 
@@ -195,5 +201,5 @@ controller = ( ->
         if undoCb?
 
           undoCb()
-  {commitUserInput: commitUserInput, populateStorySelector: populateStorySelector, requestUpdate: requestUpdate, reloadStory: reloadStory};
+  {populateStorySelector: populateStorySelector, requestUpdate: requestUpdate, reloadStory: reloadStory};
 )()
