@@ -40,6 +40,72 @@
   background-color: #3498DB;
 }
 
+#date-selector .content {
+
+	padding: 5px;
+}
+
+.ui-datepicker a {  
+
+  text-decoration: none;  
+}
+
+.ui-datepicker table {  
+
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: 16px;
+  padding-top: 5px;
+  text-align: center;
+}
+
+.ui-datepicker td {
+
+  padding: 4px;
+}
+
+.ui-datepicker table th {
+
+  font-weight: 500;
+}
+
+.ui-datepicker td:not(.ui-datepicker-unselectable):hover {
+
+	color: #333333;
+  background-color: #dcdcdc;
+}
+
+.ui-datepicker td.ui-datepicker-unselectable {
+
+  color: #333333;
+  font-weight: 300;
+}
+
+.ui-datepicker-title {
+
+  text-align: center; 
+  font-weight: 300; 
+}
+
+.ui-datepicker-header {
+
+  padding-bottom: 5px;
+  border-bottom: 1px solid #333333;
+}
+
+.ui-datepicker-next {  
+
+  padding-top: 6px;
+  padding-right: 3px;
+  float: right;  
+}
+
+.ui-datepicker-prev {
+
+  padding-top: 6px;
+  padding-left: 3px;
+  float: left;  
+}
+
 .error-popup {
 
   top: 3px;
@@ -116,6 +182,11 @@ a:visited {
 a:link {
 
 	color: black;
+}
+
+span {
+
+	margin: 0px;
 }
 
 #popup-selector span.selected {

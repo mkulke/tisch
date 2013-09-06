@@ -1,3 +1,67 @@
+describe 'model.getIndexDate', ->
+
+  before ->
+
+    @sprint = {start: '2013-01-01', length: 7}
+    @clock = sinon.useFakeTimers(new Date('2013-01-08').getTime())
+  after ->
+
+    @clock.restore()
+  it 'should return the last date index of the sprint, if the current date is after the sprint', ->
+
+    indexDate = model.getIndexDate(@sprint)
+    assert.equal indexDate, '2013-01-07'
+  it 'should return the first date index of the sprint, if the current date is before the sprint', ->
+
+    @clock = sinon.useFakeTimers(new Date('2012-12-01').getTime())
+    indexDate = model.getIndexDate(@sprint)
+    assert.equal indexDate, '2013-01-01'
+  it 'should return the current date, if it is within the sprint range', ->
+
+    @clock = sinon.useFakeTimers(new Date('2013-01-03').getTime())
+    indexDate = model.getIndexDate(@sprint)
+    assert.equal indexDate, '2013-01-03'
+  it 'should return a formatted date, when requested', ->
+
+    indexDate = model.getIndexDate(@sprint, true)
+    assert.equal indexDate, '01/03/2013'
+
+describe 'model.getDateIndexedValue', ->
+
+  before ->
+
+    model.sprint = {start: '2013-01-01'}
+    @map = 
+
+      initial: 10
+      '2013-01-03': 7.5
+      '2013-01-05': 3
+      '2013-01-07': 0
+  it 'should return the value for an existing date entry', ->
+
+    value = model.getDateIndexedValue(@map, '2013-01-03')
+    assert.equal value, 7.5
+  it 'should return 0 for a non-existing date', ->
+
+    value = model.getDateIndexedValue(@map, '2013-01-06')
+    assert.equal value, 0
+  it 'should return the value of a date entry before it for a non-existing date, when called with inherited=true', ->
+
+    value = model.getDateIndexedValue(@map, '2013-01-06', true)
+    assert.equal value, 3
+  it 'should return the initial value for a non-existing date with no entry before it, when called with inherited=true', ->
+
+    value = model.getDateIndexedValue(@map, '2013-01-02', true)
+    assert.equal value, 10
+  it 'should return the last date entry for a date after the sprint, when called with inherited=true', ->
+
+    value = model.getDateIndexedValue(@map, '2013-01-08', true)
+    assert.equal value, 0
+  it 'should return the initial entry for a date before the sprint, when called with inherited=true', ->
+
+    value = model.getDateIndexedValue(@map, '2012-12-01', true)
+    assert.equal value, 10
+
 describe 'controller.requestUpdate', ->
 
 	before -> 
@@ -14,7 +78,7 @@ describe 'controller.requestUpdate', ->
 		@xhr.onCreate = (req) => @requests.push req
 	after -> 
 
-		view.set.restore()
+		ractive.set.restore()
 		@xhr.restore()
 	it 'should issue an ajax POST request', ->
 
@@ -30,10 +94,10 @@ describe 'controller.requestUpdate', ->
 
     assert.equal @requests.length, 1
     request = @requests[0]
-    sinon.stub view, 'set'
+    sinon.stub ractive, 'set'
     request.respond 200, {'Content-Type': 'application/json'}, '{"rev":46,"id":"abc","key":"summary","value":"New summary"}'
-    assert view.set.calledWith('task._rev', 46), 'revision not set (correctly)'
-    assert view.set.calledWith('task.summary', 'New summary'), 'summary not set (correctly)'
+    assert ractive.set.calledWith('task._rev', 46), 'revision not set (correctly)'
+    assert ractive.set.calledWith('task.summary', 'New summary'), 'summary not set (correctly)'
   it 'should execute a success callback', ->
 
     assert @successCb.calledOnce, 'success callback not called (once)'
@@ -55,7 +119,7 @@ describe 'controller.reloadStory', ->
     @xhr.onCreate = (req) => @requests.push req
   after -> 
 
-    view.set.restore()
+    ractive.set.restore()
     @xhr.restore()
   it 'should issue a GET ajax request', ->
 
@@ -66,11 +130,11 @@ describe 'controller.reloadStory', ->
     assert.equal request.method, 'GET'
   it 'should update the view with the response', ->
 
-    sinon.stub view, 'set'
+    sinon.stub ractive, 'set'
     @requests[0].respond 200, {'Content-Type': 'application/json'}, '{"_id":"not an actual story"}'
-    assert view.set.calledWith('story', {_id: 'not an actual story'}), 'story not set (correctly)'
+    assert ractive.set.calledWith('story', {_id: 'not an actual story'}), 'story not set (correctly)'
 
-describe 'controller.populateStorySelector', ->
+describe 'controller.reloadStories', ->
 
   before ->
 
@@ -84,12 +148,13 @@ describe 'controller.populateStorySelector', ->
     @xhr.onCreate = (req) => @requests.push req
   after -> 
 
-    view.get.restore()
+    #ractive.get.restore()
+    ractive.set.restore()
     @xhr.restore()
   it 'should issue a GET ajax request', ->
 
-    sinon.stub view, 'get', -> [{_id: 'a', sprint_id: 'x'}, {_id: 'b', sprint_id: 'y'}]
-    controller.populateStorySelector()
+    #sinon.stub ractive, 'get', -> [{_id: 'a', sprint_id: 'x'}, {_id: 'b', sprint_id: 'y'}]
+    controller.reloadStories 'y'
     assert.equal @requests.length, 1
     request = @requests[0]
     assert.equal request.url, '/story'
@@ -97,32 +162,47 @@ describe 'controller.populateStorySelector', ->
     assert.equal request.requestHeaders.parent_id, 'y'
   it 'should update the view with the response', ->
 
-    sinon.stub view, 'set'
+    sinon.stub ractive, 'set'
     @requests[0].respond 200, {'Content-Type': 'application/json'}, '[{"_id":"a"},{"_id":"b"},{"_id":"c"}]'
-    assert view.set.calledWith('stories', [{_id: 'a'}, {_id: 'b'}, {_id: 'c'}]), 'stories not set (correctly)'
+    assert ractive.set.calledWith('stories', [{_id: 'a'}, {_id: 'b'}, {_id: 'c'}]), 'stories not set (correctly)'
 
-describe 'view.triggerUpdateTimer, view.commitUserInput', ->
+describe 'view.triggerUpdate', ->
 
   before ->
 
     model.init {summary: 'xyz'}, {}
-    @event = {
+    @ractiveEvent = {
 
       node: {localName: 'input', id: 'summary'}
       original: {which: 13, preventDefault: ->}
     }
-    sinon.stub @event.original, 'preventDefault'
+    sinon.stub @ractiveEvent.original, 'preventDefault'
     @clock = sinon.useFakeTimers()
+
+    $('body').append '<input id="with_validation"/>'
+    $('#with_validation').data('validation', (value) -> return false)
   after -> 
 
-    @event.original.preventDefault.restore()
     @clock.restore()
     controller.requestUpdate.restore()
+    $('#with_validation').remove()
   it 'should prevent a submit action on input fields when return is pressed', ->
-
+  
     sinon.stub controller, 'requestUpdate'
-    view.triggerUpdateTimer(@event)
-    assert view.set.calledOnce, 'preventDefault not called'
-  it 'should call commitUserInput (and thus controller.requestUpdate) after 1500ms', ->
+    view.triggerUpdate(@ractiveEvent)
+    assert @ractiveEvent.original.preventDefault.calledOnce, 'preventDefault not called'
+  it 'should call controller.requestUpdate', ->
+  
+    assert controller.requestUpdate.calledWith('summary', 'xyz'), 'requestUpdate not called with the correct arguments'
+  it 'should call controller.requestUpdate after 1500ms when called with delay=true', ->
+  
+    controller.requestUpdate.reset()
+    view.triggerUpdate(@ractiveEvent, true)
     @clock.tick 1500
     assert controller.requestUpdate.calledWith('summary', 'xyz'), 'requestUpdate not called after 1500ms with the correct arguments'
+  it 'should not call controller.requestUpdate when the node has a validation which fails' , ->
+
+    @ractiveEvent.node = $('#with_validation').get 0
+    controller.requestUpdate.reset()
+    view.triggerUpdate(@ractiveEvent)
+    assert controller.requestUpdate.notCalled, 'requestUpdate has been called, although it should not have been called'

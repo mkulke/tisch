@@ -6,19 +6,19 @@
 </div>
 <form>
 	<p>
-		<input on-keyup="keyup" on-focusout="focusout" id="summary" value="{{task.summary}}"/>
+		<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="summary" value="{{task.summary}}"/>
 	</p>
 	<p>
-		<textarea on-keyup="keyup" on-focusout="focusout" id="description" value="{{task.description}}"/>
+		<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description" value="{{task.description}}"/>
 	</p>
 	<p class="attribute">
 		<span class="label">{{constants.en_US.COLOR}}:&nbsp;</span>
 		<span id="color-selector" class="popup-selector">
 			<a href="#" class="open">
-				<div on-tap="tapped_color_selector" class="selected {{task.color}}"/>
+				<div on-tap="tapped_selector:color-selector" class="selected {{task.color}}"/>
 				<div class="content">
 				{{#COLORS:i}}
-					<div on-tap="tapped_color_item" data-color="{{.}}" class="color {{.}} box-{{i}}"/>
+					<div on-tap='tapped_selector_item:{"selector_id":"color-selector","value":"{{.}}"}' class="color {{.}} box-{{i}}"/>
 				{{/COLORS}}
 				</div>
 			</a>
@@ -28,10 +28,10 @@
 		<span class="label">{{constants.en_US.STORY}}:&nbsp;</span>
 		<span id="story-selector" class="popup-selector">
 			<a href="#" class="open">
-				<span on-tap="tapped_story_selector" data-id="{{story._id}}" class="selected">{{story.title}}</span>
+				<span on-tap="tapped_selector:story-selector" class="selected">{{story.title}}</span>
 				<div class="content">
 				{{#stories}}
-					<div on-tap="tapped_story_item" data-id="{{_id}}" class="line">{{title}}</div>
+					<div on-tap='tapped_selector_item:{"selector_id":"story-selector","value":"{{_id}}"}' class="line">{{title}}</div>
 				{{/stories}}
 				</div>
 			</a>
@@ -39,23 +39,29 @@
 	</p>
 	<p class="attribute">
 		<span class="label">{{constants.en_US.INITIAL_ESTIMATION}}:&nbsp;</span>
-		<input id="initial_estimation" on-keyup="keyup" on-focusout="focusout" value="{{task.initial_estimation}}"/>
+		<input id="initial_estimation" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{task.initial_estimation}}"/>
 		<span class="error-popup">
 			<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
 		</span>
 	</p>
 	<p class="attribute">
-		<span class="label">{{constants.en_US.REMAINING_TIME}} (<a href="#" class="open">{{constants.en_US.TODAY}}</a>):&nbsp;</span>
-		<input id="date" value="initial"/>
-		<input id="remaining_time" on-keyup="keyup" on-focusout="focusout" value="{{remaining_time}}"/>
+		<span class="label">{{constants.en_US.REMAINING_TIME}}&nbsp;(</span><span id="remaining_time-index" class="date-selector popup-selector">
+			<a href="#" class="open">
+				<span on-tap="tapped_selector:remaining_time-index" class="selected" data-date="{{getIndexDate(sprint)}}">{{getIndexDate(sprint, true)}}</span><div class="content"/>
+			</a>
+		</span><span class="label">):&nbsp;</span>
+		<input id="remaining_time" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{remaining_time}}"/>
 		<span class="error-popup">
 			<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
 		</span>
 	</p>
 	<p class="attribute">
-		<span class="label">{{constants.en_US.TIME_SPENT}}:&nbsp;</span>
-		<input id="date" value="initial"/>
-		<input id="time_spent" on-keyup="keyup" on-focusout="focusout" value="{{time_spent}}"/>
+		<span class="label">{{constants.en_US.TIME_SPENT}}&nbsp;(</span><span id="time_spent-index" class="date-selector popup-selector">
+			<a href="#" class="open">
+				<span on-tap="tapped_selector:time_spent-index" class="selected" data-date="{{getIndexDate(sprint)}}">{{getIndexDate(sprint, true)}}</span><div class="content"/>
+			</a>
+		</span><span class="label">):&nbsp;</span>
+		<input id="time_spent" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{time_spent}}"/>
 		<span class="error-popup">
 			<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
 		</span>

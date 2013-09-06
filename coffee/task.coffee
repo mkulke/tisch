@@ -1,6 +1,5 @@
 common = (->
 
-  COLORS = ['yellow', 'orange', 'red', 'purple', 'blue', 'green']
   uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace /[xy]/g, (c) ->
 
     r = Math.random() * 16|0
@@ -17,7 +16,14 @@ common = (->
       TIME_SPENT: 'Time spent'
       TODAY: 'today'
       VALID_TIME_MESSAGE: 'This attribute has to be specified as a positive number < 100 with two or less precision digits (e.g. "1" or "99.25").'
-  {COLORS: COLORS, uuid: uuid, constants: constants}
+  {
+    COLORS: ['yellow', 'orange', 'red', 'purple', 'blue', 'green']
+    uuid: uuid
+    constants: constants
+    MS_TO_DAYS_FACTOR: 86400000
+    KEYUP_UPDATE_DELAY: 1500
+    DATE_DISPLAY_FORMAT: 'mm/dd/yy'
+  }
 )()
 
 socketio = (->
@@ -32,15 +38,57 @@ socketio = (->
         
         for item in ['task', 'story'] when data.recipient == model[item]._id
 
-          view.set "#{item}._rev", data.data.rev
-          view.set "#{item}.#{data.data.key}", data.data.value  
+          ractive.set "#{item}._rev", data.data.rev
+          ractive.set "#{item}.#{data.data.key}", data.data.value
+          controller.reloadStory data.data.value if data.data.key == 'story_id'
   {init: init}
 )()
 
 model = (->
 
-  init = (@task, @story) ->
-  {init: init, task: this.task, story: this.story}
+  getIndexDate = (sprint, formatted) ->
+
+    currentDate = new Date()
+    sprintStart = new Date sprint.start
+    sprintEnd = new Date(sprintStart.getTime() + (sprint.length - 1) * 86400000)   
+    displayDate = currentDate if sprintStart <= currentDate <= sprintEnd
+    displayDate = sprintStart if currentDate < sprintStart
+    displayDate = sprintEnd if currentDate > sprintEnd
+
+    format = $.datepicker.ISO_8601
+    format = common.DATE_DISPLAY_FORMAT if formatted?
+
+    $.datepicker.formatDate format, displayDate
+  getDateIndexedValue = (map, indexDate, inherited) ->
+
+    if map[indexDate]?
+
+      value = map[indexDate]
+    else if inherited == true 
+
+      # in this case check for the next date w/ a value *before*, but *within* the sprint
+      value = map.initial
+      sprintStartMs = new Date(@sprint.start).getTime()
+      sprintStartMs -= sprintStartMs % common.MS_TO_DAYS_FACTOR
+      while sprintStartMs <= (ms = new Date(indexDate).getTime() - common.MS_TO_DAYS_FACTOR) 
+      
+        indexDate = $.datepicker.formatDate $.datepicker.ISO_8601, new Date(ms)
+        if map[indexDate]? 
+
+          value = map[indexDate]
+          break
+    else
+      value = 0
+    value 
+  init = (@task, @story, @sprint) ->
+  {
+    init: init
+    task: @task
+    story: @story
+    sprint: @sprint
+    getDateIndexedValue: getDateIndexedValue
+    getIndexDate: getIndexDate
+  }
 )()
 
 ractive = (->
@@ -57,32 +105,19 @@ ractive = (->
         story: model.story
         COLORS: common.COLORS
         constants: common.constants
+        sprint: model.sprint
+        test: common.test
         stories: [model.story]
-        remaining_time: model.task.remaining_time.initial
-        time_spent: model.task.time_spent.initial
+        getIndexDate: model.getIndexDate
+        remaining_time: model.getDateIndexedValue(model.task.remaining_time, model.getIndexDate(model.sprint), true)
+        time_spent: model.getDateIndexedValue(model.task.time_spent, model.getIndexDate(model.sprint))
     @ractive.on
 
-      keyup: view.triggerUpdateTimer
-      focusout: (event) ->
-
-        view.abortUpdateTimer
-        view.commitUserInput event.node
-      select_focus: controller.populateStorySelector
-      tapped_color_selector: (event) -> view.showPopup 'color-selector'
-      tapped_story_selector: (event) ->
-
-        controller.populateStorySelector()
-        view.showPopup 'story-selector'
-      tapped_color_item: (event) -> 
-
-        view.hidePopup 'color-selector'
-        controller.requestUpdate 'color', $(event.node).data('color')
-      tapped_story_item: (event) -> 
-
-        view.hidePopup 'story-selector'
-        controller.requestUpdate 'story_id', $(event.node).data('id'), (data) -> controller.reloadStory data
-    @ractive.observe 'task.color', (-> view.commitUserInput $('#color').get(0)), {init: false}
-    @ractive.observe 'task.story_id',(-> view.commitUserInput $('#story_id').get(0)), {init: false}
+      trigger_update: view.triggerUpdate
+      tapped_selector: view.openSelectorPopup
+      tapped_selector_item: view.selectPopupItem
+    #@ractive.observe 'task.color', (-> view.commitUserInput $('#color').get(0)), {init: false}
+    #@ractive.observe 'task.story_id',(-> view.commitUserInput $('#story_id').get(0)), {init: false}
   set = (keypath, value) => @ractive.set keypath, value
   get = (keypath) => @ractive.get keypath
   {init: init, set: set, get: get} 
@@ -96,99 +131,169 @@ view = (->
     $('input, textarea, select').each -> $(this).data 'confirmed_value', ractive.get(this.id)
     $('#initial_estimation, #remaining_time, #time_spent').data 'validation', (value) -> value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
 
-    $('#story-selector, #color-selector').each ->
+    #$('#story-selector, #color-selector, #date-selector').each ->
+    $('.popup-selector').each ->
 
       closeHandler = (event) =>
 
-        if $(event.target).parents("##{this.id}").length == 0    
+        #console.log "closeHandler called"
+
+        if ($(event.target).parents("##{this.id}").length == 0) && ($(event.target).parents('.ui-datepicker-header').length < 1)
         
           $("##{this.id} .content").hide()
           $(document).unbind 'click', closeHandler
-      $('.selected', $(this)).click -> $(document).bind 'click', closeHandler 
-  triggerUpdateTimer = (event) =>
+      $('.selected', $(this)).click -> $(document).bind 'click', closeHandler
+      $(this).data('close_handler', closeHandler)
 
-    if (event.node.localName == 'input') && (event.original.which == 13)
+    $('.date-selector .content').datepicker 
+    #$('#remaining_time_date-selector .content').datepicker {  
 
-      event.original.preventDefault()
+      inline: true
+      showOtherMonths: true
+      dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+      nextText: '<img src="/right.png" alt="next">'
+      prevText: '<img src="/left.png" alt="prev">'
+      minDate: new Date model.sprint.start
+      maxDate: new Date ((new Date model.sprint.start).getTime() + ((model.sprint.length - 1) * common.MS_TO_DAYS_FACTOR))
+      dateFormat: $.datepicker.ISO_8601
+      gotoCurrent: true
+      onSelect: selectDate
+  selectDate = (dateText, inst) ->
+
+    dateSelector = $(inst.input).parents('.date-selector')
+    $('.content', dateSelector).hide()
+    $('document').unbind 'click', dateSelector.data 'close_handler'
+    $('.selected', dateSelector).data 'date', dateText    
+    $('.selected', dateSelector).text($.datepicker.formatDate common.DATE_DISPLAY_FORMAT, new Date(dateText))
+    attribute = dateSelector.attr('id').split('-')[0]
+    ractive.set attribute, model.getDateIndexedValue(model.task[attribute], dateText, attribute == 'remaining_time')
+  openSelectorPopup = (ractiveEvent, id) ->
+
+    $("##{id} .content").show()
+
+    switch id
+      
+      when 'story-selector' then controller.reloadStories model.story.sprint_id
+  selectPopupItem = (ractiveEvent, args) ->
+
+    id = args.selector_id
+    $("##{id} .content").hide()
+    $(document).unbind 'click', $("##{id}").data 'close_handler'
+
+    switch id
+
+      when 'color-selector' then controller.requestUpdate 'color', args.value
+      when 'story-selector' then controller.requestUpdate 'story_id', args.value, (data) -> controller.reloadStory data
+  setConfirmedValue = (node, value, index) ->
+
+    #console.log("setConfirmedValue w/ #{value}, #{index}")
+    if index?
+
+       $(node).data 'confirmed_value', value[index]
+    else 
+
+      $(node).data 'confirmed_value', value
+  resetToConfirmedValue = (node, key, index) -> 
+
+    #console.log("resetToConfirmedValue w/ #{key}, #{index}")
+    if index?
+
+      model.task[key][index] = $(node).data('confirmed_value')
+    else
+
+      model.task[key] = $(node).data('confirmed_value')
+  buildValue = (key) ->
+
+    value = model.task[key]
+    if key == 'remaining_time'
+
+      index = $('#remaining_time-index .selected').data 'date'
+      value[index] = ractive.get(key)
+    else if key == 'time_spent'
+
+      index = $('#time_spent_date-index .selected').data 'date'
+      value[index] = ractive.get(key)
+    [value, index]
+
+  triggerUpdate = (ractiveEvent, delayed) =>
+
     clearTimeout @keyboardTimer
-    @keyboardTimer = setTimeout (-> commitUserInput event.node), 1500
-  abortUpdateTimer = => clearTimeout @keyboardTimer
-  showPopup = (id) -> $('#{id} .content').show()
-  hidePopup = (id) -> $('#{id} .content').hide()
-  commitUserInput = (element) =>
+    event = ractiveEvent.original
+    node = ractiveEvent.node
+    if (node.localName == 'input') && (event.which == 13)
 
-    if $(element).data('validation')?
+      event.preventDefault()
 
-      if !$(element).data('validation') $(element).val()
+    key = node.id
+    [value, index] = buildValue key
 
-        model.task[element.id] = $(element).data('confirmed_value')
-        $(element).next().show()
-        return false
+    updateCall = -> 
+
+      controller.requestUpdate key, value,
+
+        (value) -> setConfirmedValue(node, value, index),
+        -> ractive.set "task.#{key}", $(node).data('confirmed_value')
+
+    if node.localName.match(/^input$|^textarea$/) && $(node).data('validation')?
+
+      if !$(node).data('validation') $(node).val()
+
+        resetToConfirmedValue(node, key, index)
+        updateCall = -> $(node).next().show()  
       else
 
-        $(element).next().hide()
-    key = element.id
+        $(node).next().hide()
 
-    if element.id == 'remaining_time' || element.id == 'time_spent'
+    if delayed? 
 
-      value = model.task[key]
-      index = $(element).prev().val()
-      value[index] = ractive.get(element.id)
-    else
-      
-      value = model.task[key]
+      @keyboardTimer = setTimeout updateCall, common.KEYUP_UPDATE_DELAY 
+    else 
 
-    controller.requestUpdate key, value, (value) ->
+      updateCall()
+  showPopup = (id) -> $("##{id} .content").show()
+  hidePopup = (id) -> 
 
-      $(element).data 'confirmed_value', value
-    , ->
-
-      ractive.set "task.#{element.id}", $(element).data('confirmed_value') 
+    $("##{id} .content").hide()
+    $(document).unbind 'click', $("##{id}").data 'close_handler'
   set = (keypath, value) => ractive.set keypath, value
   get = (keypath) => ractive.get keypath
   {
     init: init
-    set: set
-    get: get
-    abortUpdateTimer: abortUpdateTimer
-    showPopup: showPopup
-    hidePopup: hidePopup
-    triggerUpdateTimer: triggerUpdateTimer
-    commitUserInput: commitUserInput
+    openSelectorPopup: openSelectorPopup
+    selectPopupItem: selectPopupItem
+    triggerUpdate: triggerUpdate
   }
 )()
 
 controller = ( ->
 
-  reloadStory = (id) ->
+  reloadStory = (storyId) ->
     
     $.ajaxq 'client',
 
-      url: "/story/#{id}"
+      url: "/story/#{storyId}"
       type: 'GET'
       dataType: 'json'
       success: (data, textStatus, jqXHR) -> 
 
-        view.set 'story', data
+        ractive.set 'story', data
       error: (data, textStatus, jqXHR) -> 
 
         console.log 'error: #{data}'
-  populateStorySelector = ->
-
-    sprint_id = story.sprint_id for story in view.get('stories') when story._id == model.task.story_id
+  reloadStories = (sprintId) ->
 
     $.ajaxq 'client',
 
       url: '/story'
       type: 'GET'
-      headers: {parent_id: sprint_id}
+      headers: {parent_id: sprintId}
       dataType: 'json'
       success: (data, textStatus, jqXHR) -> 
 
-        view.set 'stories', data
+        ractive.set 'stories', data
       error: (data, textStatus, jqXHR) ->
 
-       console.log 'error: #{data}'     
+       console.log 'error: #{data}'
   requestUpdate = (key, value, successCb, undoCb) ->
 
     $.ajaxq 'client', 
@@ -203,8 +308,8 @@ controller = ( ->
         jqXHR.setRequestHeader 'rev', model.task._rev
       success: (data, textStatus, jqXHR) ->
 
-        view.set 'task._rev', data.rev
-        view.set "task.#{key}", data.value
+        ractive.set 'task._rev', data.rev
+        ractive.set "task.#{key}", data.value
         if successCb?
 
           successCb data.value
@@ -214,5 +319,9 @@ controller = ( ->
         if undoCb?
 
           undoCb()
-  {populateStorySelector: populateStorySelector, requestUpdate: requestUpdate, reloadStory: reloadStory};
+  {
+    requestUpdate: requestUpdate
+    reloadStory: reloadStory
+    reloadStories: reloadStories
+  }
 )()

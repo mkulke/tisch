@@ -3,6 +3,7 @@ html
 		title Task details
 		link(rel='stylesheet', href='/task.css', type='text/css')
 		script(type='text/javascript', src='/jquery-dev.js')
+		script(type='text/javascript', src='/jquery-ui.js')
 		script(type='text/javascript', src='/ajaxq.js')
 		script(type='text/javascript', src='/socket.io/socket.io.js')
 		script(type='text/javascript', src='/task.coffee.js')
@@ -11,8 +12,11 @@ html
 		script(type='text/javascript', src='/Ractive.js')
 		script(type='text/javascript')
 			
-			model.init(!{JSON.stringify(task)}, !{JSON.stringify(story)});
-			$.get('/task_template.html').then(ractive.init);
+			model.init(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
+			$.get('/task_template.html').then(function(template) {
+
+				ractive.init(template);
+				view.init();
+			});
 			socketio.init()
-			view.init()
 			
