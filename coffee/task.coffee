@@ -11,6 +11,7 @@ common = (->
 
       COLOR: 'Color'
       INITIAL_ESTIMATION: 'Initial estimation'
+      OK: 'Ok'
       REMAINING_TIME: 'Remaining time'
       REMOVE: 'Remove'
       STORY: 'Story'
@@ -65,6 +66,7 @@ ractive = (->
         getIndexDate: model.getIndexDate
         remaining_time: model.getDateIndexedValue(model.task.remaining_time, model.getIndexDate(model.sprint), true)
         time_spent: model.getDateIndexedValue(model.task.time_spent, model.getIndexDate(model.sprint))
+        error_message: "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et"
     @ractive.on
 
       trigger_update: view.triggerUpdate
@@ -257,7 +259,17 @@ view = (->
     $(document).unbind 'click', $("##{id}").data 'close_handler'
   set = (keypath, value) => ractive.set keypath, value
   get = (keypath) => ractive.get keypath
-  handleButton = (ractiveEvent, action) -> console.log "#{action} button tapped."
+  showError = (message) ->
+
+    ractive.set('error_message', message)
+    $('#overlay').css({height: $(window).height() + 'px'}).show()
+    $('#error-popup').show()
+  handleButton = (ractiveEvent, action) -> 
+
+    switch action
+
+      when 'error_ok' then $('#error-popup, #overlay').hide()
+      when 'task_remove' then showError 'Move along. This functionality is not implemented yet.'
   {
     init: init
     openSelectorPopup: openSelectorPopup

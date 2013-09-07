@@ -2,7 +2,7 @@
 
 .error {
 
-  background-color: #F47E7D;
+  background-color: #E74C3C;
 }
 
 .warning {
@@ -376,6 +376,11 @@ html, body {
 	height:100%;
 }
 
+form {
+
+	margin: 0px;
+}
+
 #output {
 
 	min-height:100%;
@@ -397,7 +402,17 @@ html, body {
 	background-color: #333333;
 }
 
-#button-bar .remove.button {
+.popup-buttons {
+
+	background-color: #333333;
+	height: 45px;
+  border-bottom-right-radius: 3px;
+	-moz-border-bottom-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+	-moz-border-bottom-left-radius: 3px;
+}
+
+#button-bar .button, .popup-buttons .button {
 
 	cursor: pointer;
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -414,8 +429,48 @@ html, body {
 	clear: both;
 }
 
-#button-bar .remove.button:hover {
+#button-bar .button:hover, .popup-button .button:hover {
 
 	color: #ffffff;
 	background-color: #2accac;
+}
+
+#error-popup {
+
+	display: none;
+	position: absolute;
+	left: 35%;
+	top: 40%;
+	width: 30%;
+	z-index: 3;
+}
+
+#error-popup > .message {
+
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-weight: 200;
+	color: #fffaf0;
+  border-top-right-radius: 3px;
+	-moz-border-top-right-radius: 3px;
+  border-top-left-radius: 3px;
+	-moz-border-top-left-radius: 3px;
+	padding: 10px;	
+}
+
+.blockUI.blockMsg {
+
+	left: 35%;
+	top: 40%;
+	width: 30%;
+}
+
+#overlay {
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0.6;
+  background: white;
+  display: none;
 }
