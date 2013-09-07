@@ -130,7 +130,8 @@ view = (->
   init = ->
 
     $('.popup-selector a.open').click (event) -> event.preventDefault()
-    $('input, textarea, select').each -> $(this).data 'confirmed_value', ractive.get(this.id)
+    $('#summary, #description, #initial_estimation').each -> $(this).data 'confirmed_value', ractive.get("task.#{this.id}")
+    $('#remaining_time, #time_spent').each -> $(this).data 'confirmed_value', ractive.get(this.id)
     $('#initial_estimation, #remaining_time, #time_spent').data 'validation', (value) -> value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
 
     #$('#story-selector, #color-selector, #date-selector').each ->
@@ -204,6 +205,15 @@ view = (->
     else
 
       model.task[key] = $(node).data('confirmed_value')
+  isConfirmedValue = (node, value, index) ->
+
+    if index? 
+
+      value[index] == $(node).data('confirmed_value')
+    else
+
+      value == $(node).data('confirmed_value')
+
   buildValue = (key) ->
 
     value = model.task[key]
@@ -231,7 +241,7 @@ view = (->
 
     updateCall = -> 
 
-      controller.requestUpdate key, value,
+      if !isConfirmedValue(node, value, index) then controller.requestUpdate key, value,
 
         (value) -> setConfirmedValue(node, value, index),
         -> ractive.set "task.#{key}", $(node).data('confirmed_value')

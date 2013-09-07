@@ -431,7 +431,7 @@ form {
 	clear: both;
 }
 
-#button-bar .button:hover, .popup-button .button:hover {
+#button-bar .button:hover, .popup-buttons .button:hover {
 
 	color: #ffffff;
 	background-color: #2accac;
