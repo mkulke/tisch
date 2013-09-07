@@ -354,6 +354,7 @@ textarea#description {
 
 .breadcrumb {
 
+	cursor: pointer;
 	display: inline-block;
 	padding: 10px;
 }
@@ -365,6 +366,7 @@ textarea#description {
 
 .breadcrumb.selected {
 
+	cursor: default;
 	background-color: #000000;
 	color: #ffffff;
 }
@@ -455,13 +457,6 @@ form {
   border-top-left-radius: 3px;
 	-moz-border-top-left-radius: 3px;
 	padding: 10px;	
-}
-
-.blockUI.blockMsg {
-
-	left: 35%;
-	top: 40%;
-	width: 30%;
 }
 
 #overlay {
