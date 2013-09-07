@@ -12,6 +12,7 @@ common = (->
       COLOR: 'Color'
       INITIAL_ESTIMATION: 'Initial estimation'
       REMAINING_TIME: 'Remaining time'
+      REMOVE: 'Remove'
       STORY: 'Story'
       TIME_SPENT: 'Time spent'
       TODAY: 'today'
@@ -42,6 +43,37 @@ socketio = (->
           ractive.set "#{item}.#{data.data.key}", data.data.value
           controller.reloadStory data.data.value if data.data.key == 'story_id'
   {init: init}
+)()
+
+ractive = (->
+
+  init = (template) =>
+
+    @ractive = new Ractive
+
+      el: 'output'
+      template: template
+      data: 
+
+        task: model.task
+        story: model.story
+        COLORS: common.COLORS
+        constants: common.constants
+        sprint: model.sprint
+        test: common.test
+        stories: [model.story]
+        getIndexDate: model.getIndexDate
+        remaining_time: model.getDateIndexedValue(model.task.remaining_time, model.getIndexDate(model.sprint), true)
+        time_spent: model.getDateIndexedValue(model.task.time_spent, model.getIndexDate(model.sprint))
+    @ractive.on
+
+      trigger_update: view.triggerUpdate
+      tapped_selector: view.openSelectorPopup
+      tapped_selector_item: view.selectPopupItem
+      tapped_button: view.handleButton
+  set = (keypath, value) => @ractive.set keypath, value
+  get = (keypath) => @ractive.get keypath
+  {init: init, set: set, get: get} 
 )()
 
 model = (->
@@ -89,38 +121,6 @@ model = (->
     getDateIndexedValue: getDateIndexedValue
     getIndexDate: getIndexDate
   }
-)()
-
-ractive = (->
-
-  init = (template) =>
-
-    @ractive = new Ractive
-
-      el: 'output'
-      template: template
-      data: 
-
-        task: model.task
-        story: model.story
-        COLORS: common.COLORS
-        constants: common.constants
-        sprint: model.sprint
-        test: common.test
-        stories: [model.story]
-        getIndexDate: model.getIndexDate
-        remaining_time: model.getDateIndexedValue(model.task.remaining_time, model.getIndexDate(model.sprint), true)
-        time_spent: model.getDateIndexedValue(model.task.time_spent, model.getIndexDate(model.sprint))
-    @ractive.on
-
-      trigger_update: view.triggerUpdate
-      tapped_selector: view.openSelectorPopup
-      tapped_selector_item: view.selectPopupItem
-    #@ractive.observe 'task.color', (-> view.commitUserInput $('#color').get(0)), {init: false}
-    #@ractive.observe 'task.story_id',(-> view.commitUserInput $('#story_id').get(0)), {init: false}
-  set = (keypath, value) => @ractive.set keypath, value
-  get = (keypath) => @ractive.get keypath
-  {init: init, set: set, get: get} 
 )()
 
 view = (->
@@ -257,11 +257,13 @@ view = (->
     $(document).unbind 'click', $("##{id}").data 'close_handler'
   set = (keypath, value) => ractive.set keypath, value
   get = (keypath) => ractive.get keypath
+  handleButton = (ractiveEvent, action) -> console.log "#{action} button tapped."
   {
     init: init
     openSelectorPopup: openSelectorPopup
     selectPopupItem: selectPopupItem
     triggerUpdate: triggerUpdate
+    handleButton: handleButton
   }
 )()
 
