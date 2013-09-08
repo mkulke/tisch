@@ -134,7 +134,6 @@ view = (->
     $('#remaining_time, #time_spent').each -> $(this).data 'confirmed_value', ractive.get(this.id)
     $('#initial_estimation, #remaining_time, #time_spent').data 'validation', (value) -> value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
 
-    #$('#story-selector, #color-selector, #date-selector').each ->
     $('.popup-selector').each ->
 
       closeHandler = (event) =>
@@ -143,19 +142,19 @@ view = (->
 
         if ($(event.target).parents("##{this.id}").length == 0) && ($(event.target).parents('.ui-datepicker-header').length < 1)
         
-          $("##{this.id} .content").hide()
+          #$("##{this.id} .content").hide()
+          hidePopup(this.id)
           $(document).unbind 'click', closeHandler
       $('.selected', $(this)).click -> $(document).bind 'click', closeHandler
       $(this).data('close_handler', closeHandler)
 
     $('.date-selector .content').datepicker 
-    #$('#remaining_time_date-selector .content').datepicker {  
 
       inline: true
       showOtherMonths: true
       dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-      nextText: '<img src="/right.png" alt="next">'
-      prevText: '<img src="/left.png" alt="prev">'
+      nextText: '<div class="arrow right"></div>'
+      prevText: '<div class="arrow left"></div>'
       minDate: new Date model.sprint.start
       maxDate: new Date ((new Date model.sprint.start).getTime() + ((model.sprint.length - 1) * common.MS_TO_DAYS_FACTOR))
       dateFormat: $.datepicker.ISO_8601
@@ -164,7 +163,7 @@ view = (->
   selectDate = (dateText, inst) ->
 
     dateSelector = $(inst.input).parents('.date-selector')
-    $('.content', dateSelector).hide()
+    hidePopup dateSelector.attr('id')
     $('document').unbind 'click', dateSelector.data 'close_handler'
     $('.selected', dateSelector).data 'date', dateText    
     $('.selected', dateSelector).text($.datepicker.formatDate common.DATE_DISPLAY_FORMAT, new Date(dateText))
@@ -172,15 +171,14 @@ view = (->
     ractive.set attribute, model.getDateIndexedValue(model.task[attribute], dateText, attribute == 'remaining_time')
   openSelectorPopup = (ractiveEvent, id) ->
 
-    $("##{id} .content").show()
-
     switch id
       
-      when 'story-selector' then controller.reloadStories model.story.sprint_id
+      when 'story-selector' then controller.reloadStories model.story.sprint_id, -> showPopup(id)
+      else showPopup(id)
   selectPopupItem = (ractiveEvent, args) ->
 
     id = args.selector_id
-    $("##{id} .content").hide()
+    hidePopup id
     $(document).unbind 'click', $("##{id}").data 'close_handler'
 
     switch id
@@ -262,10 +260,23 @@ view = (->
     else 
 
       updateCall()
-  showPopup = (id) -> $("##{id} .content").show()
+  showPopup = (id) -> 
+
+    contentHeight = $('#content').height()
+    popupHeight = $("##{id} .content").height()
+    footerHeight = $("#button-bar").height()
+    $("##{id} .content").show()
+    popupTop = $("##{id}").position().top
+
+    $('#overlay').css({height: $(window).height() + 'px'}).show()
+    if (popupTop + popupHeight) > (contentHeight + footerHeight)
+
+      $('#content').css 'height', popupTop + popupHeight - footerHeight
   hidePopup = (id) -> 
 
     $("##{id} .content").hide()
+    $('#overlay').hide()
+    $('#content').css('height', 'auto')
     $(document).unbind 'click', $("##{id}").data 'close_handler'
   set = (keypath, value) => ractive.set keypath, value
   get = (keypath) => ractive.get keypath
@@ -304,7 +315,7 @@ controller = ( ->
       error: (data, textStatus, jqXHR) -> 
 
         console.log 'error: #{data}'
-  reloadStories = (sprintId) ->
+  reloadStories = (sprintId, successCb) ->
 
     $.ajaxq 'client',
 
@@ -315,6 +326,9 @@ controller = ( ->
       success: (data, textStatus, jqXHR) -> 
 
         ractive.set 'stories', data
+        if successCb?
+
+          successCb()
       error: (data, textStatus, jqXHR) ->
 
        console.log 'error: #{data}'

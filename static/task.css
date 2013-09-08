@@ -40,9 +40,10 @@
   background-color: #3498DB;
 }
 
-#date-selector .content {
+.date-selector.popup-selector .content {
 
-	padding: 5px;
+  background-color: #ffffff;
+	padding: 0px;
 }
 
 .ui-datepicker a {  
@@ -54,42 +55,46 @@
 
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	font-size: 16px;
-  padding-top: 5px;
+  /*padding-top: 5px;*/
   text-align: center;
+  border-collapse: collapse;
+  margin-bottom: 5px;
+  color: #999999;
 }
 
 .ui-datepicker td {
 
-  padding: 4px;
+  padding: 5px;
 }
 
 .ui-datepicker table th {
 
+	padding: 5 0 5 0px;
+  background-color: #dcdcdc;
+	color: #999999;
   font-weight: 500;
 }
 
 .ui-datepicker td:not(.ui-datepicker-unselectable):hover {
 
-	color: #333333;
   background-color: #dcdcdc;
 }
 
 .ui-datepicker td.ui-datepicker-unselectable {
 
-  color: #333333;
-  font-weight: 300;
+  font-weight: 200;
 }
 
 .ui-datepicker-title {
 
+  border-top-right-radius: 3px;
+	-moz-border-top-right-radius: 3px;
+  border-top-left-radius: 3px;
+	-moz-border-top-left-radius: 3px;
+	background-color: #333333;
+	padding: 5px;
   text-align: center; 
   font-weight: 300; 
-}
-
-.ui-datepicker-header {
-
-  padding-bottom: 5px;
-  border-bottom: 1px solid #333333;
 }
 
 .ui-datepicker-next {  
@@ -115,7 +120,7 @@
   text-decoration: none;
   color: white;
   display: inline-block;
-  font-weight: 400;
+  font-weight: 200;
   /*border-bottom: 1px DimGray solid;*/
   display: none;
 }
@@ -123,12 +128,11 @@
 .error-popup > .content {
 
   width: 266px;
-  font-weight: 300;
   background-clip: padding-box;
   border: solid 1px #E46E6D;
-  box-shadow: 0px 0px 15px #999;
+  /*box-shadow: 0px 0px 15px #999;
   -webkit-box-shadow: 0px 0px 15px #999;
-  -moz-box-shadow: 0px 0px 15px #999;
+  -moz-box-shadow: 0px 0px 15px #999;*/
   position: absolute;
   padding: 5px;
   top: 25px;
@@ -145,7 +149,6 @@
   border-left: 10px solid transparent;
   border-right: 10px solid transparent;
   bottom: 100%;
-  /*top: 100%;*/
   left: 20px;
   margin-left: -10px;
 }
@@ -158,7 +161,7 @@
 
 .error-popup > .content:after {
 
-  border-bottom: 10px solid #F47E7D;
+  border-bottom: 10px solid #E74C3C;
   margin-bottom: -1px;
   z-index: 2;
 }
@@ -197,12 +200,15 @@ span {
 
 .popup-selector a > .content {
 
-	background: #ffffff;
-	background-clip: padding-box;
-  border: solid 1px #bbbbbb;
-  box-shadow: 0px 0px 15px #999;
+	color: #999999;
+	background-color: #333333;
+	font-weight: 300;
+	/*background: #ffffff;*/
+	/*background-clip: padding-box;*/
+  border: solid 0px #bbbbbb;
+  /*box-shadow: 0px 0px 15px #999;
   -webkit-box-shadow: 0px 0px 15px #999;
-  -moz-box-shadow: 0px 0px 15px #999;
+  -moz-box-shadow: 0px 0px 15px #999;*/
   border-radius: 3px;
 	-moz-border-radius: 3px;
 	position: absolute;
@@ -210,10 +216,10 @@ span {
 	left: -13px;
 	top: 29px;
 	display: none;
-	z-index: 2;
+	z-index: 3;
 }
 
-.popup-selector a > .content:before, a > .content:after {
+.popup-selector a > .content:before, .popup-selector a > .content:after {
 
 	content: "";
 	position: absolute;
@@ -227,20 +233,22 @@ span {
 
 .popup-selector a > .content:before {
 
-	border-bottom: 10px solid #bbbbbb;
+	border-bottom: 10px solid #333333;
+	/*border-bottom: 10px solid #bbbbbb;*/
 	margin-bottom: 0px;
 }
 
 .popup-selector a > .content:after {
 
-	border-bottom: 10px solid #ffffff;
+	border-bottom: 10px solid #333333;
+	/*border-bottom: 10px solid #ffffff;*/
 	margin-bottom: -1px;
 	z-index: 2;
 }
 
 .popup-selector .line {
 
-  padding: 5px;
+  padding: 5 10 5 10px;
   white-space: nowrap;
 }
 
@@ -248,6 +256,11 @@ span {
 
 	color: #333333;
   background-color: #dcdcdc;
+}
+
+.popup-selector.line-selector .content {
+
+	padding: 5 0 5 0px;
 }
 
 #color-selector a > .content {
@@ -282,7 +295,6 @@ body {
 
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	font-size: 16px;
-	margin: 0px;
 	background-color: #dcdcdc;
 }
 
@@ -373,9 +385,8 @@ textarea#description {
 
 html, body {
 
-	margin:0;
-	padding:0;
-	height:100%;
+	margin: 0;
+	height: 100%;
 }
 
 form {
@@ -387,11 +398,12 @@ form {
 
 	min-height:100%;
 	position:relative;
-}
+} 
 
 #content {
 
-	padding-bottom: 45px;   /* Height of the footer element */
+	height: auto;
+	padding-bottom: 45px;
 }
 
 #button-bar {
@@ -468,4 +480,35 @@ form {
   opacity: 0.6;
   background: white;
   display: none;
+  z-index: 2
+}
+
+.arrow {
+
+	width: 0; 
+	height: 0; 
+	border-top: 8px solid transparent;
+	border-bottom: 8px solid transparent;
+}
+
+.arrow.right {
+
+	border-left: 8px solid #1abc9c;
+	padding-right: 5px;
+}
+
+.arrow.right:hover {
+
+	border-left: 8px solid #2accac;
+}
+
+.arrow.left {
+
+	border-right: 8px solid #1abc9c;
+	padding-left: 5px;
+}
+
+.arrow.left:hover {
+
+	border-right: 8px solid #2accac;
 }
