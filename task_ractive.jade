@@ -12,9 +12,10 @@ html
 		script(type='text/javascript', src='/Ractive.js')
 		script(type='text/javascript')
 			
-			model.init(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
-			$.get('/task_template.html').then(function(template) {
+			var model, viewModel;
+			model = new Model(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
+			$.get('/task_template.html').then(function(ractiveTemplate) {
 
-				viewModel.init(template);
+				viewModel = new ViewModel(model, ractiveTemplate);
 			});
 		#overlay			

@@ -129,7 +129,7 @@
 
   width: 266px;
   background-clip: padding-box;
-  border: solid 1px #E46E6D;
+  /*border: solid 1px #E46E6D;*/
   /*box-shadow: 0px 0px 15px #999;
   -webkit-box-shadow: 0px 0px 15px #999;
   -moz-box-shadow: 0px 0px 15px #999;*/
@@ -155,7 +155,7 @@
 
 .error-popup > .content:before {
 
-  border-bottom: 10px solid #E46E6D;
+  border-bottom: 10px solid #E74C3C;
   margin-bottom: 0px;
 }
 
