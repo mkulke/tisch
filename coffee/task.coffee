@@ -1,72 +1,33 @@
-common = (->
+class TaskSocketIO extends SocketIO
+  
+  messageHandler: (data) =>
 
-  uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace /[xy]/g, (c) ->
-
-    r = Math.random() * 16|0
-    v = if c == 'x' then r else (r&0x3|0x8)
-    v.toString 16
-  constants =
-
-    en_US:
-
-      COLOR: 'Color'
-      INITIAL_ESTIMATION: 'Initial estimation'
-      OK: 'Ok'
-      REMAINING_TIME: 'Remaining time'
-      REMOVE: 'Remove'
-      STORY: 'Story'
-      TIME_SPENT: 'Time spent'
-      TODAY: 'today'
-      VALID_TIME_MESSAGE: 'This attribute has to be specified as a positive number < 100 with two or less precision digits (e.g. "1" or "99.25").'
-  {
-    COLORS: ['yellow', 'orange', 'red', 'purple', 'blue', 'green']
-    uuid: uuid
-    constants: constants
-    MS_TO_DAYS_FACTOR: 86400000
-    KEYUP_UPDATE_DELAY: 1500
-    DATE_DISPLAY_FORMAT: 'mm/dd/yy'
-  }
-)()
-
-class SocketIO
-
-  constructor: (ractive, model) ->
-
-    socket = io.connect "http://#{window.location.hostname}"
-    socket.on 'connect', -> socket.emit 'register', {client_uuid: common.uuid}
-    socket.on 'message', (data) ->
-
-      if data.message == 'update'
+    if data.message == 'update'
         
-        for item in ['task', 'story'] when data.recipient == model[item]._id
+        for item in ['task', 'story'] when data.recipient == @model[item]._id
 
-          ractive.set "#{item}._rev", data.data.rev
-          ractive.set "#{item}.#{data.data.key}", data.data.value
-          if data.data.key == 'story_id' then model.reloadStory data.data.value, (data) -> ractive.set 'story', data
+          @view.set "#{item}._rev", data.data.rev
+          @view.set "#{item}.#{data.data.key}", data.data.value
+          if data.data.key == 'story_id' then @model.getStory data.data.value, (data) => @view.set 'story', data
 
-class RactiveView
+class TaskView extends View
 
-  constructor: (template, ractiveHandlers, model) ->
+  _buildRactiveData: =>
 
-    @ractive = new Ractive
+    task: @model.task
+    story: @model.story
+    COLORS: common.COLORS
+    constants: common.constants
+    sprint: @model.sprint
+    test: common.test
+    stories: [@model.story]
+    getIndexDate: @model.getIndexDate
+    remaining_time: @model.getDateIndexedValue(@model.task.remaining_time, @model.getIndexDate(@model.sprint), true)
+    time_spent: @model.getDateIndexedValue(@model.task.time_spent, @model.getIndexDate(@model.sprint))
+    error_message: "Dummy message"
+  _setRactiveObservers: =>
 
-      el: 'output'
-      template: template
-      data: 
-
-        task: model.task
-        story: model.story
-        COLORS: common.COLORS
-        constants: common.constants
-        sprint: model.sprint
-        test: common.test
-        stories: [model.story]
-        getIndexDate: model.getIndexDate
-        remaining_time: model.getDateIndexedValue(model.task.remaining_time, model.getIndexDate(model.sprint), true)
-        time_spent: model.getDateIndexedValue(model.task.time_spent, model.getIndexDate(model.sprint))
-        error_message: "Dummy message"
-    @ractive.on ractiveHandlers
-
+    model = @model
     @ractive.observe "task.remaining_time", (newValue, oldValue) ->
 
       index = $("#remaining_time-index .selected").data 'date'
@@ -77,12 +38,11 @@ class RactiveView
       index = $("#time_spent-index .selected").data 'date'
       @set 'time_spent', model.task.time_spent[index]
     , {init: false}
-  set: (keypath, value) => @ractive.set keypath, value
-  get: (keypath) => @ractive.get keypath
 
-class Model
+class TaskModel extends Model
 
   constructor: (@task, @story, @sprint) ->
+  type: 'task'
   getIndexDate: (sprint, formatted) ->
 
     currentDate = new Date()
@@ -116,55 +76,7 @@ class Model
           break
     else
       value = 0
-    value 
-  reloadStory: (storyId, successCb) ->
-    
-    $.ajaxq 'client',
-
-      url: "/story/#{storyId}"
-      type: 'GET'
-      dataType: 'json'
-      success: (data, textStatus, jqXHR) -> 
-
-        if successCb? then successCb data
-      error: (data, textStatus, jqXHR) -> 
-
-        console.log 'error: #{data}'
-  reloadStories: (sprintId, successCb) ->
-
-    $.ajaxq 'client',
-
-      url: '/story'
-      type: 'GET'
-      headers: {parent_id: sprintId}
-      dataType: 'json'
-      success: (data, textStatus, jqXHR) -> 
-
-        if successCb? then successCb data
-      error: (data, textStatus, jqXHR) ->
-
-       console.log 'error: #{data}'
-  requestUpdate: (key, value, successCb, undoCb) =>
-
-    $.ajaxq 'client', 
-
-      url: "/task/#{@task._id}"
-      type: 'POST'
-      headers: {client_uuid: common.uuid}
-      contentType: 'application/json'
-      data: JSON.stringify {key: key, value: value}
-      beforeSend: (jqXHR, settings) =>
-
-        jqXHR.setRequestHeader 'rev', @task._rev
-      success: (data, textStatus, jqXHR) ->
-
-        if successCb? then successCb data
-      error: (data, textStatus, jqXHR) ->
-
-        console.log "error: #{data}"
-        if undoCb?
-
-          undoCb()
+    value
 
 class ViewModel
 
@@ -177,12 +89,12 @@ class ViewModel
       tapped_selector_item: @selectPopupItem
       tapped_button: @handleButton
 
-    @ractive = new RactiveView ractiveTemplate, ractiveHandlers, @model
-    @socketio = new SocketIO @ractive, @model
+    @view = new TaskView ractiveTemplate, ractiveHandlers, @model
+    @socketio = new TaskSocketIO @view, @model
 
     $('.popup-selector a.open').click (event) -> event.preventDefault()
-    $('#summary, #description, #initial_estimation').each (index, element) => $(element).data 'confirmed_value', @ractive.get("task.#{this.id}")
-    $('#remaining_time, #time_spent').each (index, element) => $(element).data 'confirmed_value', @ractive.get(element.id)
+    $('#summary, #description, #initial_estimation').each (index, element) => $(element).data 'confirmed_value', @view.get("task.#{this.id}")
+    $('#remaining_time, #time_spent').each (index, element) => $(element).data 'confirmed_value', @view.get(element.id)
     $('#initial_estimation, #remaining_time, #time_spent').data 'validation', (value) -> value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
 
     $('.popup-selector').each (index, element) =>
@@ -218,7 +130,7 @@ class ViewModel
     $('.selected', dateSelector).data 'date', dateText    
     $('.selected', dateSelector).text($.datepicker.formatDate common.DATE_DISPLAY_FORMAT, new Date(dateText))
     attribute = dateSelector.attr('id').split('-')[0]
-    @ractive.set attribute, @model.getDateIndexedValue(@model.task[attribute], dateText, attribute == 'remaining_time')
+    @view.set attribute, @model.getDateIndexedValue(@model.task[attribute], dateText, attribute == 'remaining_time')
   _setConfirmedValue: (node, value, index) ->
 
     #console.log("setConfirmedValue w/ #{value}, #{index}")
@@ -251,11 +163,11 @@ class ViewModel
     if key == 'remaining_time'
 
       index = $('#remaining_time-index .selected').data 'date'
-      value[index] = @ractive.get(key)
+      value[index] = @view.get(key)
     else if key == 'time_spent'
 
       index = $('#time_spent-index .selected').data 'date'
-      value[index] = @ractive.get(key)
+      value[index] = @view.get(key)
     [value, index]
   _showPopup: (id) -> 
 
@@ -275,11 +187,9 @@ class ViewModel
     $('#overlay').hide()
     $('#content').css('height', 'auto')
     $(document).unbind 'click', $("##{id}").data 'close_handler'
-  #set = (keypath, value) => ractive.set keypath, value
-  #get = (keypath) => ractive.get keypath
   _showError: (message) =>
 
-    @ractive.set('error_message', message)
+    @view.set('error_message', message)
     $('#overlay').css({height: $(window).height() + 'px'}).show()
     $('#error-popup').show()
   triggerUpdate: (ractiveEvent, delayed) =>
@@ -300,10 +210,10 @@ class ViewModel
 
         (data) =>
 
-          @ractive.set 'task._rev', data.rev
-          @ractive.set "task.#{key}", data.value
+          @view.set 'task._rev', data.rev
+          @view.set "task.#{key}", data.value
           @_setConfirmedValue node, data.value, index
-        ,=> @ractive.set "task.#{key}", $(node).data('confirmed_value')
+        ,=> @view.set "task.#{key}", $(node).data('confirmed_value')
 
     if node.localName.match(/^input$|^textarea$/) && $(node).data('validation')?
 
@@ -325,9 +235,9 @@ class ViewModel
 
     switch id
       
-      when 'story-selector' then @model.reloadStories @model.story.sprint_id, (data) =>
+      when 'story-selector' then @model.getStories @model.story.sprint_id, (data) =>
 
-        @ractive.set 'stories', data
+        @view.set 'stories', data
         @_showPopup(id)
       else @_showPopup(id)
   selectPopupItem: (ractiveEvent, args) =>
@@ -340,17 +250,17 @@ class ViewModel
 
       when 'color-selector' then @model.requestUpdate 'color', args.value, (data) => 
 
-        @ractive.set 'task._rev', data.rev
-        @ractive.set 'task.color', data.value
+        @view.set 'task._rev', data.rev
+        @view.set 'task.color', data.value
       when 'story-selector' 
 
         @model.requestUpdate 'story_id', args.value, (data) => 
 
-          @ractive.set 'task._rev', data.rev
-          @ractive.set 'task.story_id', data.value
-          @model.reloadStory data.value, (data) => 
+          @view.set 'task._rev', data.rev
+          @view.set 'task.story_id', data.value
+          @model.getStory data.value, (data) => 
 
-            @ractive.set 'story', data
+            @view.set 'story', data
   handleButton: (ractiveEvent, action) => 
 
     switch action

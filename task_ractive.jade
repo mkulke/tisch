@@ -6,6 +6,7 @@ html
 		script(type='text/javascript', src='/jquery-ui.js')
 		script(type='text/javascript', src='/ajaxq.js')
 		script(type='text/javascript', src='/socket.io/socket.io.js')
+		script(type='text/javascript', src='/shared.coffee.js')
 		script(type='text/javascript', src='/task.coffee.js')
 	body
 		#output
@@ -13,7 +14,7 @@ html
 		script(type='text/javascript')
 			
 			var model, viewModel;
-			model = new Model(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
+			model = new TaskModel(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
 			$.get('/task_template.html').then(function(ractiveTemplate) {
 
 				viewModel = new ViewModel(model, ractiveTemplate);
