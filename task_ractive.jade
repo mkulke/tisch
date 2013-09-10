@@ -15,8 +15,6 @@ html
 			model.init(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
 			$.get('/task_template.html').then(function(template) {
 
-				ractive.init(template);
-				view.init();
+				viewModel.init(template);
 			});
-			socketio.init()
 		#overlay			

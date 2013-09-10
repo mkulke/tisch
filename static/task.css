@@ -213,8 +213,8 @@ span {
 	-moz-border-radius: 3px;
 	position: absolute;
 	padding: 5px;
-	left: -13px;
-	top: 29px;
+	left: -11px;
+	top: 32px;
 	display: none;
 	z-index: 3;
 }
@@ -291,6 +291,15 @@ span {
   left: 70px;
 }
 
+#color-selector .selected {
+
+	vertical-align: text-bottom;
+	display: inline-block;
+	height: 17px;
+	width: 17px;
+	border: 1px solid #333333;
+}
+
 body {
 
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -340,14 +349,6 @@ textarea#description {
 
 	color: #333333;
 	font-weight: 300;
-}
-
-#color-selector .selected {
-
-	vertical-align: text-bottom;
-	display: inline-block;
-	height: 18px;
-	width: 18px;
 }
 
 #summary {

@@ -62,7 +62,7 @@ describe 'model.getDateIndexedValue', ->
     value = model.getDateIndexedValue(@map, '2012-12-01', true)
     assert.equal value, 10
 
-describe 'controller.requestUpdate', ->
+describe 'model.requestUpdate', ->
 
 	before -> 
 
@@ -78,18 +78,19 @@ describe 'controller.requestUpdate', ->
 		@xhr.onCreate = (req) => @requests.push req
 	after -> 
 
-		ractive.set.restore()
+		#ractive.set.restore()
 		@xhr.restore()
 	it 'should issue an ajax POST request', ->
 
     @successCb = sinon.spy()
-    controller.requestUpdate 'summary', 'New summary', @successCb
+    model.requestUpdate 'summary', 'New summary', @successCb
     assert.equal @requests.length, 1
     request = @requests[0]
     assert.equal request.url, '/task/abc'
     assert.equal request.method, 'POST'
     assert.equal request.requestBody, '{"key":"summary","value":"New summary"}'
     assert.equal request.requestHeaders.rev, 45
+  ###
 	it 'should update the view', ->
 
     assert.equal @requests.length, 1
@@ -98,19 +99,23 @@ describe 'controller.requestUpdate', ->
     request.respond 200, {'Content-Type': 'application/json'}, '{"rev":46,"id":"abc","key":"summary","value":"New summary"}'
     assert ractive.set.calledWith('task._rev', 46), 'revision not set (correctly)'
     assert ractive.set.calledWith('task.summary', 'New summary'), 'summary not set (correctly)'
+  ###
   it 'should execute a success callback', ->
 
+    assert.equal @requests.length, 1
+    request = @requests[0]
+    request.respond 200, {'Content-Type': 'application/json'}, '{"rev":46,"id":"abc","key":"summary","value":"New summary"}'
     assert @successCb.calledOnce, 'success callback not called (once)'
   it 'should execute an undo callback', ->
 
     undoCb = sinon.spy()
-    controller.requestUpdate 'summary', 'New summary', undefined, undoCb
+    model.requestUpdate 'summary', 'New summary', undefined, undoCb
     assert.equal @requests.length, 2
     request = @requests[1]
     request.respond 500, {'Content-Type': 'text/plain'}, 'An error'
     assert undoCb.calledOnce, 'undo callback not called (once)'
 
-describe 'controller.reloadStory', ->
+describe 'model.reloadStory', ->
 
   before ->
 
@@ -119,22 +124,21 @@ describe 'controller.reloadStory', ->
     @xhr.onCreate = (req) => @requests.push req
   after -> 
 
-    ractive.set.restore()
     @xhr.restore()
   it 'should issue a GET ajax request', ->
 
-    controller.reloadStory 'def'
+    successCb = sinon.spy()
+    model.reloadStory 'def', successCb
     assert.equal @requests.length, 1
     request = @requests[0]
     assert.equal request.url, '/story/def'
     assert.equal request.method, 'GET'
-  it 'should update the view with the response', ->
+  it 'should exectua a success callback', ->
 
-    sinon.stub ractive, 'set'
     @requests[0].respond 200, {'Content-Type': 'application/json'}, '{"_id":"not an actual story"}'
-    assert ractive.set.calledWith('story', {_id: 'not an actual story'}), 'story not set (correctly)'
+    assert @successCb.calledOnce, 'success callback not called (once)'
 
-describe 'controller.reloadStories', ->
+describe 'model.reloadStories', ->
 
   before ->
 
@@ -149,24 +153,31 @@ describe 'controller.reloadStories', ->
   after -> 
 
     #ractive.get.restore()
-    ractive.set.restore()
+    #ractive.set.restore()
     @xhr.restore()
   it 'should issue a GET ajax request', ->
 
     #sinon.stub ractive, 'get', -> [{_id: 'a', sprint_id: 'x'}, {_id: 'b', sprint_id: 'y'}]
-    controller.reloadStories 'y'
+    model.reloadStories 'y'
     assert.equal @requests.length, 1
     request = @requests[0]
     assert.equal request.url, '/story'
     assert.equal request.method, 'GET'
     assert.equal request.requestHeaders.parent_id, 'y'
+  it 'should call a success Callback', ->
+
+    @requests[0].respond 200, {'Content-Type': 'application/json'}, '[{"_id":"a"},{"_id":"b"},{"_id":"c"}]'
+    assert @successCb.calledOnce, 'success callback not called (once)'
+
+  ###
   it 'should update the view with the response', ->
 
     sinon.stub ractive, 'set'
     @requests[0].respond 200, {'Content-Type': 'application/json'}, '[{"_id":"a"},{"_id":"b"},{"_id":"c"}]'
     assert ractive.set.calledWith('stories', [{_id: 'a'}, {_id: 'b'}, {_id: 'c'}]), 'stories not set (correctly)'
+  ###
 
-describe 'view.triggerUpdate', ->
+describe 'viewModel.triggerUpdate', ->
 
   before ->
 
@@ -184,25 +195,84 @@ describe 'view.triggerUpdate', ->
   after -> 
 
     @clock.restore()
-    controller.requestUpdate.restore()
+    model.requestUpdate.restore()
     $('#with_validation').remove()
   it 'should prevent a submit action on input fields when return is pressed', ->
   
-    sinon.stub controller, 'requestUpdate'
-    view.triggerUpdate(@ractiveEvent)
+    sinon.stub model, 'requestUpdate'
+    viewModel.triggerUpdate(@ractiveEvent)
     assert @ractiveEvent.original.preventDefault.calledOnce, 'preventDefault not called'
-  it 'should call controller.requestUpdate', ->
+  it 'should call model.requestUpdate', ->
   
-    assert controller.requestUpdate.calledWith('summary', 'xyz'), 'requestUpdate not called with the correct arguments'
-  it 'should call controller.requestUpdate after 1500ms when called with delay=true', ->
+    assert model.requestUpdate.calledWith('summary', 'xyz'), 'requestUpdate not called with the correct arguments'
+  it 'should call model.requestUpdate after 1500ms when called with delay=true', ->
   
-    controller.requestUpdate.reset()
-    view.triggerUpdate(@ractiveEvent, true)
+    model.requestUpdate.reset()
+    viewModel.triggerUpdate(@ractiveEvent, true)
     @clock.tick 1500
-    assert controller.requestUpdate.calledWith('summary', 'xyz'), 'requestUpdate not called after 1500ms with the correct arguments'
-  it 'should not call controller.requestUpdate when the node has a validation which fails' , ->
+    assert model.requestUpdate.calledWith('summary', 'xyz'), 'requestUpdate not called after 1500ms with the correct arguments'
+  it 'should not call model.requestUpdate when the node has a validation which fails' , ->
 
     @ractiveEvent.node = $('#with_validation').get 0
-    controller.requestUpdate.reset()
-    view.triggerUpdate(@ractiveEvent)
-    assert controller.requestUpdate.notCalled, 'requestUpdate has been called, although it should not have been called'
+    model.requestUpdate.reset()
+    viewModel.triggerUpdate(@ractiveEvent)
+    assert model.requestUpdate.notCalled, 'requestUpdate has been called, although it should not have been called'
+
+describe 'viewModel.selectPopupItem', ->
+
+  before ->
+
+    sinon.stub ractive, 'set'
+
+  after ->
+
+    model.requestUpdate.restore()
+    model.reloadStory.restore()
+    ractive.set.restore()
+
+  it 'should call model.requestUpdate when the popup is a color selector', ->
+
+    sinon.stub model, 'requestUpdate', (key, value, successCb) -> successCb {rev: 1, value: 'blue'}
+    viewModel.selectPopupItem {}, {selector_id: 'color-selector', value: 'blue'}
+    assert model.requestUpdate.calledWith 'color', 'blue'
+    assert ractive.set.calledTwice, 'ractive is not called twice'
+
+  it 'should set the ractive rev and value after a successful request', ->
+
+    assert ractive.set.calledTwice, 'ractive is not called twice'    
+
+  it 'should call model.requestUpdate and model.reloadStory when the popup is a story selector', ->
+
+    ractive.set.reset()
+    model.requestUpdate.restore()
+    sinon.stub model, 'requestUpdate', (key, value, successCb) -> successCb {rev: 1, value: 'abc'}
+    sinon.stub model, 'reloadStory', (value, successCb) -> successCb 'stub' 
+    viewModel.selectPopupItem {}, {selector_id: 'story-selector', value: 'abc'}
+    assert model.requestUpdate.calledWith 'story_id', 'abc'
+    assert model.reloadStory.calledWith('abc'), 'reloadStory not called with the correct arguments'
+
+  it 'should set the ractive rev, value and story after successful requests', ->
+
+    assert ractive.set.calledThrice, 'ractive is not called three times'
+
+describe 'viewModel.selectPopupItem', ->
+
+  before ->
+
+    model.story = {sprint_id: 'abc'}
+    sinon.stub ractive, 'set'
+    sinon.stub model, 'reloadStories', (sprintId, successCb) -> successCb 'stub'
+
+  after ->
+
+    model.reloadStories.restore()
+    ractive.set.restore()
+
+  it 'should call model.reloadStories when the popup is a story-selector', ->
+
+    viewModel.openSelectorPopup {}, 'story-selector'
+    assert model.reloadStories.calledWith('abc'), 'reloadStories not called'
+
+  it 'should set ractive stories with the returned stories on a successful reload', ->
+
+    assert ractive.set.calledWith('stories', 'stub'), 'ractive set not called with the correct arguments'

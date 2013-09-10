@@ -42,7 +42,7 @@ socketio = (->
 
           ractive.set "#{item}._rev", data.data.rev
           ractive.set "#{item}.#{data.data.key}", data.data.value
-          controller.reloadStory data.data.value if data.data.key == 'story_id'
+          if data.data.key == 'story_id' then model.reloadStory data.data.value, (data) -> ractive.set 'story', data
   {init: init}
 )()
 
@@ -69,10 +69,10 @@ ractive = (->
         error_message: "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et"
     @ractive.on
 
-      trigger_update: view.triggerUpdate
-      tapped_selector: view.openSelectorPopup
-      tapped_selector_item: view.selectPopupItem
-      tapped_button: view.handleButton
+      trigger_update: viewModel.triggerUpdate
+      tapped_selector: viewModel.openSelectorPopup
+      tapped_selector_item: viewModel.selectPopupItem
+      tapped_button: viewModel.handleButton
   set = (keypath, value) => @ractive.set keypath, value
   get = (keypath) => @ractive.get keypath
   {init: init, set: set, get: get} 
@@ -115,7 +115,58 @@ model = (->
       value = 0
     value 
   init = (@task, @story, @sprint) ->
+  reloadStory = (storyId, successCb) ->
+    
+    $.ajaxq 'client',
+
+      url: "/story/#{storyId}"
+      type: 'GET'
+      dataType: 'json'
+      success: (data, textStatus, jqXHR) -> 
+
+        if successCb? then successCb data
+      error: (data, textStatus, jqXHR) -> 
+
+        console.log 'error: #{data}'
+  reloadStories = (sprintId, successCb) ->
+
+    $.ajaxq 'client',
+
+      url: '/story'
+      type: 'GET'
+      headers: {parent_id: sprintId}
+      dataType: 'json'
+      success: (data, textStatus, jqXHR) -> 
+
+        if successCb? then successCb data
+      error: (data, textStatus, jqXHR) ->
+
+       console.log 'error: #{data}'
+  requestUpdate = (key, value, successCb, undoCb) ->
+
+    $.ajaxq 'client', 
+
+      url: "/task/#{model.task._id}"
+      type: 'POST'
+      headers: {client_uuid: common.uuid}
+      contentType: 'application/json'
+      data: JSON.stringify {key: key, value: value}
+      beforeSend: (jqXHR, settings) ->
+
+        jqXHR.setRequestHeader 'rev', model.task._rev
+      success: (data, textStatus, jqXHR) ->
+
+        if successCb? then successCb data
+      error: (data, textStatus, jqXHR) ->
+
+        console.log "error: #{data}"
+        if undoCb?
+
+          undoCb()
   {
+    requestUpdate: requestUpdate
+    reloadStory: reloadStory
+    reloadStories: reloadStories
     init: init
     task: @task
     story: @story
@@ -125,9 +176,12 @@ model = (->
   }
 )()
 
-view = (->
+viewModel = (->
 
-  init = ->
+  init = (ractiveTemplate) ->
+
+    socketio.init()
+    ractive.init ractiveTemplate
 
     $('.popup-selector a.open').click (event) -> event.preventDefault()
     $('#summary, #description, #initial_estimation').each -> $(this).data 'confirmed_value', ractive.get("task.#{this.id}")
@@ -173,7 +227,10 @@ view = (->
 
     switch id
       
-      when 'story-selector' then controller.reloadStories model.story.sprint_id, -> showPopup(id)
+      when 'story-selector' then model.reloadStories model.story.sprint_id, (data) ->
+
+        ractive.set 'stories', data
+        showPopup(id)
       else showPopup(id)
   selectPopupItem = (ractiveEvent, args) ->
 
@@ -183,8 +240,20 @@ view = (->
 
     switch id
 
-      when 'color-selector' then controller.requestUpdate 'color', args.value
-      when 'story-selector' then controller.requestUpdate 'story_id', args.value, (data) -> controller.reloadStory data
+      when 'color-selector' then model.requestUpdate 'color', args.value, (data) -> 
+
+        ractive.set 'task._rev', data.rev
+        ractive.set 'task.color', data.value
+      when 'story-selector' 
+
+        model.requestUpdate 'story_id', args.value, (data) -> 
+
+          ractive.set 'task._rev', data.rev
+          ractive.set 'task.story_id', data.value
+          model.reloadStory data.value, (data) -> 
+
+            ractive.set 'story', data
+
   setConfirmedValue = (node, value, index) ->
 
     #console.log("setConfirmedValue w/ #{value}, #{index}")
@@ -239,10 +308,14 @@ view = (->
 
     updateCall = -> 
 
-      if !isConfirmedValue(node, value, index) then controller.requestUpdate key, value,
+      if !isConfirmedValue(node, value, index) then model.requestUpdate key, value,
 
-        (value) -> setConfirmedValue(node, value, index),
-        -> ractive.set "task.#{key}", $(node).data('confirmed_value')
+        (data) ->
+
+          ractive.set 'task._rev', data.rev
+          ractive.set "task.#{key}", data.value
+          setConfirmedValue(node, data.value, index)
+        ,-> ractive.set "task.#{key}", $(node).data('confirmed_value')
 
     if node.localName.match(/^input$|^textarea$/) && $(node).data('validation')?
 
@@ -266,7 +339,7 @@ view = (->
     popupHeight = $("##{id} .content").height()
     footerHeight = $("#button-bar").height()
     $("##{id} .content").show()
-    popupTop = $("##{id}").position().top
+    popupTop = $("##{id}").position()?.top
 
     $('#overlay').css({height: $(window).height() + 'px'}).show()
     if (popupTop + popupHeight) > (contentHeight + footerHeight)
@@ -297,69 +370,5 @@ view = (->
     selectPopupItem: selectPopupItem
     triggerUpdate: triggerUpdate
     handleButton: handleButton
-  }
-)()
-
-controller = ( ->
-
-  reloadStory = (storyId) ->
-    
-    $.ajaxq 'client',
-
-      url: "/story/#{storyId}"
-      type: 'GET'
-      dataType: 'json'
-      success: (data, textStatus, jqXHR) -> 
-
-        ractive.set 'story', data
-      error: (data, textStatus, jqXHR) -> 
-
-        console.log 'error: #{data}'
-  reloadStories = (sprintId, successCb) ->
-
-    $.ajaxq 'client',
-
-      url: '/story'
-      type: 'GET'
-      headers: {parent_id: sprintId}
-      dataType: 'json'
-      success: (data, textStatus, jqXHR) -> 
-
-        ractive.set 'stories', data
-        if successCb?
-
-          successCb()
-      error: (data, textStatus, jqXHR) ->
-
-       console.log 'error: #{data}'
-  requestUpdate = (key, value, successCb, undoCb) ->
-
-    $.ajaxq 'client', 
-
-      url: "/task/#{model.task._id}"
-      type: 'POST'
-      headers: {client_uuid: common.uuid}
-      contentType: 'application/json'
-      data: JSON.stringify {key: key, value: value}
-      beforeSend: (jqXHR, settings) ->
-
-        jqXHR.setRequestHeader 'rev', model.task._rev
-      success: (data, textStatus, jqXHR) ->
-
-        ractive.set 'task._rev', data.rev
-        ractive.set "task.#{key}", data.value
-        if successCb?
-
-          successCb data.value
-      error: (data, textStatus, jqXHR) ->
-
-        console.log "error: #{data}"
-        if undoCb?
-
-          undoCb()
-  {
-    requestUpdate: requestUpdate
-    reloadStory: reloadStory
-    reloadStories: reloadStories
   }
 )()
