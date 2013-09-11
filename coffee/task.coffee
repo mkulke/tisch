@@ -4,11 +4,14 @@ class TaskSocketIO extends SocketIO
 
     if data.message == 'update'
         
-        for item in ['task', 'story'] when data.recipient == @model[item]._id
+        for item in ['task', 'story', 'sprint'] when data.recipient == @model[item]._id
 
           @view.set "#{item}._rev", data.data.rev
           @view.set "#{item}.#{data.data.key}", data.data.value
-          if data.data.key == 'story_id' then @model.getStory data.data.value, (data) => @view.set 'story', data
+          switch data.data.key
+
+            when 'story_id' then @model.getStory data.data.value, (data) => @view.set 'story', data
+            when 'sprint_id' then @model.getSprint data.data.value, (data) => @view.set 'sprint', data
 
 class TaskView extends View
 
@@ -19,7 +22,6 @@ class TaskView extends View
     COLORS: common.COLORS
     constants: common.constants
     sprint: @model.sprint
-    test: common.test
     stories: [@model.story]
     getIndexDate: @model.getIndexDate
     remaining_time: @model.getDateIndexedValue(@model.task.remaining_time, @model.getIndexDate(@model.sprint), true)
@@ -41,8 +43,8 @@ class TaskView extends View
 
 class TaskModel extends Model
 
-  constructor: (@task, @story, @sprint) ->
   type: 'task'
+  constructor: (@task, @story, @sprint) ->
   getIndexDate: (sprint, formatted) ->
 
     currentDate = new Date()

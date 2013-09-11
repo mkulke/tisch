@@ -9,11 +9,15 @@ common = (->
 
     en_US:
 
+      ADD_TASK: 'Add Task'
       COLOR: 'Color'
+      ESTIMATION: 'Estimation'
       INITIAL_ESTIMATION: 'Initial estimation'
       OK: 'Ok'
+      OPEN: 'Open'
       REMAINING_TIME: 'Remaining time'
       REMOVE: 'Remove'
+      SPRINT: 'Sprint'
       STORY: 'Story'
       TIME_SPENT: 'Time spent'
       TODAY: 'today'
@@ -55,6 +59,21 @@ class View
 
 class Model
 
+  # TODO: consolidate
+  # TODO: write unit-tests
+  getSprint: (sprintId, successCb) ->
+    
+    $.ajaxq 'client',
+
+      url: "/sprint/#{sprintId}"
+      type: 'GET'
+      dataType: 'json'
+      success: (data, textStatus, jqXHR) -> 
+
+        if successCb? then successCb data
+      error: (data, textStatus, jqXHR) -> 
+
+        console.log 'error: #{data}'
   getStory: (storyId, successCb) ->
     
     $.ajaxq 'client',
@@ -68,6 +87,19 @@ class Model
       error: (data, textStatus, jqXHR) -> 
 
         console.log 'error: #{data}'
+  getSprints: (successCb) ->
+
+    $.ajaxq 'client',
+
+      url: '/sprint'
+      type: 'GET'
+      dataType: 'json'
+      success: (data, textStatus, jqXHR) -> 
+
+        if successCb? then successCb data
+      error: (data, textStatus, jqXHR) ->
+
+       console.log 'error: #{data}'
   getStories: (sprintId, successCb) ->
 
     $.ajaxq 'client',

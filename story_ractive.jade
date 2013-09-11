@@ -1,23 +1,23 @@
 html
 	head
-		title Task details
+		title Story details
 		link(rel='stylesheet', href='/shared.css', type='text/css')
-		link(rel='stylesheet', href='/task.css', type='text/css')
+		link(rel='stylesheet', href='/story.css', type='text/css')
 		script(type='text/javascript', src='/jquery-dev.js')
 		script(type='text/javascript', src='/jquery-ui.js')
 		script(type='text/javascript', src='/ajaxq.js')
 		script(type='text/javascript', src='/socket.io/socket.io.js')
 		script(type='text/javascript', src='/shared.coffee.js')
-		script(type='text/javascript', src='/task.coffee.js')
+		script(type='text/javascript', src='/story.coffee.js')
 	body
 		#output
 		script(type='text/javascript', src='/Ractive.js')
 		script(type='text/javascript')
 			
 			var model, viewModel;
-			model = new TaskModel(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
-			$.get('/task_template.html').then(function(ractiveTemplate) {
+			model = new StoryModel(!{JSON.stringify(tasks)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
+			$.get('/story_template.html').then(function(ractiveTemplate) {
 
-				viewModel = new TaskViewModel(model, ractiveTemplate);
+				viewModel = new StoryViewModel(model, ractiveTemplate);
 			});
-		#overlay			
+		#overlay	

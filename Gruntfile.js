@@ -30,6 +30,7 @@ module.exports = function(grunt) {
 		    files: {
 
 		      'coffee/task.coffee.js': 'coffee/task.coffee',
+					'coffee/story.coffee.js': 'coffee/story.coffee',
 		     	'coffee/shared.coffee.js': 'coffee/shared.coffee',
 		      'test/unit/task.coffee.js': 'test/unit/task.coffee',
 		      'test/unit/shared.coffee.js': 'test/unit/shared.coffee'
