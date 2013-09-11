@@ -17,6 +17,6 @@ html
 			model = new TaskModel(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
 			$.get('/task_template.html').then(function(ractiveTemplate) {
 
-				viewModel = new ViewModel(model, ractiveTemplate);
+				viewModel = new TaskViewModel(model, ractiveTemplate);
 			});
 		#overlay			

@@ -63,58 +63,41 @@ describe 'TaskModel.getDateIndexedValue', ->
     value = @taskModel.getDateIndexedValue(@map, '2012-12-01', true)
     assert.equal value, 10
 
-describe 'ViewModel.triggerUpdate', ->
+describe 'TaskViewModel.openSelectorPopup', ->
 
   before ->
 
-    @ractiveEvent = {
+    class StubViewModel extends TaskViewModel
 
-      node: {localName: 'input', id: 'summary'}
-      original: {which: 13, preventDefault: ->}
-    }
-    sinon.stub @ractiveEvent.original, 'preventDefault'
-    @clock = sinon.useFakeTimers()
+      constructor: ->
 
-    $('body').append '<input id="with_validation"/>'
-    $('#with_validation').data('validation', (value) -> return false)
-    class StubViewModel extends ViewModel
-
-      constructor: -> 
+        @view = {set: ->}
     @viewModel = new StubViewModel
-    @taskModel = new TaskModel {summary: 'xyz'}
-    @viewModel.model = @taskModel
-    @viewModel.view = {set: ->}
-  after -> 
+    @model = new Model
+    @model.story = {sprint_id: 'abc'}
+    @viewModel.model = @model 
+    sinon.stub @viewModel.view, 'set'
+    sinon.stub @model, 'getStories', (sprintId, successCb) -> successCb 'stub'
 
-    @clock.restore()
-    @taskModel.requestUpdate.restore()
-    $('#with_validation').remove()
-  it 'should prevent a submit action on input fields when return is pressed', ->
-  
-    sinon.stub @taskModel, 'requestUpdate'
-    @viewModel.triggerUpdate(@ractiveEvent)
-    assert @ractiveEvent.original.preventDefault.calledOnce, 'preventDefault not called'
-  it 'should call TaskModel.requestUpdate', ->
-  
-    assert @taskModel.requestUpdate.calledWith('summary', 'xyz'), 'requestUpdate not called with the correct arguments'
-  it 'should call TaskModel.requestUpdate after 1500ms when called with delay=true', ->
-  
-    @taskModel.requestUpdate.reset()
-    @viewModel.triggerUpdate(@ractiveEvent, true)
-    @clock.tick 1500
-    assert @taskModel.requestUpdate.calledWith('summary', 'xyz'), 'requestUpdate not called after 1500ms with the correct arguments'
-  it 'should not call TaskModel.requestUpdate when the node has a validation which fails' , ->
+  after ->
 
-    @ractiveEvent.node = $('#with_validation').get 0
-    @taskModel.requestUpdate.reset()
-    @viewModel.triggerUpdate(@ractiveEvent)
-    assert @taskModel.requestUpdate.notCalled, 'requestUpdate has been called, although it should not have been called'
+    @model.getStories.restore()
+    @viewModel.view.set.restore()
 
-describe 'ViewModel.selectPopupItem', ->
+  it 'should call TaskModel.getStories when the popup is a story-selector', ->
+
+    @viewModel.openSelectorPopup {}, 'story-selector'
+    assert @model.getStories.calledWith('abc'), 'getStories not called'
+
+  it 'should set view stories with the returned stories on a successful reload', ->
+
+    assert @viewModel.view.set.calledWith('stories', 'stub'), 'view set not called with the correct arguments'
+
+describe 'TaskViewModel.selectPopupItem', ->
 
   before ->
 
-    class StubViewModel extends ViewModel
+    class StubViewModel extends TaskViewModel
 
       constructor: ->
 
@@ -133,8 +116,7 @@ describe 'ViewModel.selectPopupItem', ->
 
     sinon.stub @taskModel, 'requestUpdate', (key, value, successCb) -> successCb {rev: 1, value: 'blue'}
     @viewModel.selectPopupItem {}, {selector_id: 'color-selector', value: 'blue'}
-    assert @taskModel.requestUpdate.calledWith 'color', 'blue'
-    assert @viewModel.view.set.calledTwice, 'view is not called twice'
+    assert @taskModel.requestUpdate.calledWith('color', 'blue'), 'requestUpdate not called with the correct arguments'
 
   it 'should set the view rev and value after a successful request', ->
 
@@ -153,32 +135,3 @@ describe 'ViewModel.selectPopupItem', ->
   it 'should set the view rev, value and story after successful requests', ->
 
     assert @viewModel.view.set.calledThrice, 'view is not called three times'
-
-describe 'ViewModel.openSelectorPopup', ->
-
-  before ->
-
-    class StubViewModel extends ViewModel
-
-      constructor: ->
-
-        @view = {set: ->}
-    @viewModel = new StubViewModel
-    @taskModel = new TaskModel({}, {sprint_id: 'abc'})
-    @viewModel.model = @taskModel 
-    sinon.stub @viewModel.view, 'set'
-    sinon.stub @taskModel, 'getStories', (sprintId, successCb) -> successCb 'stub'
-
-  after ->
-
-    @taskModel.getStories.restore()
-    @viewModel.view.set.restore()
-
-  it 'should call TaskModel.getStories when the popup is a story-selector', ->
-
-    @viewModel.openSelectorPopup {}, 'story-selector'
-    assert @taskModel.getStories.calledWith('abc'), 'getStories not called'
-
-  it 'should set view stories with the returned stories on a successful reload', ->
-
-    assert @viewModel.view.set.calledWith('stories', 'stub'), 'view set not called with the correct arguments'

@@ -78,85 +78,30 @@ class TaskModel extends Model
       value = 0
     value
 
-class ViewModel
+class TaskViewModel extends ViewModel
 
+  type: 'task'
   constructor: (@model, ractiveTemplate) ->
 
-    ractiveHandlers = 
+    super()
 
-      trigger_update: @triggerUpdate
-      tapped_selector: @openSelectorPopup
-      tapped_selector_item: @selectPopupItem
-      tapped_button: @handleButton
-
-    @view = new TaskView ractiveTemplate, ractiveHandlers, @model
+    @view = new TaskView ractiveTemplate, @ractiveHandlers, @model
     @socketio = new TaskSocketIO @view, @model
 
-    $('.popup-selector a.open').click (event) -> event.preventDefault()
     $('#summary, #description, #initial_estimation').each (index, element) => $(element).data 'confirmed_value', @view.get("task.#{this.id}")
     $('#remaining_time, #time_spent').each (index, element) => $(element).data 'confirmed_value', @view.get(element.id)
     $('#initial_estimation, #remaining_time, #time_spent').data 'validation', (value) -> value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
 
-    $('.popup-selector').each (index, element) =>
+    @_initPopupSelectors()
+    @_initDatePickers 
 
-      closeHandler = (event) =>
-
-        #console.log "closeHandler called"
-
-        if ($(event.target).parents("##{element.id}").length == 0) && ($(event.target).parents('.ui-datepicker-header').length < 1)
-        
-          @_hidePopup(element.id)
-          $(document).unbind 'click', closeHandler
-      $('.selected', $(element)).click -> $(document).bind 'click', closeHandler
-      $(element).data('close_handler', closeHandler)
-
-    $('.date-selector .content').datepicker 
-
-      inline: true
-      showOtherMonths: true
-      dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-      nextText: '<div class="arrow right"></div>'
-      prevText: '<div class="arrow left"></div>'
       minDate: new Date @model.sprint.start
       maxDate: new Date ((new Date @model.sprint.start).getTime() + ((@model.sprint.length - 1) * common.MS_TO_DAYS_FACTOR))
-      dateFormat: $.datepicker.ISO_8601
-      gotoCurrent: true
-      onSelect: @_selectDate
   _selectDate: (dateText, inst) =>
 
-    dateSelector = $(inst.input).parents('.date-selector')
-    @_hidePopup dateSelector.attr('id')
-    $('document').unbind 'click', dateSelector.data 'close_handler'
-    $('.selected', dateSelector).data 'date', dateText    
-    $('.selected', dateSelector).text($.datepicker.formatDate common.DATE_DISPLAY_FORMAT, new Date(dateText))
+    dateSelector = super(dateText, inst)
     attribute = dateSelector.attr('id').split('-')[0]
     @view.set attribute, @model.getDateIndexedValue(@model.task[attribute], dateText, attribute == 'remaining_time')
-  _setConfirmedValue: (node, value, index) ->
-
-    #console.log("setConfirmedValue w/ #{value}, #{index}")
-    if index?
-
-       $(node).data 'confirmed_value', value[index]
-    else 
-
-      $(node).data 'confirmed_value', value
-  _resetToConfirmedValue: (node, key, index) -> 
-
-    #console.log("resetToConfirmedValue w/ #{key}, #{index}")
-    if index?
-
-      @model.task[key][index] = $(node).data('confirmed_value')
-    else
-
-      @model.task[key] = $(node).data('confirmed_value')
-  _isConfirmedValue: (node, value, index) ->
-
-    if index? 
-
-      value[index] == $(node).data('confirmed_value')
-    else
-
-      value == $(node).data('confirmed_value')
   _buildValue: (key) =>
 
     value = @model.task[key]
@@ -169,68 +114,6 @@ class ViewModel
       index = $('#time_spent-index .selected').data 'date'
       value[index] = @view.get(key)
     [value, index]
-  _showPopup: (id) -> 
-
-    contentHeight = $('#content').height()
-    popupHeight = $("##{id} .content").height()
-    footerHeight = $("#button-bar").height()
-    $("##{id} .content").show()
-    popupTop = $("##{id}").position()?.top
-
-    $('#overlay').css({height: $(window).height() + 'px'}).show()
-    if (popupTop + popupHeight) > (contentHeight + footerHeight)
-
-      $('#content').css 'height', popupTop + popupHeight - footerHeight
-  _hidePopup: (id) -> 
-
-    $("##{id} .content").hide()
-    $('#overlay').hide()
-    $('#content').css('height', 'auto')
-    $(document).unbind 'click', $("##{id}").data 'close_handler'
-  _showError: (message) =>
-
-    @view.set('error_message', message)
-    $('#overlay').css({height: $(window).height() + 'px'}).show()
-    $('#error-popup').show()
-  triggerUpdate: (ractiveEvent, delayed) =>
-
-    clearTimeout @keyboardTimer
-    event = ractiveEvent.original
-    node = ractiveEvent.node
-    if (node.localName == 'input') && (event.which == 13)
-
-      event.preventDefault()
-
-    key = node.id
-    [value, index] = @_buildValue key
-
-    updateCall = => 
-
-      if !@_isConfirmedValue(node, value, index) then @model.requestUpdate key, value,
-
-        (data) =>
-
-          @view.set 'task._rev', data.rev
-          @view.set "task.#{key}", data.value
-          @_setConfirmedValue node, data.value, index
-        ,=> @view.set "task.#{key}", $(node).data('confirmed_value')
-
-    if node.localName.match(/^input$|^textarea$/) && $(node).data('validation')?
-
-      if !$(node).data('validation') $(node).val()
-
-        @_resetToConfirmedValue(node, key, index)
-        updateCall = -> $(node).next().show()  
-      else
-
-        $(node).next().hide()
-
-    if delayed? 
-
-      @keyboardTimer = setTimeout updateCall, common.KEYUP_UPDATE_DELAY 
-    else 
-
-      updateCall()
   openSelectorPopup: (ractiveEvent, id) =>
 
     switch id
@@ -242,11 +125,9 @@ class ViewModel
       else @_showPopup(id)
   selectPopupItem: (ractiveEvent, args) =>
 
-    id = args.selector_id
-    @_hidePopup id
-    $(document).unbind 'click', $("##{id}").data 'close_handler'
+    super ractiveEvent, args
 
-    switch id
+    switch args.selector_id
 
       when 'color-selector' then @model.requestUpdate 'color', args.value, (data) => 
 
@@ -263,7 +144,8 @@ class ViewModel
             @view.set 'story', data
   handleButton: (ractiveEvent, action) => 
 
+    super ractiveEvent, action
+
     switch action
 
-      when 'error_ok' then $('#error-popup, #overlay').hide()
       when 'task_remove' then @_showError 'Move along. This functionality is not implemented yet.'
