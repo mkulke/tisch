@@ -122,10 +122,10 @@ describe 'ViewModel.triggerUpdate', ->
     $('#with_validation').data('validation', (value) -> return false)
     class StubViewModel extends ViewModel
 
-      type: 'sometype'
       constructor: ->
     @viewModel = new StubViewModel
     @model = new Model
+    @model.type = 'sometype'
     @model.sometype = {summary: 'xyz'}
     @viewModel.model = @model
     @viewModel.view = {set: ->}

@@ -114,19 +114,24 @@ class Model
       error: (data, textStatus, jqXHR) ->
 
        console.log 'error: #{data}'
-  requestUpdate: (key, value, successCb, undoCb) =>
+  requestChildUpdate: (index, key, value, successCb, errorCb) =>
+
+    @_requestUpdate(@children.type, @children.objects[index]._id, key, value, @children.objects[index]._rev, successCb, errorCb)
+  requestUpdate: (key, value, successCb, errorCb) =>
+
+    @_requestUpdate(@type, @[@type]._id, key, value, @[@type]._rev, successCb, errorCb)
+  _requestUpdate: (type, id, key, value, rev, successCb, undoCb) =>
 
     $.ajaxq 'client', 
 
-      url: "/#{@type}/#{@[@type]._id}"
-      #url: "/task/#{@task._id}"
+      url: "/#{type}/#{id}"
       type: 'POST'
       headers: {client_uuid: common.uuid}
       contentType: 'application/json'
       data: JSON.stringify {key: key, value: value}
       beforeSend: (jqXHR, settings) =>
 
-        jqXHR.setRequestHeader 'rev', @[@type]._rev
+        jqXHR.setRequestHeader 'rev', rev
       success: (data, textStatus, jqXHR) ->
 
         if successCb? then successCb data
@@ -136,6 +141,8 @@ class Model
         if undoCb?
 
           undoCb()
+  get: (key) => @[@type]?[key]
+  set: (key, value) => @[@type]?[value]
 
 class ViewModel
 
@@ -185,32 +192,20 @@ class ViewModel
           $(document).unbind 'click', closeHandler
       $('.selected', $(element)).click -> $(document).bind 'click', closeHandler
       $(element).data('close_handler', closeHandler)
-  _setConfirmedValue: (node, value, index) ->
+  _setConfirmedValue: (node) ->
 
-    #console.log("setConfirmedValue w/ #{value}, #{index}")
-    if index?
+    key = node.id 
+    value = @model.get key
+    $(node).data 'confirmed_value', value
+  _resetToConfirmedValue: (node) -> 
 
-      $(node).data 'confirmed_value', value[index]
-    else 
+    key = node.id 
+    @model.set key, $(node).data('confirmed_value')
+  _isConfirmedValue: (node) ->
 
-      $(node).data 'confirmed_value', value
-  _resetToConfirmedValue: (node, key, index) -> 
-
-    #console.log("resetToConfirmedValue w/ #{key}, #{index}")
-    if index?
-
-      @model[@type][key][index] = $(node).data('confirmed_value')
-    else
-
-      @model[@type][key] = $(node).data('confirmed_value')
-  _isConfirmedValue: (node, value, index) ->
-
-    if index? 
-
-      value[index] == $(node).data('confirmed_value')
-    else
-
-      value == $(node).data('confirmed_value')
+    key = node.id 
+    value = @model.get key
+    value == $(node).data('confirmed_value')
   _showPopup: (id) -> 
 
     contentHeight = $('#content').height()
@@ -234,10 +229,6 @@ class ViewModel
     @view.set('error_message', message)
     $('#overlay').css({height: $(window).height() + 'px'}).show()
     $('#error-popup').show()
-  _buildValue: (key) =>
-
-    value = @model[@type][key]
-    [value, undefined]
   openSelectorPopup: (ractiveEvent, id) =>
 
     @_showPopup(id)
@@ -251,38 +242,41 @@ class ViewModel
     switch action
 
       when 'error_ok' then $('#error-popup, #overlay').hide()
+
+  _buildUpdateCall: (node) =>
+
+    key = node.id;
+    value = @model.get key
+
+    return =>
+
+      successCb = (data) => 
+
+        @view.set "#{@model.type}._rev", data.rev
+        @view.set "#{@model.type}.#{key}", data.value
+        if $(node).data('confirmed_value')? then @_setConfirmedValue node
+      errorCb = => @view.set "#{@model.type}.#{key}", $(node).data('confirmed_value')
+
+      if !@_isConfirmedValue(node) then @model.requestUpdate key, value, successCb, errorCb
+
   triggerUpdate: (ractiveEvent, delayed) =>
 
     clearTimeout @keyboardTimer
+
     event = ractiveEvent.original
     node = ractiveEvent.node
-    if (node.localName == 'input') && (event.which == 13)
 
-      event.preventDefault()
+    if (node.localName == 'input') && (event.which == 13) then event.preventDefault()
 
-    key = node.id
-    [value, index] = @_buildValue key
-
-    updateCall = => 
-
-      if !@_isConfirmedValue(node, value, index) then @model.requestUpdate key, value,
-
-        (data) =>
-
-          @view.set "#{@type}._rev", data.rev
-          @view.set "#{@type}.#{key}", data.value
-          @_setConfirmedValue node, data.value, index
-        ,=> @view.set "#{@type}.#{key}", $(node).data('confirmed_value')
+    updateCall = @_buildUpdateCall node
 
     if node.localName.match(/^input$|^textarea$/) && $(node).data('validation')?
 
-      if !$(node).data('validation') $(node).val()
+      if !$(node).data('validation') $(node).val() 
 
-        @_resetToConfirmedValue(node, key, index)
+        @_resetToConfirmedValue(node)
         updateCall = -> $(node).next().show()  
-      else
-
-        $(node).next().hide()
+      else $(node).next().hide()
 
     if delayed? 
 

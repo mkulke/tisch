@@ -17,7 +17,7 @@ class StoryView extends View
 
   _buildRactiveData: =>
 
-    tasks: @model.tasks
+    children: @model.children.objects
     story: @model.story
     COLORS: common.COLORS
     constants: common.constants
@@ -28,11 +28,11 @@ class StoryView extends View
 class StoryModel extends Model
 
   type: 'story'
-  constructor: (@tasks, @story, @sprint) ->
+  constructor: (tasks, @story, @sprint) ->
 
+  	@children = {type: 'task', objects: tasks}
 class StoryViewModel extends ViewModel
 
-  type: 'story'
   constructor: (@model, ractiveTemplate) ->
 
     super()
@@ -40,7 +40,9 @@ class StoryViewModel extends ViewModel
     @view = new StoryView ractiveTemplate, @ractiveHandlers, @model
     @socketio = new StorySocketIO @view, @model
 
-    $('#title, #description, #estimation').each (index, element) => $(element).data 'confirmed_value', @view.get("story.#{this.id}")
+    $('#title, #description, #estimation').each (index, element) => $(element).data 'confirmed_value', @view.get("story.#{element.id}")
+    $('[id^="summary-"]').each (index, element) => $(element).data 'confirmed_value', @view.get("children[#{index}].summary")
+    $('[id^="description-"]').each (index, element) => $(element).data 'confirmed_value', @view.get("children[#{index}].description")
     $('#estimation').data 'validation', (value) -> value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
 
     $('ul#well').sortable
@@ -69,6 +71,23 @@ class StoryViewModel extends ViewModel
           @model.getSprint data.value, (data) => 
 
             @view.set 'sprint', data
+  _setConfirmedValue: (node) ->
+
+    [key, childIndex] = @_buildKey node
+    if childIndex? then value = @model.children.objects[childIndex]?[key]
+    else value = @model.get key
+    $(node).data 'confirmed_value', value
+  _resetToConfirmedValue: (node) -> 
+
+    [key, childIndex] = @_buildKey node
+    if childIndex? then @model.children.objects[childIndex]?[key] = $(node).data('confirmed_value')
+    else value = @model.set key, $(node).data('confirmed_value')
+  _isConfirmedValue: (node) ->
+
+    [key, childIndex] = @_buildKey node
+    if childIndex? then value = @model.children.objects[childIndex]?[key]
+    else value = @model.get key
+    value == $(node).data('confirmed_value')
   openSelectorPopup: (ractiveEvent, id) =>
 
 	  switch id
@@ -85,4 +104,38 @@ class StoryViewModel extends ViewModel
     switch action
 
       when 'story_remove' then @_showError 'Move along. This functionality is not implemented yet.'
-      when 'task_add' then @_showError 'Move along. This functionality is not implemented yet.'  
+      when 'task_add' then @_showError 'Move along. This functionality is not implemented yet.'
+  _buildKey: (node) ->
+
+    idParts = node.id.split('-')
+    if idParts.length > 1 then [idParts[0], idParts[1]]
+    else [idParts[0], undefined]
+  _buildUpdateCall: (node) =>
+
+    [key, childIndex] = @_buildKey node
+    if childIndex? 
+
+    	value = @model.children.objects[childIndex]?[key]
+    	type = @model.children.type
+    else 
+
+    	type = @model.type
+    	value = @model[type][key]
+
+    return =>
+
+      successCb = (data) => 
+
+        @view.set "#{type}._rev", data.rev
+        @view.set "#{type}.#{key}", data.value
+        if $(node).data('confirmed_value')? then @_setConfirmedValue node
+      errorCb = => 
+
+      	if childIndex? then keypath = "children[#{childIndex}].#{key}"
+      	else keypath = "#{type}.#{key}"      	
+      	@view.set keypath, $(node).data('confirmed_value')
+
+      if !@_isConfirmedValue(node) 
+
+      	if childIndex? then @model.requestChildUpdate childIndex, key, value, successCb, errorCb
+      	else @model.requestUpdate key, value, successCb, errorCb

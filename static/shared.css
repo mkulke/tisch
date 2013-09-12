@@ -263,30 +263,30 @@ span {
 
 #color-selector a > .content {
 
-  height: 75px;
-  width: 110px;
+  height: 105px;
+  width: 155px;
   padding: 0px;
 }
 
 #color-selector .color {
 
-  width: 30px;
-  height: 30px;
+  width: 45px;
+  height: 45px;
   margin: 5px;
 }
 
 #color-selector .box-2, #color-selector .box-3 {
 
   position: relative;
-  top: -70px;
-  left: 35px;
+  top: -100px;
+  left: 50px;
 }
 
 #color-selector .box-4, #color-selector .box-5 {
 
   position: relative;
-  top: -140px;
-  left: 70px;
+  top: -200px;
+  left: 100px;
 }
 
 #color-selector .selected {

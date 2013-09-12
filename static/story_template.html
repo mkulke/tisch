@@ -45,16 +45,16 @@
 			</span>
 		</p>
 		<ul id="well">
-			{{#tasks:i}}
+			{{#children:i}}
 				<li class="panel">
 					<div class="header {{color}}">
-						<input class="{{color}}" on-keyup="trigger_update:true" on-focusout="trigger_update" id="{{_id}}-title" value="{{summary}}"/>
+						<input class="{{color}}" on-keyup="trigger_update:true" on-focusout="trigger_update" id="summary-{{i}}" value="{{summary}}"/>
 						<div class="stats">
 							<img src="/clock_white_small.png">
 							<div class="text">3</div>
 						</div>
 					</div>
-					<div class="body"></div>
+					<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description-{{i}}" class="body" value="{{description}}"/>
 					<div class="button-bar">
 						<div class="buttons">
 							<input class="button open" type="button" value="{{constants.en_US.OPEN}}">
@@ -62,7 +62,7 @@
 						</div>
 					</div>
 				</li>
-			{{/tasks}}
+			{{/children}}
 		</ul>
 	</form>
 </div>

@@ -79,10 +79,13 @@ class TaskModel extends Model
     else
       value = 0
     value
+  set: (key, value, index) =>
+
+    if index? then @[@type][key][index] = value
+    else @[@type][key] = value
 
 class TaskViewModel extends ViewModel
 
-  type: 'task'
   constructor: (@model, ractiveTemplate) ->
 
     super()
@@ -116,6 +119,27 @@ class TaskViewModel extends ViewModel
       index = $('#time_spent-index .selected').data 'date'
       value[index] = @view.get(key)
     [value, index]
+  _setConfirmedValue: (node) ->
+
+    key = node.id 
+    [value, index] = @_buildValue key
+
+    if index? $(node).data 'confirmed_value', value[index]
+    else $(node).data 'confirmed_value', value
+  _resetToConfirmedValue: (node) -> 
+
+    key = node.id 
+    [value, index] = @_buildValue key
+
+    if index? then @model.set key, $(node).data('confirmed_value'), index
+    else @model.set key, $(node).data('confirmed_value')
+  _isConfirmedValue: (node) ->
+
+    key = node.id 
+    [value, index] = @_buildValue key
+
+    if index? value[index] == $(node).data('confirmed_value')
+    else value == $(node).data('confirmed_value')
   openSelectorPopup: (ractiveEvent, id) =>
 
     switch id
