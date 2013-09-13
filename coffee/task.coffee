@@ -174,4 +174,4 @@ class TaskViewModel extends ViewModel
 
     switch action
 
-      when 'task_remove' then @_showError 'Move along. This functionality is not implemented yet.'
+      when 'task_remove' then @showError 'Move along. This functionality is not implemented yet.'

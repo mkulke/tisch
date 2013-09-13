@@ -24,6 +24,7 @@ class StoryView extends View
     sprint: @model.sprint
     sprints: [@model.sprint]
     error_message: "Dummy message"
+    confirm_message: "Dummy message"
 
 class StoryModel extends Model
 
@@ -103,8 +104,15 @@ class StoryViewModel extends ViewModel
 
     switch action
 
-      when 'story_remove' then @_showError 'Move along. This functionality is not implemented yet.'
-      when 'task_add' then @_showError 'Move along. This functionality is not implemented yet.'
+      when 'story_remove' then @showError 'Move along. This functionality is not implemented yet.'
+      when 'task_add' then @showError 'Move along. This functionality is not implemented yet.'
+      when 'task_open' then window.location.href = "/task/#{ractiveEvent.context._id}"
+      when 'task_remove' 
+
+        @onConfirm = => @model.children.objects.splice ractiveEvent.index.i, 1
+        @showConfirm "You want to remove a task with summary #{ractiveEvent.context.summary}. This is not implemented yet."
+      when 'confirm_confirm' then @onConfirm()
+
   _buildKey: (node) ->
 
     idParts = node.id.split('-')

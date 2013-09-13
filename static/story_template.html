@@ -57,8 +57,8 @@
 					<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description-{{i}}" class="body" value="{{description}}"/>
 					<div class="button-bar">
 						<div class="buttons">
-							<input class="button open" type="button" value="{{constants.en_US.OPEN}}">
-							<input class="button open" type="button" value="{{constants.en_US.REMOVE}}">
+							<input on-tap="tapped_button:task_open" class="button open" type="button" value="{{constants.en_US.OPEN}}">
+							<input on-tap="tapped_button:task_remove" class="button remove" type="button" value="{{constants.en_US.REMOVE}}">
 						</div>
 					</div>
 				</li>
@@ -77,6 +77,15 @@
 	<div class="popup-buttons">
 		<form class="buttons">
 			<input on-tap="tapped_button:error_ok" class="button" type="button" value="{{constants.en_US.OK}}">
+		</form>
+	</div>
+</div>
+<div id="confirm-popup">
+	<div class="message warning">{{confirm_message}}</div>
+	<div class="popup-buttons">
+		<form class="buttons">
+			<input on-tap="tapped_button:confirm_cancel" class="button" type="button" value="{{constants.en_US.CANCEL}}">
+			<input on-tap="tapped_button:confirm_confirm" class="button" type="button" value="{{constants.en_US.CONFIRM}}">
 		</form>
 	</div>
 </div> 

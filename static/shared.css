@@ -5,7 +5,7 @@
 
 .warning {
 
-  background-color: #FFCC33;
+  background-color: #f39c12;
 }
 
 .red {
@@ -263,30 +263,30 @@ span {
 
 #color-selector a > .content {
 
-  height: 105px;
-  width: 155px;
+  height: 95px;
+  width: 140px;
   padding: 0px;
 }
 
 #color-selector .color {
 
-  width: 45px;
-  height: 45px;
+  width: 40px;
+  height: 40px;
   margin: 5px;
 }
 
 #color-selector .box-2, #color-selector .box-3 {
 
   position: relative;
-  top: -100px;
-  left: 50px;
+  top: -90px;
+  left: 45px;
 }
 
 #color-selector .box-4, #color-selector .box-5 {
 
   position: relative;
-  top: -200px;
-  left: 100px;
+  top: -180px;
+  left: 90px;
 }
 
 #color-selector .selected {
@@ -505,7 +505,7 @@ form {
 	background-color: #2accac;
 }
 
-#error-popup {
+#error-popup, #confirm-popup {
 
 	display: none;
 	position: absolute;
@@ -515,7 +515,7 @@ form {
 	z-index: 3;
 }
 
-#error-popup > .message {
+#error-popup > .message, #confirm-popup > .message {
 
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	font-weight: 200;

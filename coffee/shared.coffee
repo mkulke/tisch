@@ -10,7 +10,9 @@ common = (->
     en_US:
 
       ADD_TASK: 'Add Task'
+      CANCEL: 'Cancel'
       COLOR: 'Color'
+      CONFIRM: 'Confirm'
       ESTIMATION: 'Estimation'
       INITIAL_ESTIMATION: 'Initial estimation'
       OK: 'Ok'
@@ -224,11 +226,20 @@ class ViewModel
     $('#overlay').hide()
     $('#content').css('height', 'auto')
     $(document).unbind 'click', $("##{id}").data 'close_handler'
-  _showError: (message) =>
+  _showModal: (type, message) =>
 
-    @view.set('error_message', message)
+    @view.set("#{type}_message", message)
     $('#overlay').css({height: $(window).height() + 'px'}).show()
-    $('#error-popup').show()
+    $("##{type}-popup").show()   
+  showConfirm: (message) => @_showModal 'confirm', message
+  showError: (message) => @_showModal 'error', message
+  _hideModal: (type) -> 
+
+    $("##{type}-popup, #overlay").hide()
+  hideConfirm: -> 
+
+    @_hideModal 'confirm'
+  hideError: -> @_hideModal 'error'
   openSelectorPopup: (ractiveEvent, id) =>
 
     @_showPopup(id)
@@ -241,7 +252,9 @@ class ViewModel
 
     switch action
 
-      when 'error_ok' then $('#error-popup, #overlay').hide()
+      when 'error_ok' then @hideError()
+      when 'confirm_cancel' then @hideConfirm()
+      when 'confirm_confirm' then @hideConfirm()
 
   _buildUpdateCall: (node) =>
 
