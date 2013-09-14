@@ -1,4 +1,4 @@
-describe 'Model.requestUpdate', ->
+describe 'Model.update', ->
 
   before -> 
 
@@ -8,14 +8,14 @@ describe 'Model.requestUpdate', ->
     #@taskModel = new TaskModel {_id: 'abc', _rev: 45, summary: 'Old summary'}, {}, {}
     @model = new Model
     @model.type = 'sometype'
-    @model['sometype'] = {_id: 'abc', _rev: 45}
+    @model['sometype'] = {_id: 'abc', _rev: 45, summary: 'New summary'}
   after -> 
 
     @xhr.restore()
   it 'should issue an ajax POST request', ->
 
     @successCb = sinon.spy()
-    @model.requestUpdate 'summary', 'New summary', @successCb
+    @model.update 'summary', @successCb
     assert.equal @requests.length, 1
     request = @requests[0]
     assert.equal request.url, '/sometype/abc'
@@ -41,7 +41,7 @@ describe 'Model.requestUpdate', ->
   it 'should execute an undo callback', ->
 
     undoCb = sinon.spy()
-    @model.requestUpdate 'summary', 'New summary', undefined, undoCb
+    @model.update 'summary', undefined, undoCb
     assert.equal @requests.length, 2
     request = @requests[1]
     request.respond 500, {'Content-Type': 'text/plain'}, 'An error'
@@ -128,30 +128,30 @@ describe 'ViewModel.triggerUpdate', ->
     @model.type = 'sometype'
     @model.sometype = {summary: 'xyz'}
     @viewModel.model = @model
-    @viewModel.view = {set: ->}
+    @viewModel.view = {set: (->), get: -> 'New summary'}
   after -> 
 
     @clock.restore()
-    @model.requestUpdate.restore()
+    @model.update.restore()
     $('#with_validation').remove()
   it 'should prevent a submit action on input fields when return is pressed', ->
   
-    sinon.stub @model, 'requestUpdate'
+    sinon.stub @model, 'update'
     @viewModel.triggerUpdate(@ractiveEvent)
     assert @ractiveEvent.original.preventDefault.calledOnce, 'preventDefault not called'
-  it 'should call Model.requestUpdate', ->
+  it 'should call Model.update', ->
   
-    assert @model.requestUpdate.calledWith('summary', 'xyz'), 'requestUpdate not called with the correct arguments'
-  it 'should call Model.requestUpdate after 1500ms when called with delay=true', ->
+    assert @model.update.calledWith('summary'), 'update not called with the correct arguments'
+  it 'should call Model.update after 1500ms when called with delay=true', ->
   
-    @model.requestUpdate.reset()
+    @model.update.reset()
     @viewModel.triggerUpdate(@ractiveEvent, true)
     @clock.tick 1500
-    assert @model.requestUpdate.calledWith('summary', 'xyz'), 'requestUpdate not called after 1500ms with the correct arguments'
-  it 'should not call Model.requestUpdate when the node has a validation which fails' , ->
+    assert @model.update.calledWith('summary'), 'update not called after 1500ms with the correct arguments'
+  it 'should not call Model.update when the node has a validation which fails' , ->
 
     @ractiveEvent.node = $('#with_validation').get 0
-    @model.requestUpdate.reset()
+    @model.update.reset()
     @viewModel.triggerUpdate(@ractiveEvent)
-    assert @model.requestUpdate.notCalled, 'requestUpdate has been called, although it should not have been called'
+    assert @model.update.notCalled, 'update has been called, although it should not have been called'
     

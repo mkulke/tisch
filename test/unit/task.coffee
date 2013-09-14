@@ -101,35 +101,35 @@ describe 'TaskViewModel.selectPopupItem', ->
 
       constructor: ->
 
-        @view = {set: ->}
+        @view = {set: (->), get: -> 'red'}
     @viewModel = new StubViewModel
     @taskModel = new TaskModel {summary: 'xyz'}
     @viewModel.model = @taskModel
     sinon.stub @viewModel.view, 'set'
   after ->
 
-    @taskModel.requestUpdate.restore()
+    @taskModel.update.restore()
     @taskModel.getStory.restore()
     @viewModel.view.set.restore()
 
-  it 'should call TaskModel.requestUpdate when the popup is a color selector', ->
+  it 'should call TaskModel.update when the popup is a color selector', ->
 
-    sinon.stub @taskModel, 'requestUpdate', (key, value, successCb) -> successCb {rev: 1, value: 'blue'}
+    sinon.stub @taskModel, 'update', (key, successCb) -> successCb {rev: 1, value: 'blue'}
     @viewModel.selectPopupItem {}, {selector_id: 'color-selector', value: 'blue'}
-    assert @taskModel.requestUpdate.calledWith('color', 'blue'), 'requestUpdate not called with the correct arguments'
+    assert @taskModel.update.calledWith('color'), 'requestUpdate not called with the correct arguments'
 
   it 'should set the view rev and value after a successful request', ->
 
     assert @viewModel.view.set.calledTwice, 'view is not called twice'    
 
-  it 'should call TaskModel.requestUpdate and TaskModel.getStory when the popup is a story selector', ->
+  it 'should call TaskModel.update and TaskModel.getStory when the popup is a story selector', ->
 
     @viewModel.view.set.reset()
-    @taskModel.requestUpdate.restore()
-    sinon.stub @taskModel, 'requestUpdate', (key, value, successCb) -> successCb {rev: 1, value: 'abc'}
+    @taskModel.update.restore()
+    sinon.stub @taskModel, 'update', (key, successCb) -> successCb {rev: 1, value: 'abc'}
     sinon.stub @taskModel, 'getStory', (value, successCb) -> successCb 'stub' 
     @viewModel.selectPopupItem {}, {selector_id: 'story-selector', value: 'abc'}
-    assert @taskModel.requestUpdate.calledWith 'story_id', 'abc'
+    assert @taskModel.update.calledWith('story_id'), 'update not called with the correct arguments'
     assert @taskModel.getStory.calledWith('abc'), 'getStory not called with the correct arguments'
 
   it 'should set the view rev, value and story after successful requests', ->

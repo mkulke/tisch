@@ -4,14 +4,14 @@ class TaskSocketIO extends SocketIO
 
     if data.message == 'update'
         
-        for item in ['task', 'story', 'sprint'] when data.recipient == @model[item]._id
+      for item in ['task', 'story', 'sprint'] when data.recipient == @model[item]._id
 
-          @view.set "#{item}._rev", data.data.rev
-          @view.set "#{item}.#{data.data.key}", data.data.value
-          switch data.data.key
+        @view.set "#{item}._rev", data.data.rev
+        @view.set "#{item}.#{data.data.key}", data.data.value
+        switch data.data.key
 
-            when 'story_id' then @model.getStory data.data.value, (data) => @view.set 'story', data
-            when 'sprint_id' then @model.getSprint data.data.value, (data) => @view.set 'sprint', data
+          when 'story_id' then @model.getStory data.data.value, (data) => @view.set 'story', data
+          when 'sprint_id' then @model.getSprint data.data.value, (data) => @view.set 'sprint', data
 
 class TaskView extends View
 
@@ -155,19 +155,35 @@ class TaskViewModel extends ViewModel
 
     switch args.selector_id
 
-      when 'color-selector' then @model.requestUpdate 'color', args.value, (data) => 
+      when 'color-selector' 
 
-        @view.set 'task._rev', data.rev
-        @view.set 'task.color', data.value
+        undoValue = @view.get 'color'
+        @view.set 'task.color', args.value
+        @model.update 'color'
+
+          ,(data) => 
+
+            @view.set 'task._rev', data.rev
+          ,(message) =>
+
+            @view.set 'task.color', undoValue
+            #TODO: show error
       when 'story-selector' 
 
-        @model.requestUpdate 'story_id', args.value, (data) => 
+        undoValue = @view.get 'task.story_id'
+        @view.set 'task.story_id', args.value
+        @model.update 'story_id'
 
-          @view.set 'task._rev', data.rev
-          @view.set 'task.story_id', data.value
-          @model.getStory data.value, (data) => 
+          ,(data) => 
 
-            @view.set 'story', data
+            @view.set 'task._rev', data.rev
+            @model.getStory data.value, (data) => 
+
+              @view.set 'story', data
+          ,(message) =>
+
+            @view.set 'task.story_id', undoValue
+            # TODO: show error
   handleButton: (ractiveEvent, action) => 
 
     super ractiveEvent, action

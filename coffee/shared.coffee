@@ -14,6 +14,10 @@ common = (->
       COLOR: 'Color'
       CONFIRM: 'Confirm'
       ESTIMATION: 'Estimation'
+      ERROR_CREATE_TASK: 'Could not create a new Task.'
+      ERROR_REMOVE_STORY: 'Could not remove the Story. This functionality is not implemented yet.'
+      ERROR_REMOVE_TASK: 'Could not remove the Task.'
+      ERROR_UPDATE_TASK: 'Could not update the Task.'
       INITIAL_ESTIMATION: 'Initial estimation'
       OK: 'Ok'
       OPEN: 'Open'
@@ -52,10 +56,12 @@ class View
       el: 'output'
       template: ractiveTemplate
       data: @_buildRactiveData(model)
+      modifyArrays: false
     @ractive.on ractiveHandlers
     @_setRactiveObservers()
   _buildRactiveData: ->
   _setRactiveObservers: ->
+  update: => @ractive.update()
   set: (keypath, value) => @ractive.set keypath, value
   get: (keypath) => @ractive.get keypath
 
@@ -63,6 +69,41 @@ class Model
 
   # TODO: consolidate
   # TODO: write unit-tests
+  # TODO: more verbose error message, pass along those from http responses.
+
+  createTask: (storyId, successCb, errorCb) ->
+
+    $.ajaxq 'client',
+
+      url: '/task'
+      type: 'PUT'
+      headers: {client_uuid: common.uuid, parent_id: storyId}
+      success: (data, textStatus, jqXHR) -> 
+
+        if successCb? then successCb data
+      error: (data, textStatus, jqXHR) -> 
+
+        if errorCb? then errorCb "#{common.constants.en_US.ERROR_CREATE_TASK} #{jqXHR}"
+  removeTask: (task, successCb, errorCb) ->
+
+    getRev = -> 
+
+      task._rev
+
+    $.ajaxq 'client',
+
+      url: "/task/#{task._id}"
+      type: 'DELETE'
+      headers: {client_uuid: common.uuid}
+      beforeSend: (jqXHR, settings) =>
+
+        jqXHR.setRequestHeader 'rev', getRev()
+      success: (data, textStatus, jqXHR) -> 
+
+        if successCb? then successCb data
+      error: (data, textStatus, jqXHR) -> 
+
+        if errorCb? then errorCb "#{common.constants.en_US.ERROR_REMOVE_TASK} #{jqXHR}"
   getSprint: (sprintId, successCb) ->
     
     $.ajaxq 'client',
@@ -89,6 +130,9 @@ class Model
       error: (data, textStatus, jqXHR) -> 
 
         console.log 'error: #{data}'
+  removeStory: (storyId, successCb, errorCb) ->
+
+    errorCb common.constants.en_US.ERROR_REMOVE_STORY
   getSprints: (successCb) ->
 
     $.ajaxq 'client',
@@ -116,33 +160,30 @@ class Model
       error: (data, textStatus, jqXHR) ->
 
        console.log 'error: #{data}'
-  requestChildUpdate: (index, key, value, successCb, errorCb) =>
+  updateChild: (index, key, successCb, errorCb) => @_update @children.objects[index], key, @children.type, successCb, errorCb
+  update: (key, successCb, errorCb) => @_update @[@type], key, @type, successCb, errorCb
+  _update: (object, key, type, successCb, errorCb) =>
 
-    @_requestUpdate(@children.type, @children.objects[index]._id, key, value, @children.objects[index]._rev, successCb, errorCb)
-  requestUpdate: (key, value, successCb, errorCb) =>
+    getRev = ->
 
-    @_requestUpdate(@type, @[@type]._id, key, value, @[@type]._rev, successCb, errorCb)
-  _requestUpdate: (type, id, key, value, rev, successCb, undoCb) =>
+      object._rev
 
     $.ajaxq 'client', 
 
-      url: "/#{type}/#{id}"
+      url: "/#{type}/#{object._id}"
       type: 'POST'
       headers: {client_uuid: common.uuid}
       contentType: 'application/json'
-      data: JSON.stringify {key: key, value: value}
-      beforeSend: (jqXHR, settings) =>
+      data: JSON.stringify {key: key, value: object[key]}
+      beforeSend: (jqXHR, settings) ->
 
-        jqXHR.setRequestHeader 'rev', rev
+        jqXHR.setRequestHeader 'rev', getRev()
       success: (data, textStatus, jqXHR) ->
 
         if successCb? then successCb data
       error: (data, textStatus, jqXHR) ->
 
-        console.log "error: #{data}"
-        if undoCb?
-
-          undoCb()
+        if errorCb? then errorCb "#{common.constants.en_US.ERROR_UPDATE_TASK} #{jqXHR}"
   get: (key) => @[@type]?[key]
   set: (key, value) => @[@type]?[value]
 
@@ -263,14 +304,18 @@ class ViewModel
 
     return =>
 
+      undoValue = @view.get "#{@model.type}.#{key}"
       successCb = (data) => 
 
         @view.set "#{@model.type}._rev", data.rev
-        @view.set "#{@model.type}.#{key}", data.value
         if $(node).data('confirmed_value')? then @_setConfirmedValue node
-      errorCb = => @view.set "#{@model.type}.#{key}", $(node).data('confirmed_value')
+      errorCb = => 
 
-      if !@_isConfirmedValue(node) then @model.requestUpdate key, value, successCb, errorCb
+        @view.set "#{@model.type}.#{key}", undoValue
+      if !@_isConfirmedValue(node) 
+
+        @view.set "#{@model.type}.#{key}", value
+        @model.update key, successCb, errorCb
 
   triggerUpdate: (ractiveEvent, delayed) =>
 
