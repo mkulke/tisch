@@ -138,7 +138,7 @@ describe 'StoryViewModel._handleSortstop', ->
     class StubViewModel extends StoryViewModel
 
       constructor: ->
-      view: {update: ->}
+      view: {update: (->), set: ->}
     @viewModel = new StubViewModel
     @model = new Model
     @objects = [{priority: 1}, {priority: 2}, {priority: 3}, {priority: 4.5}]
