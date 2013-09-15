@@ -27,12 +27,6 @@ class StoryView extends View
     error_message: "Dummy message"
     confirm_message: "Dummy message"
 
-  ###_setRactiveObservers: =>
-
-    @ractive.observe "children", (newValue, oldValue) -> 
-
-      console.log "changed!"
-    , {init: false}###
 class StoryModel extends Model
 
   type: 'story'
@@ -66,6 +60,27 @@ class StoryViewModel extends ViewModel
         $(this).unbind(event)
 
     @_initPopupSelectors()
+  ###_debug_printPrio: (objects = @model.children.objects) =>
+
+    for task in objects
+
+      console.log "#{task.summary}: #{task.priority}"
+  _debug_setPrio: (x = 1) =>
+    
+    i = 0
+    objects = @model.children.objects #.slice()
+    objects.sort (a, b) -> a.summary > b.summary ? -1 : 1
+    for task in objects
+
+      task.priority = i + x
+      @model.updateChild i++, 'priority'
+    @_debug_printPrio objects###
+
+  _sortChildren: =>
+
+    objects = @model.children.objects.slice()
+    objects.sort @_sortByPriority
+
   _sortByPriority: (a, b) ->
 
       a.priority > b.priority ? -1 : 1
@@ -73,7 +88,7 @@ class StoryViewModel extends ViewModel
 
     objects = @model.children.objects.slice()
     object = objects[originalIndex]
-    objects.splice(originalIndex, 1);
+    objects.splice(originalIndex, 1)
     objects.splice(index, 0, object)
 
     if index == 0 then prevPrio = 0
@@ -89,6 +104,8 @@ class StoryViewModel extends ViewModel
       (nextPrio - prevPrio) / 2 + prevPrio
   _handleSortstop: (originalIndex, index) => 
 
+    if originalIndex == index then return
+
     priority = @_calculatePriority originalIndex, index
     undoValue = @model.children.objects[originalIndex].priority
     @model.children.objects[originalIndex].priority = priority
@@ -97,11 +114,13 @@ class StoryViewModel extends ViewModel
       ,(data) =>
 
         @model.children.objects[originalIndex]._rev = data.rev
-        @view.update()
       ,(message) =>
 
         @model.children.objects[originalIndex].priority = undoValue
-        #TODO: show Error
+        li = $("ul#well li:nth-child(#{index + 1})")
+        li.detach()
+        $("ul#well li:nth-child(#{originalIndex})").after(li)
+        @showError message
 
   selectPopupItem: (ractiveEvent, args) =>
 
@@ -177,7 +196,6 @@ class StoryViewModel extends ViewModel
           ,(data) => 
 
             @model.children.objects.push data
-            @view.ractive.update()
             $("#summary-#{data._id}, #description-#{data._id}").each (index, element) => @_setConfirmedValue element
           ,(message) => 
 
@@ -191,7 +209,6 @@ class StoryViewModel extends ViewModel
             , (id) => 
 
               @model.children.objects.splice ractiveEvent.index.i, 1
-              @view.ractive.update()
             ,(message) => 
 
               @showError message

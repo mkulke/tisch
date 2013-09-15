@@ -56,14 +56,19 @@ class View
       el: 'output'
       template: ractiveTemplate
       data: @_buildRactiveData(model)
-      modifyArrays: false
     @ractive.on ractiveHandlers
     @_setRactiveObservers()
   _buildRactiveData: ->
   _setRactiveObservers: ->
-  update: => @ractive.update()
-  set: (keypath, value) => @ractive.set keypath, value
-  get: (keypath) => @ractive.get keypath
+  update: (keypath) =>
+
+    @ractive.update(keypath)
+  set: (keypath, value) => 
+
+    @ractive.set keypath, value
+  get: (keypath) => 
+
+    @ractive.get keypath
 
 class Model
 
@@ -160,8 +165,12 @@ class Model
       error: (data, textStatus, jqXHR) ->
 
        console.log 'error: #{data}'
-  updateChild: (index, key, successCb, errorCb) => @_update @children.objects[index], key, @children.type, successCb, errorCb
-  update: (key, successCb, errorCb) => @_update @[@type], key, @type, successCb, errorCb
+  updateChild: (index, key, successCb, errorCb) => 
+
+    @_update @children.objects[index], key, @children.type, successCb, errorCb
+  update: (key, successCb, errorCb) => 
+
+    @_update @[@type], key, @type, successCb, errorCb
   _update: (object, key, type, successCb, errorCb) =>
 
     getRev = ->
