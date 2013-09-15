@@ -56,7 +56,7 @@ class StoryViewModel extends ViewModel
       $('ul#well').bind 'sortstop', (event, ui) =>
 
         index = ui.item.index()
-        @_handleSortstop originalIndex, index
+        if index != originalIndex then @_handleSortstop originalIndex, index
         $(this).unbind(event)
 
     @_initPopupSelectors()
@@ -75,7 +75,10 @@ class StoryViewModel extends ViewModel
       task.priority = i + x
       @model.updateChild i++, 'priority'
     @_debug_printPrio objects###
-
+  _setChildPriority: (index, priority) =>
+    
+    @view.set "children.#{index}.priority", priority
+    @view.get('children').sort @_sortByPriority
   _sortChildren: =>
 
     objects = @model.children.objects.slice()
@@ -103,8 +106,6 @@ class StoryViewModel extends ViewModel
       nextPrio = objects[index + 1].priority
       (nextPrio - prevPrio) / 2 + prevPrio
   _handleSortstop: (originalIndex, index) => 
-
-    if originalIndex == index then return
 
     priority = @_calculatePriority originalIndex, index
     undoValue = @model.children.objects[originalIndex].priority
