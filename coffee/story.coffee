@@ -5,13 +5,28 @@ class StorySocketIO extends SocketIO
     if data.message == 'update'
         
       #TODO: tasks
-      for item in ['story', 'sprint'] when data.recipient == @model[item]._id
+      if @view.get('story')._id == data.recipient
 
-        @view.set "#{item}._rev", data.data.rev
-        @view.set "#{item}.#{data.data.key}", data.data.value
-        switch data.data.key
+        @view.set "story._rev", data.data.rev
+        @view.set "story.#{data.data.key}", data.data.value
+        if data.data.key == 'sprint_id' 
 
-          when 'sprint_id' then @model.getSprint data.data.value, (data) => @view.set 'sprint', data
+          @model.getSprint data.data.value, (data) => 
+
+            @view.set 'sprint', data
+      else if @view.get('sprint')._id == data.recipient
+
+        @view.set "sprint._rev", data.data.rev
+        @view.set "sprint.#{data.data.key}", data.data.value
+      else
+
+        index = i for child, i in @view.get('children') when child._id == data.recipient
+
+        if index?
+
+          @view.set "children.#{index}._rev", data.data.rev
+          @view.set "children.#{index}.#{data.data.key}", data.data.value
+          if data.data.key == 'priority' then @view.get('children').sort (a, b) -> a.priority > b.priority ? -1 : 1
 
 class StoryView extends View
 
@@ -74,7 +89,7 @@ class StoryViewModel extends ViewModel
 
       task.priority = i + x
       @model.updateChild i++, 'priority'
-    @_debug_printPrio objects###
+    @_debug_printPrio objects
   _setChildPriority: (index, priority) =>
     
     @view.set "children.#{index}.priority", priority
@@ -86,7 +101,7 @@ class StoryViewModel extends ViewModel
 
   _sortByPriority: (a, b) ->
 
-      a.priority > b.priority ? -1 : 1
+      a.priority > b.priority ? -1 : 1###
   _calculatePriority: (originalIndex, index) =>
 
     objects = @model.children.objects.slice()
