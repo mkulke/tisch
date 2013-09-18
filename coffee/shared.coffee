@@ -9,13 +9,17 @@ common = (->
 
     en_US:
 
+      ADD_STORY: 'Add Story'
       ADD_TASK: 'Add Task'
       CANCEL: 'Cancel'
       COLOR: 'Color'
       CONFIRM: 'Confirm'
+      CONFIRM_TASK_REMOVAL: (summary) -> "Do you really want to remove the task with the summary '#{summary}'?"
+      CONFIRM_STORY_REMOVAL: (title) -> "Do you really want to remove the story with the title '#{title}' and all its assigned tasks?"
       ESTIMATION: 'Estimation'
       ERROR_CREATE_TASK: 'Could not create a new Task.'
-      ERROR_REMOVE_STORY: 'Could not remove the Story. This functionality is not implemented yet.'
+      ERROR_CREATE_STORY: (reason) -> "Could not remove the Story (#{reason})."
+      ERROR_REMOVE_STORY: 'Could not remove the Story.'
       ERROR_REMOVE_TASK: 'Could not remove the Task.'
       ERROR_UPDATE_TASK: 'Could not update the Task.'
       INITIAL_ESTIMATION: 'Initial estimation'
@@ -24,6 +28,7 @@ common = (->
       REMAINING_TIME: 'Remaining time'
       REMOVE: 'Remove'
       SPRINT: 'Sprint'
+      START_DATE: 'Start date'
       STORY: 'Story'
       TIME_SPENT: 'Time spent'
       TODAY: 'today'
@@ -49,17 +54,19 @@ class SocketIO
 
 class View
 
-  constructor: (ractiveTemplate, ractiveHandlers, @model) ->
+  constructor: (ractiveTemplate, @model) ->
 
     @ractive = new Ractive
 
       el: 'output'
       template: ractiveTemplate
       data: @_buildRactiveData(model)
-    @ractive.on ractiveHandlers
     @_setRactiveObservers()
   _buildRactiveData: ->
   _setRactiveObservers: ->
+  setRactiveHandlers: (ractiveHandlers) =>
+
+    @ractive.on ractiveHandlers
   update: (keypath) =>
 
     @ractive.update(keypath)
@@ -89,6 +96,42 @@ class Model
       error: (data, textStatus, jqXHR) -> 
 
         if errorCb? then errorCb "#{common.constants.en_US.ERROR_CREATE_TASK} #{jqXHR}"
+  createStory: (sprintId, successCb, errorCb) ->
+
+    $.ajaxq 'client',
+
+      url: '/story'
+      type: 'PUT'
+      headers: {client_uuid: common.uuid, parent_id: sprintId}
+      success: (data, textStatus, jqXHR) -> 
+
+        if successCb? then successCb data
+      error: (data, textStatus, jqXHR) -> 
+
+        if errorCb? then errorCb common.constants.en_US.ERROR_CREATE_STORY jqXHR
+  removeStory: (story, successCb, errorCb) ->
+
+    getRev = -> 
+
+      story._rev
+
+    $.ajaxq 'client',
+
+      url: "/story/#{story._id}"
+      type: 'DELETE'
+      headers: {client_uuid: common.uuid}
+      beforeSend: (jqXHR, settings) =>
+
+        jqXHR.setRequestHeader 'rev', getRev()
+      success: (data, textStatus, jqXHR) -> 
+
+        if successCb? then successCb data
+      error: (data, textStatus, jqXHR) -> 
+
+        if errorCb? then errorCb "#{common.constants.en_US.ERROR_REMOVE_STORY} #{jqXHR}"
+  removeSprint: (sprint, successCb, errorCb) ->
+
+    errorCb 'not implemented yet'
   removeTask: (task, successCb, errorCb) ->
 
     getRev = -> 
@@ -135,9 +178,6 @@ class Model
       error: (data, textStatus, jqXHR) -> 
 
         console.log 'error: #{data}'
-  removeStory: (storyId, successCb, errorCb) ->
-
-    errorCb common.constants.en_US.ERROR_REMOVE_STORY
   getSprints: (successCb) ->
 
     $.ajaxq 'client',
@@ -198,14 +238,15 @@ class Model
 
 class ViewModel
 
-  constructor: ->
+  constructor: (@view, @model) ->
 
-    @ractiveHandlers =
+    ractiveHandlers =
 
       trigger_update: @triggerUpdate
       tapped_selector: @openSelectorPopup
       tapped_selector_item: @selectPopupItem
       tapped_button: @handleButton
+    @view.setRactiveHandlers ractiveHandlers
 
   _initDatePickers: (options) =>
 
@@ -351,3 +392,138 @@ class ViewModel
     else 
 
       updateCall()
+
+class ChildViewModel extends ViewModel
+
+  constructor: (@view, @model) ->
+
+    super(@view, @model)
+
+    $('ul#well').sortable
+
+      tolerance: 'pointer'
+      containment: 'ul#well'
+      handle: '.header'
+    $('ul#well').on 'sortstart', (event, ui) => 
+
+      originalIndex = ui.item.index()
+      $('ul#well').bind 'sortstop', (event, ui) =>
+
+        index = ui.item.index()
+        if index != originalIndex then @_handleSortstop originalIndex, index
+        $(this).unbind(event)
+  _calculatePriority: (originalIndex, index) =>
+
+    objects = @model.children.objects.slice()
+    object = objects[originalIndex]
+    objects.splice(originalIndex, 1)
+    objects.splice(index, 0, object)
+
+    if index == 0 then prevPrio = 0
+    else prevPrio = objects[index - 1].priority
+
+    last = objects.length - 1
+    if index == last 
+
+      Math.ceil objects[index - 1].priority + 1
+    else
+
+      nextPrio = objects[index + 1].priority
+      (nextPrio - prevPrio) / 2 + prevPrio
+  _setConfirmedValue: (node) ->
+
+    [key, childIndex] = @_buildKey node
+    if childIndex? then value = @model.children.objects[childIndex]?[key]
+    else value = @model.get key
+    $(node).data 'confirmed_value', value
+  _resetToConfirmedValue: (node) -> 
+
+    [key, childIndex] = @_buildKey node
+    if childIndex? then @model.children.objects[childIndex]?[key] = $(node).data('confirmed_value')
+    else value = @model.set key, $(node).data('confirmed_value')
+  _isConfirmedValue: (node) ->
+
+    [key, childIndex] = @_buildKey node
+    if childIndex? then value = @model.children.objects[childIndex]?[key]
+    else value = @model.get key
+    value == $(node).data('confirmed_value')
+  _handleSortstop: (originalIndex, index) => 
+
+    priority = @_calculatePriority originalIndex, index
+    undoValue = @model.children.objects[originalIndex].priority
+    @model.children.objects[originalIndex].priority = priority
+    @model.updateChild originalIndex, 'priority'
+
+      ,(data) =>
+
+        @model.children.objects[originalIndex]._rev = data.rev
+      ,(message) =>
+
+        @model.children.objects[originalIndex].priority = undoValue
+        li = $("ul#well li:nth-child(#{index + 1})")
+        li.detach()
+        $("ul#well li:nth-child(#{originalIndex})").after(li)
+        @showError message
+   _buildKey: (node) ->
+
+    idParts = node.id.split('-')
+    if idParts.length > 1 then [idParts[0], idParts[1]]
+    else [idParts[0], undefined]
+  _buildUpdateCall: (node) =>
+
+    [key, childIndex] = @_buildKey node
+    if childIndex? 
+
+      value = @model.children.objects[childIndex]?[key]
+      type = @model.children.type
+    else 
+
+      type = @model.type
+      value = @model[type][key]
+
+    return =>
+
+      successCb = (data) => 
+
+        if childIndex? then keypathPrefix = "children[#{childIndex}]"
+        else keypathPrefix = "#{type}"
+        @view.set "#{keypathPrefix}._rev", data.rev
+        @view.set "#{keypathPrefix}.#{key}", data.value
+        if $(node).data('confirmed_value')? then @_setConfirmedValue node
+      errorCb = => 
+
+        if childIndex? then keypath = "children[#{childIndex}].#{key}"
+        else keypath = "#{type}.#{key}"       
+        @view.set keypath, $(node).data('confirmed_value')
+
+      if !@_isConfirmedValue(node) 
+
+        if childIndex? then @model.updateChild childIndex, key, successCb, errorCb
+        else @model.update key, successCb, errorCb
+  ###_debug_printPrio: (objects = @model.children.objects) =>
+
+    for task in objects
+
+      console.log "#{task.summary}: #{task.priority}"
+  _debug_setPrio: (x = 1) =>
+    
+    i = 0
+    objects = @model.children.objects #.slice()
+    objects.sort (a, b) -> a.summary > b.summary ? -1 : 1
+    for task in objects
+
+      task.priority = i + x
+      @model.updateChild i++, 'priority'
+    @_debug_printPrio objects
+  _setChildPriority: (index, priority) =>
+    
+    @view.set "children.#{index}.priority", priority
+    @view.get('children').sort @_sortByPriority
+  _sortChildren: =>
+
+    objects = @model.children.objects.slice()
+    objects.sort @_sortByPriority
+
+  _sortByPriority: (a, b) ->
+
+      a.priority > b.priority ? -1 : 1###

@@ -11,7 +11,7 @@ var Q = require('q');
 var io = require('socket.io');
 
 var cwd = process.cwd();
-var options = { pretty: false, filename: 'sprint.jade' };
+var options = { pretty: false, filename: 'sprint_ractive.jade' };
 var sprint_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'story_ractive.jade';
 var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
@@ -973,6 +973,8 @@ app.start = function() {
   
     console.log('Server listening on port 8000');  
   });
+
+  // TODO: (IMPORTANT!) make the socket.io calls async!!
 
   socket = io.listen(server);
 

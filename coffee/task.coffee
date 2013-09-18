@@ -54,8 +54,8 @@ class TaskModel extends Model
     displayDate = sprintStart if currentDate < sprintStart
     displayDate = sprintEnd if currentDate > sprintEnd
 
-    format = $.datepicker.ISO_8601
-    format = common.DATE_DISPLAY_FORMAT if formatted?
+    if formatted? then format = common.DATE_DISPLAY_FORMAT
+    else format = $.datepicker.ISO_8601
 
     $.datepicker.formatDate format, displayDate
   getDateIndexedValue: (map, indexDate, inherited) ->
@@ -88,9 +88,8 @@ class TaskViewModel extends ViewModel
 
   constructor: (@model, ractiveTemplate) ->
 
-    super()
-
-    @view = new TaskView ractiveTemplate, @ractiveHandlers, @model
+    @view = new TaskView ractiveTemplate, @model
+    super(@view, @model)
     @socketio = new TaskSocketIO @view, @model
 
     $('#summary, #description, #initial_estimation').each (index, element) => $(element).data 'confirmed_value', @view.get("task.#{this.id}")

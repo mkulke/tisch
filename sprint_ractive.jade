@@ -1,22 +1,22 @@
 html
 	head
-		title Task details
+		title Sprint details
 		link(rel='stylesheet', href='/shared.css', type='text/css')
 		script(type='text/javascript', src='/jquery-dev.js')
 		script(type='text/javascript', src='/jquery-ui.js')
 		script(type='text/javascript', src='/ajaxq.js')
 		script(type='text/javascript', src='/socket.io/socket.io.js')
 		script(type='text/javascript', src='/shared.coffee.js')
-		script(type='text/javascript', src='/task.coffee.js')
+		script(type='text/javascript', src='/sprint.coffee.js')
 	body
 		#output
 		script(type='text/javascript', src='/Ractive.js')
 		script(type='text/javascript')
 			
 			var model, viewModel;
-			model = new TaskModel(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
-			$.get('/task_template.html').then(function(ractiveTemplate) {
+			model = new SprintModel(!{JSON.stringify(stories)}, !{JSON.stringify(sprint)});
+			$.get('/sprint_template.html').then(function(ractiveTemplate) {
 
-				viewModel = new TaskViewModel(model, ractiveTemplate);
+				viewModel = new SprintViewModel(model, ractiveTemplate);
 			});
-		#overlay			
+		#overlay	

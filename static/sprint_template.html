@@ -1,21 +1,20 @@
 <div id="breadcrumb-bar">
   <a class="breadcrumb index">Index</a>
   <a class="breadcrumb sprint">{{sprint.title}}</a>
-  <a class="breadcrumb story selected">{{story.title}}</a>
 </div>
 <div id="content">
 	<form>
 		<p>
-			<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="title" class="identifier" value="{{story.title}}"/>
+			<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="title" class="identifier" value="{{sprint.title}}"/>
 		</p>
 		<p>
-			<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description" value="{{story.description}}"/>
+			<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description" value="{{sprint.description}}"/>
 		</p>
 		<p class="attribute">
 			<span class="label">{{constants.en_US.COLOR}}:&nbsp;</span>
 			<span id="color-selector" class="popup-selector">
 				<a href="#" class="open">
-					<div on-tap="tapped_selector:color-selector" class="selected {{story.color}}"/>
+					<div on-tap="tapped_selector:color-selector" class="selected {{sprint.color}}"/>
 					<div class="content">
 					{{#COLORS:i}}
 						<div on-tap='tapped_selector_item:{"selector_id":"color-selector","value":"{{.}}"}' class="color {{.}} box-{{i}}"/>
@@ -25,30 +24,17 @@
 			</span>
 		</p>
 		<p class="attribute">
-			<span class="label">{{constants.en_US.SPRINT}}:&nbsp;</span>
-			<span id="sprint-selector" class="popup-selector line-selector">
+			<span class="label">{{constants.en_US.START_DATE}}:&nbsp;</span><span id="start_date" class="date-selector popup-selector">
 				<a href="#" class="open">
-					<span on-tap="tapped_selector:sprint-selector" class="selected">{{sprint.title}}</span>
-					<div class="content">
-					{{#sprints}}
-						<div on-tap='tapped_selector_item:{"selector_id":"sprint-selector","value":"{{_id}}"}' class="line">{{title}}</div>
-					{{/sprints}}
-					</div>
+					<span on-tap="tapped_selector:start_date" class="selected" data-date="{{sprint.start}}">{{format_date(sprint.start)}}</span><div class="content"/>
 				</a>
-			</span>
-		</p>
-		<p class="attribute">
-			<span class="label">{{constants.en_US.ESTIMATION}}:&nbsp;</span>
-			<input id="estimation" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{story.estimation}}"/>
-			<span class="error-popup">
-				<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
 			</span>
 		</p>
 		<ul id="well">
 			{{#children:i}}
 				<li class="panel">
 					<div class="header {{color}}">
-						<input class="{{color}}" on-keyup="trigger_update:true" on-focusout="trigger_update" id="summary-{{i}}" value="{{summary}}"/>
+						<input class="{{color}}" on-keyup="trigger_update:true" on-focusout="trigger_update" id="title-{{i}}" value="{{title}}"/>
 						<div class="stats">
 							<img src="/clock_white_small.png">
 							<div class="text">3</div>
@@ -57,8 +43,8 @@
 					<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description-{{i}}" class="body" value="{{description}}"/>
 					<div class="button-bar">
 						<div class="buttons">
-							<input on-tap="tapped_button:task_open" class="button open" type="button" value="{{constants.en_US.OPEN}}">
-							<input on-tap="tapped_button:task_remove" class="button remove" type="button" value="{{constants.en_US.REMOVE}}">
+							<input on-tap="tapped_button:story_open" class="button open" type="button" value="{{constants.en_US.OPEN}}">
+							<input on-tap="tapped_button:story_remove" class="button remove" type="button" value="{{constants.en_US.REMOVE}}">
 						</div>
 					</div>
 				</li>
@@ -68,8 +54,8 @@
 </div>
 <div id="button-bar">
 	<form class="buttons">
-		<input on-tap="tapped_button:task_add" class="button add" type="button" value="{{constants.en_US.ADD_TASK}}">
-		<input on-tap="tapped_button:story_remove" class="button remove" type="button" value="{{constants.en_US.REMOVE}}">
+		<input on-tap="tapped_button:story_add" class="button add" type="button" value="{{constants.en_US.ADD_STORY}}">
+		<input on-tap="tapped_button:sprint_remove" class="button remove" type="button" value="{{constants.en_US.REMOVE}}">
 	</form>
 </div>
 <div id="error-popup">

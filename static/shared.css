@@ -263,30 +263,30 @@ span {
 
 #color-selector a > .content {
 
-  height: 95px;
-  width: 140px;
+  height: 85px;
+  width: 125px;
   padding: 0px;
 }
 
 #color-selector .color {
 
-  width: 40px;
-  height: 40px;
+  width: 35px;
+  height: 35px;
   margin: 5px;
 }
 
 #color-selector .box-2, #color-selector .box-3 {
 
   position: relative;
-  top: -90px;
-  left: 45px;
+  top: -80px;
+  left: 40px;
 }
 
 #color-selector .box-4, #color-selector .box-5 {
 
   position: relative;
-  top: -180px;
-  left: 90px;
+  top: -160px;
+  left: 80px;
 }
 
 #color-selector .selected {
@@ -569,4 +569,81 @@ form {
 .arrow.left:hover {
 
 	border-right: 8px solid #2accac;
+}
+
+.identifier {
+
+	font-size: 36px;
+	font-weight: 300;
+	margin-left: 10px;
+}
+
+ul#well{
+
+	margin: 0 10 20 10px;
+	list-style-type: none;
+	padding-left: 0px;
+	padding-right: 0px;
+	background-color: #ababab;
+  border-radius: 4px;
+	-moz-border-radius: 4px;
+	padding: 15px;
+  /* -moz-box-shadow: inset 0 0 10px #000000;
+   -webkit-box-shadow: inset 0 0 10px #000000;
+   box-shadow: inset 0 0 10px #000000;*/
+}
+
+ul#well:empty {
+
+	padding: 0px;	
+}
+
+#well li.panel {
+
+	display: list-item;
+	margin-bottom: 15px;
+}
+
+#well .panel:last-child {
+
+	margin-bottom: 0px;
+}
+
+#well .panel .header {
+
+  border-top-right-radius: 3px;
+	-moz-border-top-right-radius: 3px;
+  border-top-left-radius: 3px;
+	-moz-border-top-left-radius: 3px;
+	height: 40px;
+}
+
+#well .panel .body {
+
+	background-color: #ffffff;
+	height: 100px;
+}
+
+#well .panel .button-bar {
+
+	background-color: #333333;
+	height: 40px;
+  border-bottom-right-radius: 3px;
+	-moz-border-bottom-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+	-moz-border-bottom-left-radius: 3px;
+}
+
+.panel textarea.body {
+
+	outline: none;
+  margin: 0px;
+  padding: 5 10 5 10px;
+  resize: none;
+  border: 0px;
+  width: 100%;
+  height: 100px;
+  background-color: #ffffff;
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: 16px;
 }
