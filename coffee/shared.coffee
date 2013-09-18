@@ -16,6 +16,7 @@ common = (->
       CONFIRM: 'Confirm'
       CONFIRM_TASK_REMOVAL: (summary) -> "Do you really want to remove the task with the summary '#{summary}'?"
       CONFIRM_STORY_REMOVAL: (title) -> "Do you really want to remove the story with the title '#{title}' and all its assigned tasks?"
+      END_DATE: 'End date'
       ESTIMATION: 'Estimation'
       ERROR_CREATE_TASK: 'Could not create a new Task.'
       ERROR_CREATE_STORY: (reason) -> "Could not remove the Story (#{reason})."

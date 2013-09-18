@@ -15,6 +15,10 @@ class SprintView extends View
     format_date: (displayDate) -> 
 
       $.datepicker.formatDate common.DATE_DISPLAY_FORMAT, new Date(displayDate)
+    calculate_end_date: (start, length) ->
+
+      startDate = new Date(start)
+      new Date(startDate.getTime() + (length * common.MS_TO_DAYS_FACTOR))
 
 class SprintModel extends Model
 
@@ -35,22 +39,42 @@ class SprintViewModel extends ChildViewModel
 
     @_initPopupSelectors()
     @_initDatePickers()
+    $('#length .content').datepicker 'option', 'minDate', new Date(@model.sprint.start)
   _selectDate: (dateText, inst) =>
 
     dateSelector = super(dateText, inst)
     newDate = new Date(dateText)
-    undoValue = dateSelector.data 'date'
-    @view.set 'sprint.start', newDate.toString()
-    @model.update 'start'
+    id = dateSelector.attr('id')
 
-      ,(data) => 
+    switch id
 
-        @view.set 'sprint._rev', data.rev
-        dateSelector.data 'date', data.value
-      ,(message) =>
+      when 'start_date'
 
-        @view.set 'sprint.start', undoValue
-        #TODO show error
+        undoValue = @view.get 'sprint.start'
+        @view.set 'sprint.start', newDate.toString()
+        @model.update 'start'
+
+          ,(data) => 
+
+            @view.set 'sprint._rev', data.rev
+            $('#length .content').datepicker 'option', 'minDate', new Date(data.value)
+          ,(message) =>
+
+            @view.set 'sprint.start', undoValue
+            #TODO show error
+      when 'length'
+        undoValue = @view.get 'sprint.length'
+        newLength = (newDate - new Date(@view.get 'sprint.start')) / common.MS_TO_DAYS_FACTOR
+        @view.set 'sprint.length', newLength
+        @model.update 'length'
+
+          ,(data) =>
+
+            @view.set 'sprint._rev', data.rev
+          ,(message) =>
+
+            @view.set 'sprint.length', undoValue
+            #TODO: show error
   selectPopupItem: (ractiveEvent, args) =>
 
     super ractiveEvent, args

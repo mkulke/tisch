@@ -26,7 +26,14 @@
 		<p class="attribute">
 			<span class="label">{{constants.en_US.START_DATE}}:&nbsp;</span><span id="start_date" class="date-selector popup-selector">
 				<a href="#" class="open">
-					<span on-tap="tapped_selector:start_date" class="selected" data-date="{{sprint.start}}">{{format_date(sprint.start)}}</span><div class="content"/>
+					<span on-tap="tapped_selector:start_date" class="selected">{{format_date(sprint.start)}}</span><div class="content"/>
+				</a>
+			</span>
+		</p>
+		<p class="attribute">
+			<span class="label">{{constants.en_US.END_DATE}}:&nbsp;</span><span id="length" class="date-selector popup-selector">
+				<a href="#" class="open">
+					<span on-tap="tapped_selector:length" class="selected">{{format_date(calculate_end_date(sprint.start, sprint.length))}}</span><div class="content"/>
 				</a>
 			</span>
 		</p>
