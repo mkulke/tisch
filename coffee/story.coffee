@@ -40,6 +40,25 @@ class StoryView extends View
     sprints: [@model.sprint]
     error_message: "Dummy message"
     confirm_message: "Dummy message"
+    buildRemainingTime: @_buildRemainingTime
+  _buildRemainingTime: (remainingTime, sprint) ->
+
+    isValid = (key) ->
+
+      date = new Date(key)
+      sprintStart = new Date(sprint.start)
+      sprintEnd = new Date(sprintStart.getTime() + sprint.length * common.MS_TO_DAYS_FACTOR)
+      key != 'initial' && date >= sprintStart && date < sprintEnd
+
+    dates = (key for key of remainingTime when isValid(key)).sort()
+
+    if dates.length == 0
+
+      remainingTime.initial
+    else
+
+      latest = dates[dates.length - 1]
+      remainingTime[latest]
 
 class StoryModel extends Model
 

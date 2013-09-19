@@ -494,6 +494,11 @@ form {
 	color: #fffaf0;	
 }
 
+.header .stats .text:empty {
+
+	margin-left: 0px;	
+}
+
 .header .stats .text:after {
 
 	clear: both;
