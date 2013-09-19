@@ -42,6 +42,8 @@ class SprintViewModel extends ChildViewModel
     $('#length .content').datepicker 'option', 'minDate', new Date(@model.sprint.start)
   _selectDate: (dateText, inst) =>
 
+    # TODO: unit test
+
     dateSelector = super(dateText, inst)
     newDate = new Date(dateText)
     id = dateSelector.attr('id')
@@ -83,14 +85,14 @@ class SprintViewModel extends ChildViewModel
 
       when 'color-selector' 
 
-        undoValue = @view.get 'story.color'
-        @view.set 'story.color', args.value
+        undoValue = @view.get 'sprint.color'
+        @view.set 'sprint.color', args.value
         @model.update 'color'
 
-          ,(data) => @view.set 'story._rev', data.rev
+          ,(data) => @view.set 'sprint._rev', data.rev
           ,(message) => 
           
-            @view.set 'story.color', undoValue
+            @view.set 'sprint.color', undoValue
             #TODO: error output
   handleButton: (ractiveEvent, action) => 
 

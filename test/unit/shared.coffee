@@ -154,4 +154,102 @@ describe 'ViewModel.triggerUpdate', ->
     @model.update.reset()
     @viewModel.triggerUpdate(@ractiveEvent)
     assert @model.update.notCalled, 'update has been called, although it should not have been called'
+
+describe 'ChildViewModel.triggerUpdate', ->
+
+  before ->
+
+    @ractiveEvent = {
+
+      node: {localName: 'input', id: 'summary-0'}
+      original: {which: 13, preventDefault: ->}
+    }
+
+    class StubViewModel extends ChildViewModel
+
+      constructor: ->
+    @viewModel = new StubViewModel
+    @model = new Model
+    @model.type = 'sometype'
+    @model.children = {type: 'childtype', objects: [{ summary: 'xyz'}]}
+    @viewModel.model = @model
+    @viewModel.view = {set: (->), get: -> 'abc'}
+    sinon.stub @model, 'updateChild'
+  after -> 
+
+    @model.updateChild.restore()
+  it 'should call Model.updateChild when called the node id is has a child index', ->
+  
+    @viewModel.triggerUpdate(@ractiveEvent)
+    assert @model.updateChild.calledWith('0', 'summary'), 'updateChild not called with the correct arguments'
+
+describe 'ChildViewModel._calculatePriority', ->
+
+  before ->
+
+    class StubViewModel extends ChildViewModel
+
+      constructor: ->
+    @viewModel = new StubViewModel
+    @model = new Model
+    @objects = [{priority: 1}, {priority: 2}, {priority: 3}, {priority: 4.5}]
+    @model.children = {type: 'childtype', objects: @objects}
+    @viewModel.model = @model
+  afterEach ->
+
+    @model.children.objects = [{priority: 1}, {priority: 2}, {priority: 3}, {priority: 4.5}]    
+
+  it 'should return 1.5 when the item before is 1 and the item after is 2', ->
+  
+    priority = @viewModel._calculatePriority 3, 1
+    assert.equal priority, 1.5
+  it 'should return 0.5 when it is the first item in the list and the item after is 1', ->
+  
+    priority = @viewModel._calculatePriority 2, 0
+    assert.equal priority, 0.5
+  it 'should return 3.75 when the item before is 3 and the item after is 4.5', ->
+  
+    priority = @viewModel._calculatePriority 0, 2
+    assert.equal priority, 3.75
+  it 'should return 6 when it is the last item in the list and the item before is 4.5', ->
+  
+    priority = @viewModel._calculatePriority 2,3
+    assert.equal priority, 6
+
+describe 'ChildViewModel._handleSortstop', ->
+
+  before ->
+
+    class StubViewModel extends ChildViewModel
+
+      constructor: ->
+      view: {update: (->), set: ->}
+    @viewModel = new StubViewModel
+    @model = new Model
+    @objects = [{priority: 1}, {priority: 2}, {priority: 3}, {priority: 4.5}]
+    @model.children = {type: 'childtype', objects: @objects}
+    @viewModel.model = @model
+    sinon.stub @model, 'updateChild'
+
+  after ->
+
+    @model.updateChild.restore()
+  afterEach ->
+
+    @model.children.objects = [{priority: 1}, {priority: 2}, {priority: 3}, {priority: 4.5}]    
+
+  it 'should update item 2 with priority 3.75 when dropped between item 3 and item 4', ->
+
+    @viewModel._handleSortstop 1, 2
+    assert.equal @model.children.objects[1].priority, 3.75
+    assert @model.updateChild.calledWith(1, 'priority'), 'updateChild not called with the correct arguments'
+
+  it 'should reset the priority of an object, if the update failed', ->
+
+    @model.updateChild.restore()
+    sinon.stub @model, 'updateChild', (index, key, successCb, errorCb) -> errorCb('error')
+    @viewModel._handleSortstop 1, 2
+    assert.equal @model.children.objects[1].priority, 2
+
+
     
