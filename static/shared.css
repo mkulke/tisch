@@ -367,7 +367,12 @@ textarea#description {
 	padding: 10px;
 }
 
-.breadcrumb:hover {
+a.breadcrumb, a.breadcrumb:visited, a.breadcrumb:active {
+
+	color: #999999;
+}
+
+a.breadcrumb:hover {
 
 	color: #ffffff;
 }

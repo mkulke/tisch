@@ -1,7 +1,7 @@
 <div id="breadcrumb-bar">
-  <a class="breadcrumb index">Index</a>
-  <a class="breadcrumb sprint">{{sprint.title}}</a>
-  <a class="breadcrumb story">{{story.title}}</a>
+  <a href="/" class="breadcrumb index">Index</a>
+  <a href="/sprint/{{breadcrumbs.sprint.id}}" class="breadcrumb sprint">{{breadcrumbs.sprint.title}}</a>
+  <a href="/story/{{breadcrumbs.story.id}}" class="breadcrumb story">{{breadcrumbs.story.title}}</a>
   <a class="breadcrumb task selected">{{task.summary}}</a>
 </div>
 <div id="content">

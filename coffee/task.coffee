@@ -17,6 +17,10 @@ class TaskView extends View
 
   _buildRactiveData: =>
 
+    breadcrumbs: 
+
+      story: title: @model.story.title, id: @model.story._id
+      sprint: title: @model.sprint.title, id: @model.sprint._id
     task: @model.task
     story: @model.story
     COLORS: common.COLORS

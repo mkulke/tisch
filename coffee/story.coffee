@@ -32,6 +32,9 @@ class StoryView extends View
 
   _buildRactiveData: =>
 
+    breadcrumbs: 
+
+      sprint: title: @model.sprint.title, id: @model.sprint._id
     children: @model.children.objects
     story: @model.story
     COLORS: common.COLORS
