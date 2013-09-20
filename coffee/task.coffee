@@ -68,7 +68,7 @@ class TaskModel extends Model
       # in this case check for the next date w/ a value *before*, but *within* the sprint
       value = map.initial
       sprintStartMs = new Date(@sprint.start).getTime()
-      sprintStartMs -= sprintStartMs % common.MS_TO_DAYS_FACTOR
+      #sprintStartMs -= sprintStartMs % common.MS_TO_DAYS_FACTOR
       while sprintStartMs <= (ms = new Date(indexDate).getTime() - common.MS_TO_DAYS_FACTOR) 
       
         indexDate = $.datepicker.formatDate $.datepicker.ISO_8601, new Date(ms)

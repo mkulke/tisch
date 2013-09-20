@@ -69,3 +69,45 @@ describe 'StoryViewModel.selectPopupItem', ->
   it 'should set the view rev, value and story after successful requests', ->
 
     assert @viewModel.view.set.calledThrice, 'view is not called three times'
+
+describe 'StoryView.buildRemainingTime', ->
+
+  before ->
+
+    class StubView extends StoryView
+
+      constructor: ->
+
+        @model = {children: {}}
+    @view = new StubView
+  it 'should return the initial remaining time when there are no date/number pairs', ->
+
+    ret = @view.buildRemainingTime {initial: 9.5}, {} 
+    assert.equal ret, 9.5
+  it 'should return the initial remaining time when none of the date/number pairs is within in the sprint', ->
+
+    remainingTime =
+
+      initial: 10
+      '2010-01-02': 8 
+      '2010-01-04': 7
+      '2010-01-10': 6
+
+    sprint = start: '2010-01-05T00:00:00.000Z', length: 5
+
+    ret = @view.buildRemainingTime remainingTime, sprint
+    assert.equal ret, 10
+  it 'should return the number of the last date within in the sprint', ->
+
+    remainingTime =
+
+      initial: 10
+      '2010-01-02': 8 
+      '2010-01-04': 7
+      '2010-01-08': 6
+      '2010-01-09': 5
+
+    sprint = start: '2010-01-05T00:00:00.000Z', length: 5
+
+    ret = @view.buildRemainingTime remainingTime, sprint
+    assert.equal ret, 5
