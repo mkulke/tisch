@@ -12,6 +12,7 @@ class SprintView extends View
     constants: common.constants
     error_message: "Dummy message"
     confirm_message: "Dummy message"
+    remaining_time: @model.calculations.remaining_time
     format_date: (displayDate) -> 
 
       $.datepicker.formatDate common.DATE_DISPLAY_FORMAT, new Date(displayDate)
@@ -23,7 +24,7 @@ class SprintView extends View
 class SprintModel extends Model
 
   type: 'sprint'
-  constructor: (stories, @sprint) ->
+  constructor: (stories, @sprint, @calculations) ->
 
   	@children = {type: 'story', objects: stories}
 

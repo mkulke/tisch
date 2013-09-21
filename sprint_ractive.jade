@@ -14,7 +14,7 @@ html
 		script(type='text/javascript')
 			
 			var model, viewModel;
-			model = new SprintModel(!{JSON.stringify(stories)}, !{JSON.stringify(sprint)});
+			model = new SprintModel(!{JSON.stringify(stories)}, !{JSON.stringify(sprint)}, !{JSON.stringify(calculations)});
 			$.get('/sprint_template.html').then(function(ractiveTemplate) {
 
 				viewModel = new SprintViewModel(model, ractiveTemplate);

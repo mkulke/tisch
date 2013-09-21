@@ -43,8 +43,13 @@
 					<div class="header {{color}}">
 						<input class="{{color}}" on-keyup="trigger_update:true" on-focusout="trigger_update" id="title-{{i}}" value="{{title}}"/>
 						<div class="stats">
-							<img src="/clock_white_small.png">
-							<div class="text">3</div>
+							{{#remaining_time[_id]}}
+								<img src="/clock_white_30.png">
+								<div class="text">{{remaining_time[_id]}}</div>
+							{{/remaining_time[_id]}}
+							{{#remaining_time[_id] == 0}}
+								<img src="/done_white_30.png">
+							{{/remaining_time[_id] == 0}}
 						</div>
 					</div>
 					<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description-{{i}}" class="body" value="{{description}}"/>
