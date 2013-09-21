@@ -9,6 +9,8 @@ var ObjectID = require('mongodb').ObjectID;
 var messages = require('./messages.json');
 var Q = require('q');
 var io = require('socket.io');
+var moment = require('moment');
+var curry = require('curry');
 
 var cwd = process.cwd();
 var options = { pretty: false, filename: 'sprint_ractive.jade' };
@@ -63,17 +65,38 @@ function respondOk(response) {
   response.end();
 }
 
-function getRemainingTime(db, type, parentType, parentId) {
+function getRemainingTime(db, type, parentType, parentIds, dateRange) {
 
   var deferred = Q.defer();
 
-  var aggregation = [
-    {$match: {}},
-    {$group: {_id: null, remaining_time: {$sum: '$remaining_time'}}}
-  ];
-  aggregation[0].$match[parentType + '_id'] = parentId;
+  objectIds = parentIds.map(ObjectID);
 
-  db.collection(type).aggregate(aggregation, function(err, result) {
+  var map = function() {  
+
+    var date;
+    keys = Object.keys(this.remaining_time).filter(function(key) {
+
+      return ((key >= dateRange.start) && (key < dateRange.end)); // filters out 'initial' as well
+    }).sort();
+    if (keys.length > 0) {
+
+      date = keys[keys.length - 1];
+    }
+    else {
+
+      date = 'initial';
+    }
+    emit(this.story_id, this.remaining_time[date]);
+  };
+
+  var reduce = function(key, values) {
+
+    return Array.sum(values);
+  };
+
+  query = {};
+  query[parentType + '_id'] = {$in: objectIds};
+  db.collection(type).mapReduce(map, reduce, {query: query, out: {inline: 1}, scope: {dateRange: dateRange}}, function (err, result) {
 
     if (err) {
 
@@ -81,13 +104,7 @@ function getRemainingTime(db, type, parentType, parentId) {
     }
     else {
 
-      var remainingTime = null;
-      if (result.length == 1) {
-      
-        remainingTime = result[0].remaining_time;
-      }
-
-      deferred.resolve({id: parentId.toString(), key: 'remaining_time', value: remainingTime});      
+      deferred.resolve(result);
     }
   });
 
@@ -743,30 +760,23 @@ function processRequest(request, response) {
           .then(function (result) {
 
             stories = result;
+            storyIds = stories.map(function(story) {
 
-            function buildCalls() {
-
-              var calls = [];
-              for (var i in stories) {
-
-                calls.push(getRemainingTime(db, 'task', 'story', stories[i]._id));
-              }
-
-              return calls;
-            }
-
-            return Q.all(buildCalls());
+              return story._id.toString();
+            });
+            start = moment(result.start).format('YYYY-MM-DD');
+            end = moment(result.start).add('days', result.length).format('YYYY-MM-DD');
+            return getRemainingTime(db, 'task', 'story', storyIds, {start: start, end: end});
           })
-          .then(function (results) {
+          .then(function (result) {
 
-            var remaining_time = {};
-            for (var i in results) {
+            var remainingTime = result.reduce(function(object, element) {
 
-              var result = results[i];
-              remaining_time[result.id] = result.value;
-            }
+              object[element._id] = element.value;
+              return object;
+            }, {});
 
-            return {sprint: sprint, stories: stories, calculations: {remaining_time: remaining_time}}; 
+            return {sprint: sprint, stories: stories, calculations: {remaining_time: remainingTime}}; 
           });
         }
         else {
@@ -931,13 +941,23 @@ function processRequest(request, response) {
 
       assert.ok(id, 'Story id is missing in the request\'s url');
 
-      return getRemainingTime(db, 'task', 'story', ObjectID(id));
+      return findOne(db, 'story', id)
+      .then(function (result) {
+
+        return findOne(db, 'sprint', result.sprint_id.toString());
+      })
+      .then(function (result) {
+
+        start = moment(result.start).format('YYYY-MM-DD');
+        end = moment(result.start).add('days', result.length).format('YYYY-MM-DD');
+        return getRemainingTime(db, 'task', 'story', [id], {start: start, end: end});
+      });
     }
     answer = function(result) {
 
       assert.notEqual(true, html, 'Remaining time calculation available only as json.');
 
-      respondWithJson(result.value, response);
+      respondWithJson(result, response);
     };
   }
   else {
