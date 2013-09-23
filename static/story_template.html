@@ -1,5 +1,5 @@
 <div id="breadcrumb-bar">
-  <a class="breadcrumb index">Index</a>
+  <a href="/" class="breadcrumb index">Index</a>
   <a href="/sprint/{{breadcrumbs.sprint.id}}" class="breadcrumb sprint">{{breadcrumbs.sprint.title}}</a>
   <a class="breadcrumb story selected">{{story.title}}</a>
 </div>
@@ -18,7 +18,7 @@
 					<div on-tap="tapped_selector:color-selector" class="selected {{story.color}}"/>
 					<div class="content">
 					{{#COLORS:i}}
-						<div on-tap='tapped_selector_item:{"selector_id":"color-selector","value":"{{.}}"}' class="color {{.}} box-{{i}}"/>
+						<div on-tap='tapped_selector_item:{"selector_id":"color-selector","value":"{{.}}"}' class="color hoverable {{.}} box-{{i}}"/>
 					{{/COLORS}}
 					</div>
 				</a>
@@ -47,8 +47,8 @@
 		<ul id="well">
 			{{#children:i}}
 				<li class="panel">
-					<div class="header {{color}}">
-						<input class="{{color}}" on-keyup="trigger_update:true" on-focusout="trigger_update" id="summary-{{i}}" value="{{summary}}"/>
+					<div class="header {{color}} hoverable">
+						<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="summary-{{i}}" value="{{summary}}"/>
 						<div class="stats">
 							<img src="/{{buildRemainingTime(remaining_time, sprint) > 0 ? 'clock_white_30.png' : 'done_white_30.png'}}">
 							<div class="text">{{buildRemainingTime(remaining_time, sprint) > 0 ? buildRemainingTime(remaining_time, sprint) : ''}}</div>

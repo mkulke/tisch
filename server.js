@@ -19,7 +19,7 @@ options.filename = 'story_ractive.jade';
 var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'task_ractive.jade';
 var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
-options.filename = 'index.jade';
+options.filename = 'index_ractive.jade';
 var index_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 
 var clients = {};
@@ -69,6 +69,9 @@ function getRemainingTime(db, type, parentType, parentIds, dateRange) {
 
   var deferred = Q.defer();
 
+  start = moment(dateRange.start).format('YYYY-MM-DD');
+  end = moment(dateRange.start).add('days', dateRange.length).format('YYYY-MM-DD');
+
   objectIds = parentIds.map(ObjectID);
 
   var map = function() {  
@@ -76,7 +79,7 @@ function getRemainingTime(db, type, parentType, parentIds, dateRange) {
     var date;
     keys = Object.keys(this.remaining_time).filter(function(key) {
 
-      return ((key >= dateRange.start) && (key < dateRange.end)); // filters out 'initial' as well
+      return ((key >= start) && (key < end)); // filters out 'initial' as well
     }).sort();
     if (keys.length > 0) {
 
@@ -96,7 +99,7 @@ function getRemainingTime(db, type, parentType, parentIds, dateRange) {
 
   query = {};
   query[parentType + '_id'] = {$in: objectIds};
-  db.collection(type).mapReduce(map, reduce, {query: query, out: {inline: 1}, scope: {dateRange: dateRange}}, function (err, result) {
+  db.collection(type).mapReduce(map, reduce, {query: query, out: {inline: 1}, scope: {start: start, end: end}}, function (err, result) {
 
     if (err) {
 
@@ -764,9 +767,7 @@ function processRequest(request, response) {
 
               return story._id.toString();
             });
-            start = moment(result.start).format('YYYY-MM-DD');
-            end = moment(result.start).add('days', result.length).format('YYYY-MM-DD');
-            return getRemainingTime(db, 'task', 'story', storyIds, {start: start, end: end});
+            return getRemainingTime(db, 'task', 'story', storyIds, {start: result.start, length: result.length});
           })
           .then(function (result) {
 
@@ -849,7 +850,7 @@ function processRequest(request, response) {
       var data = {
       
         description: 'Sprint description',
-        start: new Date(),
+        start: new moment().millisecond(0).second(0).minute(0).hour(0).toDate(),
         length: 14,
         color: 'blue', 
         title: 'New Sprint'
@@ -948,9 +949,7 @@ function processRequest(request, response) {
       })
       .then(function (result) {
 
-        start = moment(result.start).format('YYYY-MM-DD');
-        end = moment(result.start).add('days', result.length).format('YYYY-MM-DD');
-        return getRemainingTime(db, 'task', 'story', [id], {start: start, end: end});
+        return getRemainingTime(db, 'task', 'story', [id], {start: result.start, length: result.length});
       });
     }
     answer = function(result) {

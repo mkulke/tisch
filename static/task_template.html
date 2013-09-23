@@ -19,7 +19,7 @@
 					<div on-tap="tapped_selector:color-selector" class="selected {{task.color}}"/>
 					<div class="content">
 					{{#COLORS:i}}
-						<div on-tap='tapped_selector_item:{"selector_id":"color-selector","value":"{{.}}"}' class="color {{.}} box-{{i}}"/>
+						<div on-tap='tapped_selector_item:{"selector_id":"color-selector","value":"{{.}}"}' class="color hoverable {{.}} box-{{i}}"/>
 					{{/COLORS}}
 					</div>
 				</a>

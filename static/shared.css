@@ -13,9 +13,19 @@
   background-color: #D2315D;
 }
 
+.red.hoverable:hover {
+
+  background-color: #C2214D;
+}
+
 .green {
 
   background-color: #88C134;
+}
+
+.green.hoverable:hover {
+
+  background-color: #78B124;
 }
 
 .yellow {
@@ -23,9 +33,19 @@
   background-color: #F1C40F;
 }
 
+.yellow.hoverable:hover {
+
+  background-color: #E1B400;
+}
+
 .orange {
 
   background-color: #E98813;
+}
+
+.orange.hoverable:hover {
+
+  background-color: #D97803;	
 }
 
 .purple {
@@ -33,9 +53,24 @@
   background-color: #8767A6;
 }
 
+.purple.hoverable:hover {
+
+  background-color: #775796;	
+}
+
 .blue {
 
   background-color: #3498DB;
+}
+
+.blue.hoverable:hover {
+
+  background-color: #2488CB;
+}
+
+.panel .header input {
+
+	background-color: inherit;
 }
 
 .date-selector.popup-selector .content {
@@ -51,7 +86,8 @@
 
 .ui-datepicker table {  
 
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
 	font-size: 16px;
   /*padding-top: 5px;*/
   text-align: center;
@@ -310,7 +346,8 @@ body {
 
 input {
 
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
 	font-size: 16px;
 	outline: none;
   border: 0px;
@@ -319,7 +356,8 @@ input {
 
 textarea#description {
 
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
 	font-size: 16px;
 	outline: none;
   resize: none;
@@ -437,7 +475,8 @@ form {
 #button-bar .button, .popup-buttons .button, .panel .button {
 
 	cursor: pointer;
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
 	color: #fffaf0;
 	font-weight: 200;
 	background-color: #1abc9c;
@@ -463,7 +502,8 @@ form {
 
 .panel .header input {
 
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
 	padding: 5px;
 	margin-left: 5px;
 	font-size: 22px;
@@ -493,7 +533,8 @@ form {
 	padding-top: 2px;
 	margin-left: 5px;
 	float: right;
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
+	/*font-family: inherit;*/
 	font-size: 22px;
 	font-weight: 200;
 	color: #fffaf0;	
@@ -529,7 +570,8 @@ form {
 
 #error-popup > .message, #confirm-popup > .message {
 
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
 	font-weight: 200;
 	color: #fffaf0;
   border-top-right-radius: 3px;
@@ -619,25 +661,33 @@ ul#well:empty {
 	margin-bottom: 0px;
 }
 
-#well .panel .header {
+.panel .header {
+
+	height: 40px;
+}
+
+.panel .header {
 
   border-top-right-radius: 3px;
 	-moz-border-top-right-radius: 3px;
   border-top-left-radius: 3px;
 	-moz-border-top-left-radius: 3px;
-	height: 40px;
 }
 
-#well .panel .body {
+.panel .body {
 
 	background-color: #ffffff;
 	height: 100px;
 }
 
-#well .panel .button-bar {
+.panel .button-bar {
 
 	background-color: #333333;
 	height: 40px;
+}
+
+.panel .button-bar {
+
   border-bottom-right-radius: 3px;
 	-moz-border-bottom-right-radius: 3px;
   border-bottom-left-radius: 3px;
@@ -654,6 +704,42 @@ ul#well:empty {
   width: 100%;
   height: 100px;
   background-color: #ffffff;
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
 	font-size: 16px;
+}
+
+h2 {
+
+	font-weight: 300;
+}
+
+ul#sprints li:not(:first-child) {
+
+	border-top: 1px solid #333333;	
+}
+
+ul#sprints {
+
+	list-style-type: none;
+	padding: 0px;
+	margin: 0 0 10 0px;
+}	
+
+ul#sprints li {
+
+	margin: 10 0 0 0px;
+	padding: 0 10 0 10px;
+	display: list-item;
+}
+
+ul#sprints li h2 {
+
+	margin: 5 0 5 0px;
+	/*border-top: 1px solid black;*/
+}
+
+ul#sprints li:first-child {
+
+	margin-top: 0px;
 }

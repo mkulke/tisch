@@ -134,9 +134,11 @@ class StoryViewModel extends ChildViewModel
 
     switch action
 
+      # TODO: confirm
       when 'story_remove'
 
-        @model.removeStory @model._id, (=>), (message) => @showError message
+        @showError 'Not implemented yet!'
+        #@model.removeStory @model.story, (=>), (message) => @showError message
       when 'task_add' 
 
         @model.createTask @model.get('_id')

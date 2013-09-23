@@ -9,17 +9,20 @@ common = (->
 
     en_US:
 
+      ADD_SPRINT: 'Add Sprint'
       ADD_STORY: 'Add Story'
       ADD_TASK: 'Add Task'
       CANCEL: 'Cancel'
       COLOR: 'Color'
       CONFIRM: 'Confirm'
       CONFIRM_TASK_REMOVAL: (summary) -> "Do you really want to remove the task with the summary '#{summary}'?"
+      CONFIRM_SPRINT_REMOVAL: (title) -> "Do you really want to remove the sprint with the title '#{title}' and all its assigned stories and tasks?"
       CONFIRM_STORY_REMOVAL: (title) -> "Do you really want to remove the story with the title '#{title}' and all its assigned tasks?"
       END_DATE: 'End date'
       ESTIMATION: 'Estimation'
       ERROR_CREATE_TASK: 'Could not create a new Task.'
-      ERROR_CREATE_STORY: (reason) -> "Could not remove the Story (#{reason})."
+      ERROR_CREATE_SPRINT: (reason) -> "Could not create a new Sprint (#{reason})."
+      ERROR_CREATE_STORY: (reason) -> "Could not create a new the Story (#{reason})."
       ERROR_REMOVE_STORY: 'Could not remove the Story.'
       ERROR_REMOVE_TASK: 'Could not remove the Task.'
       ERROR_UPDATE_TASK: 'Could not update the Task.'
@@ -84,41 +87,14 @@ class Model
   # TODO: write unit-tests
   # TODO: more verbose error message, pass along those from http responses.
 
-  createTask: (storyId, successCb, errorCb) ->
+  remove = curry (type, item, successCb, errorCb) ->
 
+    getRev = ->
+
+      item._rev
     $.ajaxq 'client',
 
-      url: '/task'
-      type: 'PUT'
-      headers: {client_uuid: common.uuid, parent_id: storyId}
-      success: (data, textStatus, jqXHR) -> 
-
-        if successCb? then successCb data
-      error: (data, textStatus, jqXHR) -> 
-
-        if errorCb? then errorCb "#{common.constants.en_US.ERROR_CREATE_TASK} #{jqXHR}"
-  createStory: (sprintId, successCb, errorCb) ->
-
-    $.ajaxq 'client',
-
-      url: '/story'
-      type: 'PUT'
-      headers: {client_uuid: common.uuid, parent_id: sprintId}
-      success: (data, textStatus, jqXHR) -> 
-
-        if successCb? then successCb data
-      error: (data, textStatus, jqXHR) -> 
-
-        if errorCb? then errorCb common.constants.en_US.ERROR_CREATE_STORY jqXHR
-  removeStory: (story, successCb, errorCb) ->
-
-    getRev = -> 
-
-      story._rev
-
-    $.ajaxq 'client',
-
-      url: "/story/#{story._id}"
+      url: "/#{type}/#{item._id}"
       type: 'DELETE'
       headers: {client_uuid: common.uuid}
       beforeSend: (jqXHR, settings) =>
@@ -129,35 +105,32 @@ class Model
         if successCb? then successCb data
       error: (data, textStatus, jqXHR) -> 
 
-        if errorCb? then errorCb "#{common.constants.en_US.ERROR_REMOVE_STORY} #{jqXHR}"
-  removeSprint: (sprint, successCb, errorCb) ->
+        msgFunction = common.constants.en_US["ERROR_REMOVE_#{type}"]
+        if errorCb? then errorCb msgFunction #{jqXHR}
+  create = curry (type, parentId, successCb, errorCb) ->
 
-    errorCb 'not implemented yet'
-  removeTask: (task, successCb, errorCb) ->
+    headers = {client_uuid: common.uuid}
+    if parentId?
 
-    getRev = -> 
-
-      task._rev
+      headers.parent_id = parentId
 
     $.ajaxq 'client',
 
-      url: "/task/#{task._id}"
-      type: 'DELETE'
-      headers: {client_uuid: common.uuid}
-      beforeSend: (jqXHR, settings) =>
-
-        jqXHR.setRequestHeader 'rev', getRev()
+      url: "/#{type}"
+      type: 'PUT'
+      headers: headers
       success: (data, textStatus, jqXHR) -> 
 
         if successCb? then successCb data
       error: (data, textStatus, jqXHR) -> 
 
-        if errorCb? then errorCb "#{common.constants.en_US.ERROR_REMOVE_TASK} #{jqXHR}"
-  getSprint: (sprintId, successCb) ->
-    
+        msgFunction = common.constants.en_US["ERROR_CREATE_#{type}"]
+        if errorCb? then errorCb msgFunction #{jqXHR}
+  get = curry (type, id, successCb) ->
+
     $.ajaxq 'client',
 
-      url: "/sprint/#{sprintId}"
+      url: "/#{type}/#{id}"
       type: 'GET'
       dataType: 'json'
       success: (data, textStatus, jqXHR) -> 
@@ -165,47 +138,43 @@ class Model
         if successCb? then successCb data
       error: (data, textStatus, jqXHR) -> 
 
+        #TODO: proper errmsg
         console.log 'error: #{data}'
-  getStory: (storyId, successCb) ->
-    
+  getMultiple = curry (type, parentId, successCb) ->
+
+    if parentId?
+
+      headers = {parent_id: parentId}
+    else
+
+      headers = {}
+
     $.ajaxq 'client',
 
-      url: "/story/#{storyId}"
+      url: "/#{type}"
       type: 'GET'
+      headers: headers
       dataType: 'json'
       success: (data, textStatus, jqXHR) -> 
 
         if successCb? then successCb data
       error: (data, textStatus, jqXHR) -> 
 
-        console.log 'error: #{data}'
-  getSprints: (successCb) ->
+        #TODO: proper errmsg
+        console.log 'error: #{data}'    
 
-    $.ajaxq 'client',
-
-      url: '/sprint'
-      type: 'GET'
-      dataType: 'json'
-      success: (data, textStatus, jqXHR) -> 
-
-        if successCb? then successCb data
-      error: (data, textStatus, jqXHR) ->
-
-       console.log 'error: #{data}'
-  getStories: (sprintId, successCb) ->
-
-    $.ajaxq 'client',
-
-      url: '/story'
-      type: 'GET'
-      headers: {parent_id: sprintId}
-      dataType: 'json'
-      success: (data, textStatus, jqXHR) -> 
-
-        if successCb? then successCb data
-      error: (data, textStatus, jqXHR) ->
-
-       console.log 'error: #{data}'
+  createTask: create 'task'
+  createStory: create 'story'
+  createSprint: create 'sprint', null
+  removeTask: remove 'task'
+  removeStory: remove 'story'  
+  removeSprint: remove 'sprint'
+  getTask: get 'task'
+  getStory: get 'story'
+  getSprint: get 'sprint'
+  getTasks: getMultiple 'task'
+  getStories: getMultiple 'story'
+  getSprints: getMultiple 'sprint', null
   updateChild: (index, key, successCb, errorCb) => 
 
     @_update @children.objects[index], key, @children.type, successCb, errorCb
@@ -403,6 +372,8 @@ class ChildViewModel extends ViewModel
     $('ul#well').sortable
 
       tolerance: 'pointer'
+      delay: 150
+      cursor: 'move'
       containment: 'ul#well'
       handle: '.header'
     $('ul#well').on 'sortstart', (event, ui) => 

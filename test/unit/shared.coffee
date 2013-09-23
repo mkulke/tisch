@@ -87,7 +87,7 @@ describe 'Model.getStories', ->
   it 'should issue a GET ajax request', ->
 
     #sinon.stub ractive, 'get', -> [{_id: 'a', sprint_id: 'x'}, {_id: 'b', sprint_id: 'y'}]
-    @model.getStories 'y'
+    @model.getStories 'y', ->
     assert.equal @requests.length, 1
     request = @requests[0]
     assert.equal request.url, '/story'
