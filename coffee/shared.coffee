@@ -13,6 +13,7 @@ common = (->
       ADD_STORY: 'Add Story'
       ADD_TASK: 'Add Task'
       CANCEL: 'Cancel'
+      CLOSE: 'Close'
       COLOR: 'Color'
       CONFIRM: 'Confirm'
       CONFIRM_TASK_REMOVAL: (summary) -> "Do you really want to remove the task with the summary '#{summary}'?"
@@ -31,6 +32,7 @@ common = (->
       OPEN: 'Open'
       REMAINING_TIME: 'Remaining time'
       REMOVE: 'Remove'
+      SHOW_STATS: 'Show Stats'
       SPRINT: 'Sprint'
       START_DATE: 'Start date'
       STORY: 'Story'
@@ -289,17 +291,13 @@ class ViewModel
     $(document).unbind 'click', $("##{id}").data 'close_handler'
   _showModal: (type, message) =>
 
-    @view.set("#{type}_message", message)
+    if message? then @view.set("#{type}_message", message)
     $('#overlay').css({height: $(window).height() + 'px'}).show()
-    $("##{type}-popup").show()   
+    $("##{type}-dialog").show()
   showConfirm: (message) => @_showModal 'confirm', message
   showError: (message) => @_showModal 'error', message
-  _hideModal: (type) -> 
-
-    $("##{type}-popup, #overlay").hide()
-  hideConfirm: -> 
-
-    @_hideModal 'confirm'
+  _hideModal: (type) -> $("##{type}-dialog, #overlay").hide()
+  hideConfirm: -> @_hideModal 'confirm'
   hideError: -> @_hideModal 'error'
   openSelectorPopup: (ractiveEvent, id) =>
 

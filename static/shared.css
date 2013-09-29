@@ -556,19 +556,61 @@ form {
 	background-color: #2accac;
 }
 
-#error-popup, #confirm-popup {
+.modal {
 
 	display: none;
 	position: fixed;
-	width: 30%;
 	z-index: 3;
-	top: 50%;
-	left: 50%;
-	margin-top: -100px;
-	margin-left: -250px;
 }
 
-#error-popup > .message, #confirm-popup > .message {
+#stats-dialog {
+
+	top: 50%;
+	left: 50%;
+	width: auto;
+	margin-top: -125px;
+	margin-left: -280px;
+}
+
+#stats-dialog .content {
+
+	background-color: #dcdcdc;
+	padding: 10px;
+	border-top-right-radius: 3px;
+	-moz-border-top-right-radius: 3px;
+  border-top-left-radius: 3px;
+	-moz-border-top-left-radius: 3px;
+}
+
+#stats-dialog .textbox {
+
+	/*border: 1px solid black;*/
+	display: inline-block;
+	vertical-align: top;
+}
+
+#stats-dialog .textbox > p {
+
+	font-weight: 300;
+	padding: 0px;
+	margin: 0 0 15 0px;
+}
+
+#stats-dialog .chartbox {
+
+	margin-left: 10px;
+	display: inline-block;
+	/*border: 1px solid black;*/
+}
+
+#error-dialog, #confirm-dialog {
+
+	top: 44%;
+	left: 35%;
+	width: 30%;
+}
+
+#error-dialog > .message, #confirm-dialog > .message {
 
 	font-family: inherit;
 	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
@@ -736,10 +778,14 @@ ul#sprints li {
 ul#sprints li h2 {
 
 	margin: 5 0 5 0px;
-	/*border-top: 1px solid black;*/
 }
 
 ul#sprints li:first-child {
 
 	margin-top: 0px;
+}
+
+#content > form > .stats {
+
+	padding: 10px;
 }

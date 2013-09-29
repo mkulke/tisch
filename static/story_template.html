@@ -44,14 +44,29 @@
 				<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
 			</span>
 		</p>
+		<div class="stats">
+
+		</div>
+		<!--<table>
+			<tr>
+				<th>date</th>
+				<th>cummulative value</th>
+			</tr>
+			{{#buildStatMatrix(children, buildSprintRange(sprint))}}
+				<tr>
+					<td>{{date}}</td>
+					<td>{{time_spent}}</td>
+				</tr>
+			{{/buildStatMatrix}}
+		</table>-->
 		<ul id="well">
 			{{#children:i}}
 				<li class="panel">
 					<div class="header {{color}} hoverable">
 						<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="summary-{{i}}" value="{{summary}}"/>
 						<div class="stats">
-							<img src="/{{buildRemainingTime(remaining_time, sprint) > 0 ? 'clock_white_30.png' : 'done_white_30.png'}}">
-							<div class="text">{{buildRemainingTime(remaining_time, sprint) > 0 ? buildRemainingTime(remaining_time, sprint) : ''}}</div>
+							<img src="/{{buildRemainingTime(remaining_time, buildSprintRange(sprint)) > 0 ? 'clock_white_30.png' : 'done_white_30.png'}}">
+							<div class="text">{{buildRemainingTime(remaining_time, buildSprintRange(sprint)) > 0 ? buildRemainingTime(remaining_time, buildSprintRange(sprint)) : ''}}</div>
 						</div>
 					</div>
 					<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description-{{i}}" class="body" value="{{description}}"/>
@@ -68,11 +83,12 @@
 </div>
 <div id="button-bar">
 	<form class="buttons">
+		<input on-tap="tapped_button:show_stats" class="button stats" type="button" value="{{constants.en_US.SHOW_STATS}}">
 		<input on-tap="tapped_button:task_add" class="button add" type="button" value="{{constants.en_US.ADD_TASK}}">
 		<input on-tap="tapped_button:story_remove" class="button remove" type="button" value="{{constants.en_US.REMOVE}}">
 	</form>
 </div>
-<div id="error-popup">
+<div class="modal" id="error-dialog">
 	<div class="message error">{{error_message}}</div>
 	<div class="popup-buttons">
 		<form class="buttons">
@@ -80,7 +96,7 @@
 		</form>
 	</div>
 </div>
-<div id="confirm-popup">
+<div class="modal" id="confirm-dialog">
 	<div class="message warning">{{confirm_message}}</div>
 	<div class="popup-buttons">
 		<form class="buttons">
@@ -88,4 +104,27 @@
 			<input on-tap="tapped_button:confirm_confirm" class="button" type="button" value="{{constants.en_US.CONFIRM}}">
 		</form>
 	</div>
-</div> 
+</div>
+<div class="modal" id="stats-dialog">
+	<div class="content">
+		<div class="textbox">
+			<p class="stat">
+				<span class="label">No. of Tasks:&nbsp;</span>
+				<span class="value">{{countTasks(children)}}</span>
+			</p>
+			<p class="stat">
+				<span class="label">Remaining time:&nbsp;</span>
+				<span class="value">{{calculateRemainingTime(children, buildSprintRange(sprint), buildRemainingTime)}}</span>
+			</p>
+			<p class="stat">
+				<span class="label">Time spent:&nbsp;</span>
+				<span class="value">{{buildAllTimeSpent(children, buildSprintRange(sprint), buildTimeSpent)}}</span>
+			</p>
+		</div><div class="chartbox"><div id="chart"></div></div>
+	</div>
+	<div class="popup-buttons">
+		<form class="buttons">
+			<input on-tap="tapped_button:stats_close" class="button" type="button" value="{{constants.en_US.CLOSE}}">
+		</form>
+	</div>
+</div>

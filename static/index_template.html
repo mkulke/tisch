@@ -29,7 +29,7 @@
 		<input on-tap="tapped_button:sprint_add" class="button add" type="button" value="{{constants.en_US.ADD_SPRINT}}">
 	</form>
 </div>
-<div id="error-popup">
+<div class="modal" id="error-dialog">
 	<div class="message error">{{error_message}}</div>
 	<div class="popup-buttons">
 		<form class="buttons">
@@ -37,7 +37,7 @@
 		</form>
 	</div>
 </div>
-<div id="confirm-popup">
+<div class="modal" id="confirm-dialog">
 	<div class="message warning">{{confirm_message}}</div>
 	<div class="popup-buttons">
 		<form class="buttons">

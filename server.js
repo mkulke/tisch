@@ -850,7 +850,7 @@ function processRequest(request, response) {
       var data = {
       
         description: 'Sprint description',
-        start: new moment().millisecond(0).second(0).minute(0).hour(0).toDate(),
+        start: moment().millisecond(0).second(0).minute(0).hour(0).toDate(),
         length: 14,
         color: 'blue', 
         title: 'New Sprint'

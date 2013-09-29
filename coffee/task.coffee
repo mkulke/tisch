@@ -72,7 +72,6 @@ class TaskModel extends Model
       # in this case check for the next date w/ a value *before*, but *within* the sprint
       value = map.initial
       sprintStartMs = new Date(@sprint.start).getTime()
-      #sprintStartMs -= sprintStartMs % common.MS_TO_DAYS_FACTOR
       while sprintStartMs <= (ms = new Date(indexDate).getTime() - common.MS_TO_DAYS_FACTOR) 
       
         indexDate = $.datepicker.formatDate $.datepicker.ISO_8601, new Date(ms)
@@ -97,7 +96,7 @@ class TaskViewModel extends ViewModel
     @socketio = new TaskSocketIO @view, @model
 
     $('#summary, #description, #initial_estimation').each (index, element) => $(element).data 'confirmed_value', @view.get("task.#{this.id}")
-    $('#remaining_time, #time_spent').each (index, element) => $(element).data 'confirmed_value', @view.get(element.id)
+    $('#remaining_time, #time_spent').each (index, element) => $(element).data 'confirmed_value', {index: @model.getIndexDate(@model.sprint), value: @view.get(element.id)}
     $('#initial_estimation, #remaining_time, #time_spent').data 'validation', (value) -> value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
 
     @_initPopupSelectors()
@@ -127,22 +126,35 @@ class TaskViewModel extends ViewModel
     key = node.id 
     [value, index] = @_buildValue key
 
-    if index? $(node).data 'confirmed_value', value[index]
-    else $(node).data 'confirmed_value', value
+    if index? 
+
+      $(node).data 'confirmed_value', {index: index, value: value[index]}
+
+    else 
+
+      $(node).data 'confirmed_value', value
   _resetToConfirmedValue: (node) -> 
 
     key = node.id 
     [value, index] = @_buildValue key
 
-    if index? then @model.set key, $(node).data('confirmed_value'), index
-    else @model.set key, $(node).data('confirmed_value')
+    if index? 
+
+      @model.set key, $(node).data('confirmed_value').value, index
+    else 
+
+      @model.set key, $(node).data('confirmed_value')
   _isConfirmedValue: (node) ->
 
     key = node.id 
     [value, index] = @_buildValue key
 
-    if index? value[index] == $(node).data('confirmed_value')
-    else value == $(node).data('confirmed_value')
+    if index? 
+
+      index == $(node).data('confirmed_value').index && value[index] == $(node).data('confirmed_value').value
+    else 
+
+      value == $(node).data('confirmed_value')
   openSelectorPopup: (ractiveEvent, id) =>
 
     switch id
@@ -193,4 +205,6 @@ class TaskViewModel extends ViewModel
 
     switch action
 
-      when 'task_remove' then @showError 'Move along. This functionality is not implemented yet.'
+      when 'task_remove' 
+
+        @showError 'Move along. This functionality is not implemented yet.'

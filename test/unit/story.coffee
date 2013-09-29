@@ -93,9 +93,9 @@ describe 'StoryView.buildRemainingTime', ->
       '2010-01-04': 7
       '2010-01-10': 6
 
-    sprint = start: '2010-01-05T00:00:00.000Z', length: 5
+    range = start: '2010-01-05', end: '2010-01-10'
 
-    ret = @view.buildRemainingTime remainingTime, sprint
+    ret = @view.buildRemainingTime remainingTime, range
     assert.equal ret, 10
   it 'should return the number of the last date within in the sprint', ->
 
@@ -107,7 +107,84 @@ describe 'StoryView.buildRemainingTime', ->
       '2010-01-08': 6
       '2010-01-09': 5
 
-    sprint = start: '2010-01-05T00:00:00.000Z', length: 5
+    range = start: '2010-01-05', end: '2010-01-10'
 
-    ret = @view.buildRemainingTime remainingTime, sprint
+    ret = @view.buildRemainingTime remainingTime, range
     assert.equal ret, 5
+describe 'StoryModel.buildSprintRange', ->
+
+  before ->
+
+    @model = new StoryModel
+  it 'should return a calculated sprint range object', ->
+
+    range = @model.buildSprintRange {start: '2010-01-01T00:00:00.000Z', length: 7}
+    assert.equal range.start, '2010-01-01'
+    assert.equal range.end, '2010-01-08'
+
+describe 'StoryModel.buildChartData', ->
+
+  before ->
+
+    @model = new StoryModel
+  it 'should return an empty list, if there are no time_spent values specified', ->
+
+    tasks = [
+
+      { time_spent: {initial: 0} }
+    ]
+    chartData = @model.buildChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
+    assert.deepEqual chartData, []
+  it 'should return an empty list, if no time_spent value is within sprint range', ->
+
+    tasks = [
+
+      { time_spent: {initial: 0, '2010-01-08': 1, '2010-01-09': 1.5, '2010-01-09': 0.5} }
+    ]
+    chartData = @model.buildChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
+    assert.deepEqual chartData, []
+  it 'should return cumulative time_spent values', ->
+
+    tasks = [
+
+      { time_spent: {initial: 0, '2010-01-01': 1, '2010-01-07': 1.5} }
+    ]
+    chartData = @model.buildChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
+    assert.deepEqual chartData, [{x: 1262300400000, y: 1}, {x: 1262818800000, y: 2.5}]
+  it 'should exlude values which are not in sprint range', ->
+
+    tasks = [
+
+      { time_spent: {initial: 0, '2010-01-01': 1, '2010-01-07': 1.5, '2010-01-08': 0.5} }
+    ]
+    chartData = @model.buildChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
+    assert.deepEqual chartData, [{x: 1262300400000, y: 1}, {x: 1262818800000, y: 2.5}]
+  it 'should add up time spent values from different tasks', ->
+
+    tasks = [
+
+      { time_spent: {initial: 0, '2010-01-01': 1, '2010-01-07': 1.5} }
+      { time_spent: {initial: 0, '2010-01-02': 1.5, '2010-01-07': 0.25} }
+    ]
+    chartData = @model.buildChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
+    assert.deepEqual chartData, [{x: 1262300400000, y: 1}, {x: 1262386800000, y: 2.5}, {x: 1262818800000, y: 4.25}]
+
+  ###buildChartData: (tasks, range) ->
+
+    timeSpent = tasks.reduce (object, task) ->
+
+      for key, value of task.time_spent when range.start <= key < range.end
+
+        if object[key]? then object[key] += value
+        else object[key] = value
+      object
+    , {}
+
+    sortedData = ({x: moment(key).unix(), y: value} for key, value of timeSpent).sort (a,b) -> a.x > b.x ? -1 : 1
+    # make it cumulative
+    ySeed = 0
+    for coord in sortedData
+
+      coord.y = coord.y + ySeed
+      ySeed = coord.y
+    sortedData###

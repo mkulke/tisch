@@ -44,20 +44,45 @@ class StoryView extends View
     error_message: "Dummy message"
     confirm_message: "Dummy message"
     buildRemainingTime: @buildRemainingTime
-  buildRemainingTime: (remainingTime, sprint) ->
+    buildTimeSpent: @buildTimeSpent
+    buildSprintRange: @model.buildSprintRange
+    countTasks: (tasks) -> 
 
-    isValid = (key) ->
+      (key for key, value of tasks).length
+    calculateRemainingTime: (tasks, range, buildFunction) ->
 
-      date = new Date(key)
-      sprintStart = new Date(sprint.start)
+      tasks.reduce (count, task) -> 
 
-      sprintStartMs = sprintStart.getTime() # + sprintStart.getTimezoneOffset() * common.MS_TO_MIN_FACTOR
-      #sprintStartMs -= sprintStartMs % common.MS_TO_DAYS_FACTOR
+        count + (buildFunction task.remaining_time, range)
+      , 0
+    buildAllTimeSpent: (tasks, range, buildFunction) ->
 
-      sprintEnd = new Date(sprintStartMs + sprint.length * common.MS_TO_DAYS_FACTOR)
-      key != 'initial' && date >= sprintStart && date < sprintEnd
+      tasks.reduce (count, task) -> 
 
-    dates = (key for key of remainingTime when isValid(key)).sort()
+        count + (buildFunction task.time_spent, range)
+      ,0
+    buildStatMatrix: @buildStatMatrix
+  buildStatMatrix: (tasks, range) ->
+
+    timeSpent = tasks.reduce (object, task) ->
+
+      for key, value of task.time_spent when range.start <= key < range.end
+
+        if object[key]? then object[key] += value
+        else object[key] = value
+      object
+    , {}
+    ({date: key, time_spent: value} for key, value of timeSpent)
+  buildTimeSpent: (timeSpent, range) ->
+
+    spentTimes = (value for key, value of timeSpent when range.start <= key < range.end)
+    spentTimes.reduce (count, spentTime) ->
+
+      count + spentTime
+    ,0
+  buildRemainingTime: (remainingTime, range) ->
+
+    dates = (key for key of remainingTime when range.start <= key < range.end).sort()
 
     if dates.length == 0
 
@@ -73,6 +98,31 @@ class StoryModel extends Model
   constructor: (tasks, @story, @sprint) ->
 
   	@children = {type: 'task', objects: tasks}
+
+  buildSprintRange: (sprint) ->
+
+    start = moment sprint.start
+    end = moment(start).add 'days', sprint.length
+    start: start.format('YYYY-MM-DD'), end: end.format('YYYY-MM-DD')
+  buildChartData: (tasks, range) ->
+
+    timeSpent = tasks.reduce (object, task) ->
+
+      for key, value of task.time_spent when range.start <= key < range.end
+
+        if object[key]? then object[key] += value
+        else object[key] = value
+      object
+    , {}
+
+    sortedData = ({x: moment(key).valueOf(), y: value} for key, value of timeSpent).sort (a,b) -> a.x > b.x ? -1 : 1
+    # make it cumulative
+    ySeed = 0
+    for coord in sortedData
+
+      coord.y = coord.y + ySeed
+      ySeed = coord.y
+    sortedData
 
 class StoryViewModel extends ChildViewModel
 
@@ -128,6 +178,41 @@ class StoryViewModel extends ChildViewModel
 	      @view.set 'sprints', data
 	      @_showPopup(id)
 	    else @_showPopup(id)
+  updateChart: =>
+
+    series = [
+        
+      color: 'steelblue'
+      data: @model.buildChartData @model.children.objects, @model.buildSprintRange @model.sprint
+    ]
+
+    if @graph?
+
+      @graph.configure
+
+        series: series
+    else
+
+      @graph = new Rickshaw.Graph
+
+        element: $('#chart').get(0)
+        width: $('#stats-dialog .content').width() - $('#stats-dialog .textbox').width()
+        height: 200
+        series: series
+      @graph.render()
+
+      xAxis = new Rickshaw.Graph.Axis.Time
+
+        graph: @graph
+        timeFixture: new Rickshaw.Fixtures.Time.Local()
+      xAxis.render()
+  hideStats: =>
+
+    @_hideModal 'stats'
+  showStats: => 
+
+    @updateChart()
+    @_showModal 'stats'
   handleButton: (ractiveEvent, action) => 
 
     super ractiveEvent, action
@@ -163,3 +248,9 @@ class StoryViewModel extends ChildViewModel
               @showError message
         @showConfirm common.constants.en_US.CONFIRM_TASK_REMOVAL ractiveEvent.context.summary
       when 'confirm_confirm' then @onConfirm()
+      when 'show_stats' 
+
+        @showStats()
+      when 'stats_close' 
+
+        @hideStats()
