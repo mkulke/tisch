@@ -115,14 +115,13 @@ class StoryModel extends Model
       object
     , {}
 
-    sortedData = ({x: moment(key).valueOf(), y: value} for key, value of timeSpent).sort (a,b) -> a.x > b.x ? -1 : 1
+    sortedData = ({x: moment(key).unix(), y: value} for key, value of timeSpent).sort (a,b) -> a.x > b.x ? -1 : 1
+    
     # make it cumulative
-    ySeed = 0
-    for coord in sortedData
+    sortedData.map (coord) ->
 
-      coord.y = coord.y + ySeed
-      ySeed = coord.y
-    sortedData
+      {x: coord.x, y: @ySeed += coord.y}
+    , {ySeed: 0}
 
 class StoryViewModel extends ChildViewModel
 

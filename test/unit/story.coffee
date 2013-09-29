@@ -150,7 +150,7 @@ describe 'StoryModel.buildChartData', ->
       { time_spent: {initial: 0, '2010-01-01': 1, '2010-01-07': 1.5} }
     ]
     chartData = @model.buildChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
-    assert.deepEqual chartData, [{x: 1262300400000, y: 1}, {x: 1262818800000, y: 2.5}]
+    assert.deepEqual chartData, [{x: 1262300400, y: 1}, {x: 1262818800, y: 2.5}]
   it 'should exlude values which are not in sprint range', ->
 
     tasks = [
@@ -158,7 +158,7 @@ describe 'StoryModel.buildChartData', ->
       { time_spent: {initial: 0, '2010-01-01': 1, '2010-01-07': 1.5, '2010-01-08': 0.5} }
     ]
     chartData = @model.buildChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
-    assert.deepEqual chartData, [{x: 1262300400000, y: 1}, {x: 1262818800000, y: 2.5}]
+    assert.deepEqual chartData, [{x: 1262300400, y: 1}, {x: 1262818800, y: 2.5}]
   it 'should add up time spent values from different tasks', ->
 
     tasks = [
@@ -167,24 +167,4 @@ describe 'StoryModel.buildChartData', ->
       { time_spent: {initial: 0, '2010-01-02': 1.5, '2010-01-07': 0.25} }
     ]
     chartData = @model.buildChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
-    assert.deepEqual chartData, [{x: 1262300400000, y: 1}, {x: 1262386800000, y: 2.5}, {x: 1262818800000, y: 4.25}]
-
-  ###buildChartData: (tasks, range) ->
-
-    timeSpent = tasks.reduce (object, task) ->
-
-      for key, value of task.time_spent when range.start <= key < range.end
-
-        if object[key]? then object[key] += value
-        else object[key] = value
-      object
-    , {}
-
-    sortedData = ({x: moment(key).unix(), y: value} for key, value of timeSpent).sort (a,b) -> a.x > b.x ? -1 : 1
-    # make it cumulative
-    ySeed = 0
-    for coord in sortedData
-
-      coord.y = coord.y + ySeed
-      ySeed = coord.y
-    sortedData###
+    assert.deepEqual chartData, [{x: 1262300400, y: 1}, {x: 1262386800, y: 2.5}, {x: 1262818800, y: 4.25}]

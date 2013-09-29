@@ -104,11 +104,11 @@ class Model
         jqXHR.setRequestHeader 'rev', getRev()
       success: (data, textStatus, jqXHR) -> 
 
-        if successCb? then successCb data
+        successCb? data
       error: (data, textStatus, jqXHR) -> 
 
         msgFunction = common.constants.en_US["ERROR_REMOVE_#{type}"]
-        if errorCb? then errorCb msgFunction #{jqXHR}
+        errorCb? msgFunction #{jqXHR}
   create = curry (type, parentId, successCb, errorCb) ->
 
     headers = {client_uuid: common.uuid}
@@ -123,11 +123,11 @@ class Model
       headers: headers
       success: (data, textStatus, jqXHR) -> 
 
-        if successCb? then successCb data
+        successCb? data
       error: (data, textStatus, jqXHR) -> 
 
         msgFunction = common.constants.en_US["ERROR_CREATE_#{type}"]
-        if errorCb? then errorCb msgFunction #{jqXHR}
+        errorCb? msgFunction #{jqXHR}
   get = curry (type, id, successCb) ->
 
     $.ajaxq 'client',
@@ -137,7 +137,7 @@ class Model
       dataType: 'json'
       success: (data, textStatus, jqXHR) -> 
 
-        if successCb? then successCb data
+        successCb? data
       error: (data, textStatus, jqXHR) -> 
 
         #TODO: proper errmsg
@@ -159,7 +159,7 @@ class Model
       dataType: 'json'
       success: (data, textStatus, jqXHR) -> 
 
-        if successCb? then successCb data
+        successCb? data
       error: (data, textStatus, jqXHR) -> 
 
         #TODO: proper errmsg
@@ -201,10 +201,10 @@ class Model
         jqXHR.setRequestHeader 'rev', getRev()
       success: (data, textStatus, jqXHR) ->
 
-        if successCb? then successCb data
+        successCb? data
       error: (data, textStatus, jqXHR) ->
 
-        if errorCb? then errorCb "#{common.constants.en_US.ERROR_UPDATE_TASK} #{jqXHR}"
+        errorCb? "#{common.constants.en_US.ERROR_UPDATE_TASK} #{jqXHR}"
   get: (key) => @[@type]?[key]
   set: (key, value) => @[@type]?[value]
 
