@@ -115,7 +115,7 @@ class StoryModel extends Model
       object
     , {}
 
-    sortedData = ({x: moment(key).unix(), y: value} for key, value of timeSpent).sort (a,b) -> a.x > b.x ? -1 : 1
+    sortedData = ({x: moment(key).unix(), y: value} for key, value of timeSpent).sort (a, b) -> a.x - b.x
     
     # make it cumulative
     sortedData.map (coord) ->

@@ -150,7 +150,7 @@ describe 'StoryModel.buildChartData', ->
       { time_spent: {initial: 0, '2010-01-01': 1, '2010-01-07': 1.5} }
     ]
     chartData = @model.buildChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
-    assert.deepEqual chartData, [{x: 1262300400, y: 1}, {x: 1262818800, y: 2.5}]
+    assert.deepEqual chartData, [{x: moment('2010-01-01').unix(), y: 1}, {x: moment('2010-01-07').unix(), y: 2.5}]
   it 'should exlude values which are not in sprint range', ->
 
     tasks = [
@@ -158,7 +158,7 @@ describe 'StoryModel.buildChartData', ->
       { time_spent: {initial: 0, '2010-01-01': 1, '2010-01-07': 1.5, '2010-01-08': 0.5} }
     ]
     chartData = @model.buildChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
-    assert.deepEqual chartData, [{x: 1262300400, y: 1}, {x: 1262818800, y: 2.5}]
+    assert.deepEqual chartData, [{x: moment('2010-01-01').unix(), y: 1}, {x: moment('2010-01-07').unix(), y: 2.5}]
   it 'should add up time spent values from different tasks', ->
 
     tasks = [
@@ -167,4 +167,4 @@ describe 'StoryModel.buildChartData', ->
       { time_spent: {initial: 0, '2010-01-02': 1.5, '2010-01-07': 0.25} }
     ]
     chartData = @model.buildChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
-    assert.deepEqual chartData, [{x: 1262300400, y: 1}, {x: 1262386800, y: 2.5}, {x: 1262818800, y: 4.25}]
+    assert.deepEqual chartData, [{x: moment('2010-01-01').unix(), y: 1}, {x: moment('2010-01-02').unix(), y: 2.5}, {x: moment('2010-01-07').unix(), y: 4.25}]
