@@ -45,7 +45,7 @@ common = (->
     constants: constants
     MS_TO_DAYS_FACTOR: 86400000
     KEYUP_UPDATE_DELAY: 1500
-    DATE_DISPLAY_FORMAT: 'mm/dd/yy'
+    DATE_DISPLAY_FORMAT: 'MM/DD/YY'
   }
 )()
 
@@ -67,9 +67,7 @@ class View
       el: 'output'
       template: ractiveTemplate
       data: @_buildRactiveData(model)
-    @_setRactiveObservers()
   _buildRactiveData: ->
-  _setRactiveObservers: ->
   setRactiveHandlers: (ractiveHandlers) =>
 
     @ractive.on ractiveHandlers
@@ -240,23 +238,17 @@ class ViewModel
 
     dateSelector = $(inst.input).parents('.date-selector')
     @_hidePopup dateSelector.attr('id')
-    $('document').unbind 'click', dateSelector.data 'close_handler'
-    $('.selected', dateSelector).data 'date', dateText    
-    $('.selected', dateSelector).text($.datepicker.formatDate common.DATE_DISPLAY_FORMAT, new Date(dateText))
-    dateSelector
+    # rather put that in as a ractive variable? TODO: FIX THAT FOR SPRINTS, TOO!
+    $('.selected', dateSelector).data 'date', dateText
+    $('.selected', dateSelector).text moment(dateText).format(common.DATE_DISPLAY_FORMAT)
   _initPopupSelectors: =>
 
     $('.popup-selector a.open').click (event) -> event.preventDefault()
     $('.popup-selector').each (index, element) =>
 
-      closeHandler = (event) =>
+      $('.selected', $(element)).click => $(document).one 'keyup', (event) =>
 
-        if ($(event.target).parents("##{element.id}").length == 0) && ($(event.target).parents('.ui-datepicker-header').length < 1)
-        
-          @_hidePopup(element.id)
-          $(document).unbind 'click', closeHandler
-      $('.selected', $(element)).click -> $(document).bind 'click', closeHandler
-      $(element).data('close_handler', closeHandler)
+        if event.keyCode == 27 then @_hidePopup(element.id)
   _setConfirmedValue: (node) ->
 
     key = node.id 
@@ -288,7 +280,6 @@ class ViewModel
     $("##{id} .content").hide()
     $('#overlay').hide()
     $('#content').css('height', 'auto')
-    $(document).unbind 'click', $("##{id}").data 'close_handler'
   _showModal: (type, message) =>
 
     if message? then @view.set("#{type}_message", message)
@@ -306,7 +297,6 @@ class ViewModel
 
     id = args.selector_id
     @_hidePopup id
-    $(document).unbind 'click', $("##{id}").data 'close_handler'
   handleButton: (ractiveEvent, action) => 
 
     switch action
@@ -346,7 +336,7 @@ class ViewModel
 
     updateCall = @_buildUpdateCall node
 
-    if node.localName.match(/^input$|^textarea$/) && $(node).data('validation')?
+    if (node.localName.match /^input$|^textarea$/)? && $(node).data('validation')?
 
       if !$(node).data('validation') $(node).val() 
 
@@ -354,12 +344,8 @@ class ViewModel
         updateCall = -> $(node).next().show()  
       else $(node).next().hide()
 
-    if delayed? 
-
-      @keyboardTimer = setTimeout updateCall, common.KEYUP_UPDATE_DELAY 
-    else 
-
-      updateCall()
+    if delayed? then @keyboardTimer = setTimeout updateCall, common.KEYUP_UPDATE_DELAY 
+    else do updateCall
 
 class ChildViewModel extends ViewModel
 
@@ -377,11 +363,12 @@ class ChildViewModel extends ViewModel
     $('ul#well').on 'sortstart', (event, ui) => 
 
       originalIndex = ui.item.index()
-      $('ul#well').bind 'sortstop', (event, ui) =>
+      $('ul#well').one 'sortstop', (event, ui) =>
+
+        console.log 'sort stop'
 
         index = ui.item.index()
         if index != originalIndex then @_handleSortstop originalIndex, index
-        $(this).unbind(event)
   _calculatePriority: (originalIndex, index) =>
 
     objects = @model.children.objects.slice()

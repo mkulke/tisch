@@ -46,23 +46,23 @@
 			</span>
 		</p>
 		<p class="attribute">
-			<span class="label">{{constants.en_US.REMAINING_TIME}}&nbsp;(</span><span id="remaining_time-index" class="date-selector popup-selector">
+			<span class="label">{{constants.en_US.REMAINING_TIME}}&nbsp;(</span><span id="remaining_time_index" class="date-selector popup-selector">
 				<a href="#" class="open">
-					<span on-tap="tapped_selector:remaining_time-index" class="selected" data-date="{{getIndexDate(sprint)}}">{{getIndexDate(sprint, true)}}</span><div class="content"/>
+					<span on-tap="tapped_selector:remaining_time_index" class="selected" data-date="{{remaining_time_index}}">{{formatDateIndex(remaining_time_index)}}</span><div class="content"/>
 				</a>
 			</span><span class="label">):&nbsp;</span>
-			<input id="remaining_time" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{remaining_time}}"/>
+			<input id="remaining_time" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{formatRemainingTime(task.remaining_time, remaining_time_index, sprint)}}"/>
 			<span class="error-popup">
 				<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
 			</span>
 		</p>
 		<p class="attribute">
-			<span class="label">{{constants.en_US.TIME_SPENT}}&nbsp;(</span><span id="time_spent-index" class="date-selector popup-selector">
+			<span class="label">{{constants.en_US.TIME_SPENT}}&nbsp;(</span><span id="time_spent_index" class="date-selector popup-selector">
 				<a href="#" class="open">
-					<span on-tap="tapped_selector:time_spent-index" class="selected" data-date="{{getIndexDate(sprint)}}">{{getIndexDate(sprint, true)}}</span><div class="content"/>
+					<span on-tap="tapped_selector:time_spent_index" class="selected" data-date="{{time_spent_index}}">{{formatDateIndex(time_spent_index)}}</span><div class="content"/>
 				</a>
 			</span><span class="label">):&nbsp;</span>
-			<input id="time_spent" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{time_spent}}"/>
+			<input id="time_spent" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{formatTimeSpent(task.time_spent, time_spent_index)}}"/>
 			<span class="error-popup">
 				<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
 			</span>

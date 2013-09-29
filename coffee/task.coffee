@@ -27,61 +27,48 @@ class TaskView extends View
     constants: common.constants
     sprint: @model.sprint
     stories: [@model.story]
-    getIndexDate: @model.getIndexDate
-    remaining_time: @model.getDateIndexedValue(@model.task.remaining_time, @model.getIndexDate(@model.sprint), true)
-    time_spent: @model.getDateIndexedValue(@model.task.time_spent, @model.getIndexDate(@model.sprint))
+    getDateIndex: @model.getDateIndex
+    time_spent_index: @model.getDateIndex(@model.sprint)
+    remaining_time_index: @model.getDateIndex(@model.sprint)
+    formatTimeSpent: (timeSpent, index) ->
+
+      if timeSpent[index]? then timeSpent[index]
+      else 0
+    formatRemainingTime: @model.formatRemainingTime
+    formatDateIndex: (dateIndex) -> moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
     error_message: "Dummy message"
-  _setRactiveObservers: =>
-
-    model = @model
-    @ractive.observe "task.remaining_time", (newValue, oldValue) ->
-
-      index = $("#remaining_time-index .selected").data 'date'
-      @set 'remaining_time', model.task.remaining_time[index]
-    , {init: false}
-    @ractive.observe "task.time_spent", (newValue, oldValue) ->
-
-      index = $("#time_spent-index .selected").data 'date'
-      @set 'time_spent', model.task.time_spent[index]
-    , {init: false}
-
 class TaskModel extends Model
 
   type: 'task'
   constructor: (@task, @story, @sprint) ->
-  getIndexDate: (sprint, formatted) ->
+  getDateIndex: (sprint) ->
 
-    currentDate = new Date()
-    sprintStart = new Date sprint.start
-    sprintEnd = new Date(sprintStart.getTime() + (sprint.length - 1) * 86400000)   
-    displayDate = currentDate if sprintStart <= currentDate <= sprintEnd
-    displayDate = sprintStart if currentDate < sprintStart
-    displayDate = sprintEnd if currentDate > sprintEnd
+    currentDate = new moment()
+    sprintStart = new moment sprint.start
+    sprintInclusiveEnd = sprintStart.clone().add('days', sprint.length - 1)
+    dateIndex = 
 
-    if formatted? then format = common.DATE_DISPLAY_FORMAT
-    else format = $.datepicker.ISO_8601
+      if currentDate < sprintStart then sprintStart
+      else if currentDate > sprintInclusiveEnd then sprintInclusiveEnd 
+      else currentDate
+    dateIndex.format('YYYY-MM-DD')
+  formatRemainingTime: (remainingTime, index, sprint) ->
 
-    $.datepicker.formatDate format, displayDate
-  getDateIndexedValue: (map, indexDate, inherited) ->
-
-    if map[indexDate]?
-
-      value = map[indexDate]
-    else if inherited == true 
+    if remainingTime[index]? then remainingTime[index]
+    else
 
       # in this case check for the next date w/ a value *before*, but *within* the sprint
-      value = map.initial
-      sprintStartMs = new Date(@sprint.start).getTime()
-      while sprintStartMs <= (ms = new Date(indexDate).getTime() - common.MS_TO_DAYS_FACTOR) 
-      
-        indexDate = $.datepicker.formatDate $.datepicker.ISO_8601, new Date(ms)
-        if map[indexDate]? 
+      value = remainingTime.initial
+      start = moment(sprint.start)
 
-          value = map[indexDate]
+      indexDate = moment(index)
+      while indexDate.subtract('days', 1) >= start
+
+        if remainingTime[indexDate.format('YYYY-MM-DD')]?
+
+          value = remainingTime[indexDate.format('YYYY-MM-DD')]
           break
-    else
-      value = 0
-    value
+      value
   set: (key, value, index) =>
 
     if index? then @[@type][key][index] = value
@@ -95,9 +82,12 @@ class TaskViewModel extends ViewModel
     super(@view, @model)
     @socketio = new TaskSocketIO @view, @model
 
-    $('#summary, #description, #initial_estimation').each (index, element) => $(element).data 'confirmed_value', @view.get("task.#{this.id}")
-    $('#remaining_time, #time_spent').each (index, element) => $(element).data 'confirmed_value', {index: @model.getIndexDate(@model.sprint), value: @view.get(element.id)}
-    $('#initial_estimation, #remaining_time, #time_spent').data 'validation', (value) -> value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
+    $('#summary, #description, #initial_estimation, #remaining_time, #time_spent').each (index, element) => 
+
+      @_setConfirmedValue(element)
+    $('#initial_estimation, #remaining_time, #time_spent').data 'validation', (value) -> 
+
+      value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
 
     @_initPopupSelectors()
     @_initDatePickers 
@@ -106,55 +96,51 @@ class TaskViewModel extends ViewModel
       maxDate: new Date ((new Date @model.sprint.start).getTime() + ((@model.sprint.length - 1) * common.MS_TO_DAYS_FACTOR))
   _selectDate: (dateText, inst) =>
 
-    dateSelector = super(dateText, inst)
-    attribute = dateSelector.attr('id').split('-')[0]
-    @view.set attribute, @model.getDateIndexedValue(@model.task[attribute], dateText, attribute == 'remaining_time')
-  _buildValue: (key) =>
-
-    value = @model.task[key]
-    if key == 'remaining_time'
-
-      index = $('#remaining_time-index .selected').data 'date'
-      value[index] = @view.get(key)
-    else if key == 'time_spent'
-
-      index = $('#time_spent-index .selected').data 'date'
-      value[index] = @view.get(key)
-    [value, index]
+    super(dateText, inst)
+    dateSelector = $(inst.input).parents('.date-selector')
+    id = dateSelector.attr('id')
+    @view.set id, dateText
   _setConfirmedValue: (node) ->
 
     key = node.id 
-    [value, index] = @_buildValue key
+    if key.match /^remaining_time$|^time_spent$/
 
-    if index? 
+      valueObject = @model.get key
+      newObject = {}
+      for i of valueObject
 
-      $(node).data 'confirmed_value', {index: index, value: value[index]}
+        newObject[i] = valueObject[i]
+      $(node).data 'confirmed_value', newObject
+    else
 
-    else 
-
-      $(node).data 'confirmed_value', value
-  _resetToConfirmedValue: (node) -> 
-
-    key = node.id 
-    [value, index] = @_buildValue key
-
-    if index? 
-
-      @model.set key, $(node).data('confirmed_value').value, index
-    else 
-
-      @model.set key, $(node).data('confirmed_value')
+      super node
   _isConfirmedValue: (node) ->
 
-    key = node.id 
-    [value, index] = @_buildValue key
+    key = node.id
+    value = @view.get "task.#{key}"
+    confirmedValue = $(node).data('confirmed_value')
+    if key.match /^remaining_time$|^time_spent$/
 
-    if index? 
-
-      index == $(node).data('confirmed_value').index && value[index] == $(node).data('confirmed_value').value
+        # ugly, but is sufficient here.
+        JSON.stringify(confirmedValue) == JSON.stringify(value) 
     else 
 
-      value == $(node).data('confirmed_value')
+      confirmedValue == value
+  _buildUpdateCall: (node) =>
+
+    call = super node
+
+    key = node.id;
+    if key.match /^remaining_time$|^time_spent$/
+
+      #execute that stuff before the update call
+      =>
+      
+        index = $("##{key}_index .selected").data 'date'
+        value = parseFloat $(node).val(), 10
+        @model.set key, value, index
+        call()
+    else call
   openSelectorPopup: (ractiveEvent, id) =>
 
     switch id

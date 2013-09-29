@@ -15,7 +15,7 @@ class SprintView extends View
     remaining_time: @model.calculations.remaining_time
     format_date: (displayDate) -> 
 
-      $.datepicker.formatDate common.DATE_DISPLAY_FORMAT, new Date(displayDate)
+      moment(displayDate).format(common.DATE_DISPLAY_FORMAT)
     calculate_end_date: (start, length) ->
 
       startDate = new Date(start)
@@ -45,7 +45,9 @@ class SprintViewModel extends ChildViewModel
 
     # TODO: unit test
 
-    dateSelector = super(dateText, inst)
+    super(dateText, inst)
+
+    dateSelector = $(inst.input).parents('.date-selector')
     newDate = new Date(dateText)
     id = dateSelector.attr('id')
 
