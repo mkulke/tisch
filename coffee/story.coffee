@@ -115,10 +115,36 @@ class StoryModel extends Model
       object
     , {}
 
+    length = moment(range.end).diff(moment(range.start), 'days')
+    allDates = {}
+    #allDates = ({x: moment(range.start).add('days', i).unix(), y: 0} for i in [0..length])
+    allDates[moment(range.start).add('days', i).unix()] = 0 for i in [0..length]
+
+    for task in tasks
+
+      for key, value of task.time_spent when range.start <= key < range.end
+
+        allDates[moment(key).unix()] += value
+
+    timeSpent_test = tasks.reduce (object, task) ->
+
+      for key, value of task.time_spent when range.start <= key < range.end
+
+        if object[key]? then object[key] += value
+        else object[key] = value
+      object
+    , {}
+
     sortedData = ({x: moment(key).unix(), y: value} for key, value of timeSpent).sort (a, b) -> a.x - b.x
     
     # make it cumulative
     sortedData.map (coord) ->
+
+      {x: coord.x, y: @ySeed += coord.y}
+    , {ySeed: 0}
+
+    chartData = ({x: parseInt(key, 10), y: value} for key, value of allDates)
+    chartData.map (coord) ->
 
       {x: coord.x, y: @ySeed += coord.y}
     , {ySeed: 0}
@@ -179,11 +205,20 @@ class StoryViewModel extends ChildViewModel
 	    else @_showPopup(id)
   updateChart: =>
 
-    series = [
+    range = @model.buildSprintRange @model.sprint
+
+    series = [{
         
       color: 'steelblue'
-      data: @model.buildChartData @model.children.objects, @model.buildSprintRange @model.sprint
-    ]
+      data: @model.buildChartData @model.children.objects, range
+    },{
+      color: 'orange'
+      data: [
+
+        {x: moment(range.start).unix(), y: @model.story.estimation}
+        {x: moment(range.end).unix(), y: 0}
+      ]
+    }]
 
     if @graph?
 
@@ -198,6 +233,9 @@ class StoryViewModel extends ChildViewModel
         width: $('#stats-dialog .content').width() - $('#stats-dialog .textbox').width()
         height: 200
         series: series
+        renderer: 'line'
+        stroke: true
+      #@graph.renderer.unstack = true
       @graph.render()
 
       xAxis = new Rickshaw.Graph.Axis.Time
