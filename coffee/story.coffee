@@ -104,20 +104,10 @@ class StoryModel extends Model
     start = moment sprint.start
     end = moment(start).add 'days', sprint.length
     start: start.format('YYYY-MM-DD'), end: end.format('YYYY-MM-DD')
-  buildChartData: (tasks, range) ->
-
-    timeSpent = tasks.reduce (object, task) ->
-
-      for key, value of task.time_spent when range.start <= key < range.end
-
-        if object[key]? then object[key] += value
-        else object[key] = value
-      object
-    , {}
+  buildTimeSpentChartData: (tasks, range) ->
 
     length = moment(range.end).diff(moment(range.start), 'days')
     allDates = {}
-    #allDates = ({x: moment(range.start).add('days', i).unix(), y: 0} for i in [0..length])
     allDates[moment(range.start).add('days', i).unix()] = 0 for i in [0..length]
 
     for task in tasks
@@ -126,29 +116,31 @@ class StoryModel extends Model
 
         allDates[moment(key).unix()] += value
 
-    timeSpent_test = tasks.reduce (object, task) ->
-
-      for key, value of task.time_spent when range.start <= key < range.end
-
-        if object[key]? then object[key] += value
-        else object[key] = value
-      object
-    , {}
-
-    sortedData = ({x: moment(key).unix(), y: value} for key, value of timeSpent).sort (a, b) -> a.x - b.x
-    
-    # make it cumulative
-    sortedData.map (coord) ->
-
-      {x: coord.x, y: @ySeed += coord.y}
-    , {ySeed: 0}
-
     chartData = ({x: parseInt(key, 10), y: value} for key, value of allDates)
     chartData.map (coord) ->
 
       {x: coord.x, y: @ySeed += coord.y}
     , {ySeed: 0}
+  buildRemainingTimeChartData: (story, tasks, range) ->
 
+    length = moment(range.end).diff(moment(range.start), 'days')
+    allDates = {}
+    allDates[moment(range.start).add('days', i).unix()] = story.estimation for i in [0..length]
+
+    for task in tasks
+
+      for key, value of task.remaining_time when range.start <= key < range.end
+
+        allDates[moment(key).unix()] += value
+
+    chartData = ({x: parseInt(key, 10), y: value} for key, value of allDates)
+
+    chartData.map (coord) ->
+
+      # if this is smaller
+      if coord.y < @ySeed then @ySeed = coord.y
+      {x: coord.x, y: @ySeed}
+    , {ySeed: story.estimation}
 class StoryViewModel extends ChildViewModel
 
   constructor: (@model, ractiveTemplate) ->
@@ -210,7 +202,7 @@ class StoryViewModel extends ChildViewModel
     series = [{
         
       color: 'steelblue'
-      data: @model.buildChartData @model.children.objects, range
+      data: @model.buildTimeSpentChartData @model.children.objects, range
     },{
       color: 'orange'
       data: [
@@ -218,6 +210,9 @@ class StoryViewModel extends ChildViewModel
         {x: moment(range.start).unix(), y: @model.story.estimation}
         {x: moment(range.end).unix(), y: 0}
       ]
+    },{
+      color: 'red'
+      data: @model.buildRemainingTimeChartData @model.story, @model.children.objects, range
     }]
 
     if @graph?
