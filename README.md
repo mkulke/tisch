@@ -3,4 +3,5 @@
 tisch
 =====
 
- Mundane node.js webapp for project management. 
+A humble attempt at implementing a scrum board using node.js and mongodb. 
+
