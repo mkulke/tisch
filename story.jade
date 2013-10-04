@@ -44,11 +44,17 @@ html
         });
       });
   body
+    #breadcrumbs
+      a(href='/').index.
+        Index
+      img(src='/right.png', alt='down')
+      a(href='/sprint/' + sprint._id).sprint
+        =sprint.title
     #alert-panel
       .message
       .icons
         a(href='#')
-          img(class='ok-button', src='/ok.png', alt='ok')
+          img(src='/ok.png', alt='ok').ok-button
     .main-panel(id='uuid-' + story._id)
       form(autocomplete='off')
         div(class='header ' + story.color)

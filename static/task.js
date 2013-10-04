@@ -23,6 +23,11 @@ var updateStoryId = function(item, id) {
   });
 };
 
+var remainingTimeParser = function(value) {
+
+  return $('.main-panel').data('attributes').remaining_time;
+}
+
 $(document).ready(function() {
   
   $('#date-selector span.selected').html('today');
@@ -92,7 +97,9 @@ $(document).ready(function() {
     }
   }});
 
-  $('input[name="initial_estimation"], input[name="remaining_time"], input[name="time_spent"]').data('parser', timeParser);
+  $('input[name="initial_estimation"], input[name="time_spent"]').data('parser', timeParser);
+  $('input[name="remaining_time"]').data('parser', remainingTimeParser);
+
 
   var updateFunctions = {color: updateColor, story_id: updateStoryId};  
   $.each(['summary', 'description', 'initial_estimation', 'remaining_time', 'time_spent'], function(index, value) {
@@ -100,6 +107,7 @@ $(document).ready(function() {
     updateFunctions[value] = function(item, text) {
 
       var inputOrTextarea = $('input[name="' + value + '"], textarea[name="' + value + '"]', item);
+
       if (isUpdateOk(inputOrTextarea, text)) {
 
         inputOrTextarea.val(text);

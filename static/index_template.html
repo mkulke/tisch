@@ -1,0 +1,48 @@
+<div id="breadcrumb-bar">
+  <a class="breadcrumb index selected">Index</a>
+</div>
+<div id="content" class="index">
+	<form>
+		<ul id="sprints">
+			{{#children:i}}
+				<li class="sprint">
+					<h2>{{format_date(start)}} &ndash; {{format_date(calculate_end_date(start, length))}}</h2>
+					<div class="panel">
+						<div class="header {{color}}">
+							<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="title-{{i}}" value="{{title}}"/>
+						</div>
+						<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description-{{i}}" class="body" value="{{description}}"/>
+						<div class="button-bar">
+							<div class="buttons">
+								<input on-tap="tapped_button:sprint_open" class="button open" type="button" value="{{constants.en_US.OPEN}}">
+								<input on-tap="tapped_button:sprint_remove" class="button remove" type="button" value="{{constants.en_US.REMOVE}}">
+							</div>
+						</div>
+					</div>
+				</div>
+			{{/children}}
+		</ul>
+	</form>
+</div>
+<div id="button-bar">
+	<form class="buttons">
+		<input on-tap="tapped_button:sprint_add" class="button add" type="button" value="{{constants.en_US.ADD_SPRINT}}">
+	</form>
+</div>
+<div class="modal" id="error-dialog">
+	<div class="message error">{{error_message}}</div>
+	<div class="popup-buttons">
+		<form class="buttons">
+			<input on-tap="tapped_button:error_ok" class="button" type="button" value="{{constants.en_US.OK}}">
+		</form>
+	</div>
+</div>
+<div class="modal" id="confirm-dialog">
+	<div class="message warning">{{confirm_message}}</div>
+	<div class="popup-buttons">
+		<form class="buttons">
+			<input on-tap="tapped_button:confirm_cancel" class="button" type="button" value="{{constants.en_US.CANCEL}}">
+			<input on-tap="tapped_button:confirm_confirm" class="button" type="button" value="{{constants.en_US.CONFIRM}}">
+		</form>
+	</div>
+</div> 

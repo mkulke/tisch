@@ -1,0 +1,791 @@
+.error {
+
+  background-color: #E74C3C;
+}
+
+.warning {
+
+  background-color: #f39c12;
+}
+
+.red {
+
+  background-color: #D2315D;
+}
+
+.red.hoverable:hover {
+
+  background-color: #C2214D;
+}
+
+.green {
+
+  background-color: #88C134;
+}
+
+.green.hoverable:hover {
+
+  background-color: #78B124;
+}
+
+.yellow {
+
+  background-color: #F1C40F;
+}
+
+.yellow.hoverable:hover {
+
+  background-color: #E1B400;
+}
+
+.orange {
+
+  background-color: #E98813;
+}
+
+.orange.hoverable:hover {
+
+  background-color: #D97803;	
+}
+
+.purple {
+
+  background-color: #8767A6;
+}
+
+.purple.hoverable:hover {
+
+  background-color: #775796;	
+}
+
+.blue {
+
+  background-color: #3498DB;
+}
+
+.blue.hoverable:hover {
+
+  background-color: #2488CB;
+}
+
+.panel .header input {
+
+	background-color: inherit;
+}
+
+.date-selector.popup-selector .content {
+
+  background-color: #ffffff;
+	padding: 0px;
+}
+
+.ui-datepicker a {  
+
+  text-decoration: none;  
+}
+
+.ui-datepicker table {  
+
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
+	font-size: 16px;
+  /*padding-top: 5px;*/
+  text-align: center;
+  border-collapse: collapse;
+  margin-bottom: 5px;
+  color: #999999;
+}
+
+.ui-datepicker td {
+
+  padding: 5px;
+}
+
+.ui-datepicker table th {
+
+	padding: 5 0 5 0px;
+  background-color: #dcdcdc;
+	color: #999999;
+  font-weight: 500;
+}
+
+.ui-datepicker td:not(.ui-datepicker-unselectable):hover {
+
+  background-color: #dcdcdc;
+}
+
+.ui-datepicker td.ui-datepicker-unselectable {
+
+  font-weight: 200;
+}
+
+.ui-datepicker-title {
+
+  border-top-right-radius: 3px;
+	-moz-border-top-right-radius: 3px;
+  border-top-left-radius: 3px;
+	-moz-border-top-left-radius: 3px;
+	background-color: #333333;
+	padding: 5px;
+  text-align: center; 
+  font-weight: 300; 
+}
+
+.ui-datepicker-next {  
+
+  padding-top: 6px;
+  padding-right: 3px;
+  float: right;  
+}
+
+.ui-datepicker-prev {
+
+  padding-top: 6px;
+  padding-left: 3px;
+  float: left;  
+}
+
+.error-popup {
+
+  top: 3px;
+  left: -116px;
+  position: relative;
+  cursor: pointer;
+  text-decoration: none;
+  color: white;
+  display: inline-block;
+  font-weight: 200;
+  /*border-bottom: 1px DimGray solid;*/
+  display: none;
+}
+
+.error-popup > .content {
+
+  width: 266px;
+  background-clip: padding-box;
+  /*border: solid 1px #E46E6D;*/
+  /*box-shadow: 0px 0px 15px #999;
+  -webkit-box-shadow: 0px 0px 15px #999;
+  -moz-box-shadow: 0px 0px 15px #999;*/
+  position: absolute;
+  padding: 5px;
+  top: 25px;
+  margin-bottom: 15px;
+  z-index: 2;
+  border-radius: 3px;
+	-moz-border-radius: 3px;
+}
+
+.error-popup > .content:before, .error-popup .content:after {
+
+  content: "";
+  position: absolute;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  bottom: 100%;
+  left: 20px;
+  margin-left: -10px;
+}
+
+.error-popup > .content:before {
+
+  border-bottom: 10px solid #E74C3C;
+  margin-bottom: 0px;
+}
+
+.error-popup > .content:after {
+
+  border-bottom: 10px solid #E74C3C;
+  margin-bottom: -1px;
+  z-index: 2;
+}
+
+.popup-selector a {
+
+	position: relative;
+}
+
+a {
+
+	font-weight: 400;
+  text-decoration: none;
+}
+
+a:visited {
+
+	color: black;
+}
+
+a:link {
+
+	color: black;
+}
+
+span {
+
+	margin: 0px;
+}
+
+#popup-selector span.selected {
+
+  color: black;
+	font-weight: 400;
+}
+
+.popup-selector a > .content {
+
+	color: #999999;
+	background-color: #333333;
+	font-weight: 300;
+	/*background: #ffffff;*/
+	/*background-clip: padding-box;*/
+  border: solid 0px #bbbbbb;
+  /*box-shadow: 0px 0px 15px #999;
+  -webkit-box-shadow: 0px 0px 15px #999;
+  -moz-box-shadow: 0px 0px 15px #999;*/
+  border-radius: 3px;
+	-moz-border-radius: 3px;
+	position: absolute;
+	padding: 5px;
+	left: -11px;
+	top: 32px;
+	display: none;
+	z-index: 3;
+}
+
+.popup-selector a > .content:before, .popup-selector a > .content:after {
+
+	content: "";
+	position: absolute;
+	border-left: 10px solid transparent;
+	border-right: 10px solid transparent;
+	bottom: 100%;
+	/*top: 100%;*/
+	left: 20px;
+	margin-left: -10px;
+}
+
+.popup-selector a > .content:before {
+
+	border-bottom: 10px solid #333333;
+	/*border-bottom: 10px solid #bbbbbb;*/
+	margin-bottom: 0px;
+}
+
+.popup-selector a > .content:after {
+
+	border-bottom: 10px solid #333333;
+	/*border-bottom: 10px solid #ffffff;*/
+	margin-bottom: -1px;
+	z-index: 2;
+}
+
+.popup-selector .line {
+
+  padding: 5 10 5 10px;
+  white-space: nowrap;
+}
+
+.popup-selector .line:hover {
+
+	color: #333333;
+  background-color: #dcdcdc;
+}
+
+.popup-selector.line-selector .content {
+
+	padding: 5 0 5 0px;
+}
+
+#color-selector a > .content {
+
+  height: 85px;
+  width: 125px;
+  padding: 0px;
+}
+
+#color-selector .color {
+
+  width: 35px;
+  height: 35px;
+  margin: 5px;
+}
+
+#color-selector .box-2, #color-selector .box-3 {
+
+  position: relative;
+  top: -80px;
+  left: 40px;
+}
+
+#color-selector .box-4, #color-selector .box-5 {
+
+  position: relative;
+  top: -160px;
+  left: 80px;
+}
+
+#color-selector .selected {
+
+	padding-top: 2px;
+	padding-left: 2px;
+	vertical-align: text-top;
+	display: inline-block;
+	height: 16px;
+	width: 16px;
+	border-radius: 50%;
+	/*border: 1px solid #333333;*/
+}
+
+body {
+
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: 16px;
+	background-color: #dcdcdc;
+}
+
+input {
+
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
+	font-size: 16px;
+	outline: none;
+  border: 0px;
+	background-color: #dcdcdc;
+}
+
+textarea#description {
+
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
+	font-size: 16px;
+	outline: none;
+  resize: none;
+  border: 0px;
+  /*border-top: 0px;
+  border-left: 0px;
+  border-right: 0px;
+	border-bottom: 1px solid #bbbbbb;*/
+  margin: 0px;
+  width: 100%;
+  padding: 10px;
+  height: 200px;
+  /*-moz-box-shadow: inset 0 15px 15px -15px #000000;
+  -webkit-box-shadow: inset 0 15px 15px -15px #000000;
+  box-shadow: inset 0 15px 15px -15px #000000;*/
+}
+
+.attribute {
+
+	margin-left: 10px;
+}
+
+.attribute input {
+
+	width: 100px;
+}
+
+.attribute > .label {
+
+	color: #333333;
+	font-weight: 300;
+}
+
+#breadcrumb-bar {
+
+	background-color: #333333;
+	color: #999999;
+	font-weight: 300;
+}
+
+.breadcrumb {
+
+	cursor: pointer;
+	display: inline-block;
+	padding: 10px;
+}
+
+a.breadcrumb, a.breadcrumb:visited, a.breadcrumb:active {
+
+	color: #999999;
+}
+
+a.breadcrumb:hover {
+
+	color: #ffffff;
+}
+
+.breadcrumb.selected {
+
+	cursor: default;
+	background-color: #000000;
+	color: #ffffff;
+}
+
+html, body {
+
+	margin: 0;
+	height: 100%;
+}
+
+form {
+
+	margin: 0px;
+}
+
+#output {
+
+	min-height:100%;
+	position:relative;
+} 
+
+#content {
+
+	height: auto;
+	padding-bottom: 45px;
+}
+
+#button-bar {
+
+	width: 100%;
+	height: 45px;
+	position:absolute;
+	bottom: 0;
+	left: 0;
+	background-color: #333333;
+}
+
+.popup-buttons {
+
+	background-color: #333333;
+	height: 45px;
+  border-bottom-right-radius: 3px;
+	-moz-border-bottom-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+	-moz-border-bottom-left-radius: 3px;
+}
+
+#button-bar .buttons, .popup-buttons .buttons, .panel .buttons {
+
+	float:right;
+	clear: both;
+	padding-right: 3px;
+}
+
+#button-bar .button, .popup-buttons .button, .panel .button {
+
+	cursor: pointer;
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
+	color: #fffaf0;
+	font-weight: 200;
+	background-color: #1abc9c;
+  border-radius: 3px;
+	-moz-border-radius: 3px;
+}
+
+#button-bar .button, .popup-buttons .button {
+
+	font-size: 16px;
+	height: 35px;
+	margin: 5 2 5 0px;
+	padding: 0 15 2 15px;
+}
+
+.panel .button {
+
+	font-size: 14px;
+	margin: 5 2 5 0px;
+	height: 30px;
+	padding: 0 15 2 15px;
+}
+
+.panel .header input {
+
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
+	padding: 5px;
+	margin-left: 5px;
+	font-size: 22px;
+	font-weight: 200;
+	color: #fffaf0;	
+}
+
+.header .stats {
+
+	margin: 5px;
+  float: right;
+  clear: both;	
+}
+
+.header .stats:after {
+
+  clear: both;	
+}
+
+.header .stats img  {
+
+	float: left;
+}
+
+.header .stats .text {
+
+	padding-top: 2px;
+	margin-left: 5px;
+	float: right;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
+	/*font-family: inherit;*/
+	font-size: 22px;
+	font-weight: 200;
+	color: #fffaf0;	
+}
+
+.header .stats .text:empty {
+
+	margin-left: 0px;	
+}
+
+.header .stats .text:after {
+
+	clear: both;
+}
+
+#button-bar .button:hover, .popup-buttons .button:hover, .panel .button:hover {
+
+	color: #ffffff;
+	background-color: #2accac;
+}
+
+.modal {
+
+	display: none;
+	position: fixed;
+	z-index: 3;
+}
+
+#stats-dialog {
+
+	top: 50%;
+	left: 50%;
+	width: auto;
+	margin-top: -125px;
+	margin-left: -280px;
+}
+
+#stats-dialog .content {
+
+	background-color: #dcdcdc;
+	padding: 10px;
+	border-top-right-radius: 3px;
+	-moz-border-top-right-radius: 3px;
+  border-top-left-radius: 3px;
+	-moz-border-top-left-radius: 3px;
+}
+
+#stats-dialog .textbox {
+
+	/*border: 1px solid black;*/
+	display: inline-block;
+	vertical-align: top;
+}
+
+#stats-dialog .textbox > p {
+
+	font-weight: 300;
+	padding: 0px;
+	margin: 0 0 15 0px;
+}
+
+#stats-dialog .chartbox {
+
+	margin-left: 10px;
+	display: inline-block;
+	/*border: 1px solid black;*/
+}
+
+#error-dialog, #confirm-dialog {
+
+	top: 44%;
+	left: 35%;
+	width: 30%;
+}
+
+#error-dialog > .message, #confirm-dialog > .message {
+
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
+	font-weight: 200;
+	color: #fffaf0;
+  border-top-right-radius: 3px;
+	-moz-border-top-right-radius: 3px;
+  border-top-left-radius: 3px;
+	-moz-border-top-left-radius: 3px;
+	padding: 10px;	
+}
+
+#overlay {
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0.6;
+  background: white;
+  display: none;
+  z-index: 2
+}
+
+.arrow {
+
+	width: 0; 
+	height: 0; 
+	border-top: 8px solid transparent;
+	border-bottom: 8px solid transparent;
+}
+
+.arrow.right {
+
+	border-left: 8px solid #1abc9c;
+	padding-right: 5px;
+}
+
+.arrow.right:hover {
+
+	border-left: 8px solid #2accac;
+}
+
+.arrow.left {
+
+	border-right: 8px solid #1abc9c;
+	padding-left: 5px;
+}
+
+.arrow.left:hover {
+
+	border-right: 8px solid #2accac;
+}
+
+.identifier {
+
+	font-size: 36px;
+	font-weight: 300;
+	margin-left: 10px;
+}
+
+ul#well{
+
+	margin: 0 10 20 10px;
+	list-style-type: none;
+	padding-left: 0px;
+	padding-right: 0px;
+	background-color: #ababab;
+  border-radius: 4px;
+	-moz-border-radius: 4px;
+	padding: 15px;
+  /* -moz-box-shadow: inset 0 0 10px #000000;
+   -webkit-box-shadow: inset 0 0 10px #000000;
+   box-shadow: inset 0 0 10px #000000;*/
+}
+
+ul#well:empty {
+
+	padding: 0px;	
+}
+
+#well li.panel {
+
+	display: list-item;
+	margin-bottom: 15px;
+}
+
+#well .panel:last-child {
+
+	margin-bottom: 0px;
+}
+
+.panel .header {
+
+	height: 40px;
+}
+
+.panel .header {
+
+  border-top-right-radius: 3px;
+	-moz-border-top-right-radius: 3px;
+  border-top-left-radius: 3px;
+	-moz-border-top-left-radius: 3px;
+}
+
+.panel .body {
+
+	background-color: #ffffff;
+	height: 100px;
+}
+
+.panel .button-bar {
+
+	background-color: #333333;
+	height: 40px;
+}
+
+.panel .button-bar {
+
+  border-bottom-right-radius: 3px;
+	-moz-border-bottom-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+	-moz-border-bottom-left-radius: 3px;
+}
+
+.panel textarea.body {
+
+	outline: none;
+  margin: 0px;
+  padding: 5 10 5 10px;
+  resize: none;
+  border: 0px;
+  width: 100%;
+  height: 100px;
+  background-color: #ffffff;
+  font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
+	font-size: 16px;
+}
+
+h2 {
+
+	font-weight: 300;
+}
+
+ul#sprints li:not(:first-child) {
+
+	border-top: 1px solid #333333;	
+}
+
+ul#sprints {
+
+	list-style-type: none;
+	padding: 0px;
+	margin: 0 0 10 0px;
+}	
+
+ul#sprints li {
+
+	margin: 10 0 0 0px;
+	padding: 0 10 0 10px;
+	display: list-item;
+}
+
+ul#sprints li h2 {
+
+	margin: 5 0 5 0px;
+}
+
+ul#sprints li:first-child {
+
+	margin-top: 0px;
+}
+
+#content > form > .stats {
+
+	padding: 10px;
+}

@@ -1,0 +1,20 @@
+html
+	head
+		title Story details
+		include shared_ractive
+		link(rel='stylesheet', href='/rickshaw.min.css')
+		script(type='text/javascript', src='/story.coffee.js')
+		script(type='text/javascript', src='/rickshaw.min.js')
+		script(type='text/javascript', src='/d3.min.js')
+	body
+		#output
+		script(type='text/javascript', src='/Ractive.js')
+		script(type='text/javascript')
+			
+			var model, viewModel;
+			model = new StoryModel(!{JSON.stringify(tasks)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
+			$.get('/story_template.html').then(function(ractiveTemplate) {
+
+				viewModel = new StoryViewModel(model, ractiveTemplate);
+			});
+		#overlay	

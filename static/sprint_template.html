@@ -1,0 +1,89 @@
+<div id="breadcrumb-bar">
+  <a href="/" class="breadcrumb index">Index</a>
+  <a class="breadcrumb sprint selected">{{sprint.title}}</a>
+</div>
+<div id="content">
+	<form>
+		<p>
+			<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="title" class="identifier" value="{{sprint.title}}"/>
+		</p>
+		<p>
+			<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description" value="{{sprint.description}}"/>
+		</p>
+		<p class="attribute">
+			<span class="label">{{constants.en_US.COLOR}}:&nbsp;</span>
+			<span id="color-selector" class="popup-selector">
+				<a href="#" class="open">
+					<div on-tap="tapped_selector:color-selector" class="selected {{sprint.color}}"/>
+					<div class="content">
+					{{#COLORS:i}}
+						<div on-tap='tapped_selector_item:{"selector_id":"color-selector","value":"{{.}}"}' class="color hoverable {{.}} box-{{i}}"/>
+					{{/COLORS}}
+					</div>
+				</a>
+			</span>
+		</p>
+		<p class="attribute">
+			<span class="label">{{constants.en_US.START_DATE}}:&nbsp;</span><span id="start_date" class="date-selector popup-selector">
+				<a href="#" class="open">
+					<span on-tap="tapped_selector:start_date" class="selected">{{format_date(sprint.start)}}</span><div class="content"/>
+				</a>
+			</span>
+		</p>
+		<p class="attribute">
+			<span class="label">{{constants.en_US.END_DATE}}:&nbsp;</span><span id="length" class="date-selector popup-selector">
+				<a href="#" class="open">
+					<span on-tap="tapped_selector:length" class="selected">{{format_date(calculate_end_date(sprint.start, sprint.length))}}</span><div class="content"/>
+				</a>
+			</span>
+		</p>
+		<ul id="well">
+			{{#children:i}}
+				<li class="panel">
+					<div class="header {{color}} hoverable">
+						<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="title-{{i}}" value="{{title}}"/>
+						<div class="stats">
+							{{#remaining_time[_id]}}
+								<img src="/clock_white_30.png">
+								<div class="text">{{remaining_time[_id]}}</div>
+							{{/remaining_time[_id]}}
+							{{#remaining_time[_id] == 0}}
+								<img src="/done_white_30.png">
+							{{/remaining_time[_id] == 0}}
+						</div>
+					</div>
+					<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description-{{i}}" class="body" value="{{description}}"/>
+					<div class="button-bar">
+						<div class="buttons">
+							<input on-tap="tapped_button:story_open" class="button open" type="button" value="{{constants.en_US.OPEN}}">
+							<input on-tap="tapped_button:story_remove" class="button remove" type="button" value="{{constants.en_US.REMOVE}}">
+						</div>
+					</div>
+				</li>
+			{{/children}}
+		</ul>
+	</form>
+</div>
+<div id="button-bar">
+	<form class="buttons">
+		<input on-tap="tapped_button:story_add" class="button add" type="button" value="{{constants.en_US.ADD_STORY}}">
+		<input on-tap="tapped_button:sprint_remove" class="button remove" type="button" value="{{constants.en_US.REMOVE}}">
+	</form>
+</div>
+<div class="modal" id="error-dialog">
+	<div class="message error">{{error_message}}</div>
+	<div class="popup-buttons">
+		<form class="buttons">
+			<input on-tap="tapped_button:error_ok" class="button" type="button" value="{{constants.en_US.OK}}">
+		</form>
+	</div>
+</div>
+<div class="modal" id="confirm-dialog">
+	<div class="message warning">{{confirm_message}}</div>
+	<div class="popup-buttons">
+		<form class="buttons">
+			<input on-tap="tapped_button:confirm_cancel" class="button" type="button" value="{{constants.en_US.CANCEL}}">
+			<input on-tap="tapped_button:confirm_confirm" class="button" type="button" value="{{constants.en_US.CONFIRM}}">
+		</form>
+	</div>
+</div> 

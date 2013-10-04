@@ -1,0 +1,84 @@
+<div id="breadcrumb-bar">
+  <a href="/" class="breadcrumb index">Index</a>
+  <a href="/sprint/{{breadcrumbs.sprint.id}}" class="breadcrumb sprint">{{breadcrumbs.sprint.title}}</a>
+  <a href="/story/{{breadcrumbs.story.id}}" class="breadcrumb story">{{breadcrumbs.story.title}}</a>
+  <a class="breadcrumb task selected">{{task.summary}}</a>
+</div>
+<div id="content">
+	<form>
+		<p>
+			<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="summary" class="identifier" value="{{task.summary}}"/>
+		</p>
+		<p>
+			<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description" value="{{task.description}}"/>
+		</p>
+		<p class="attribute">
+			<span class="label">{{constants.en_US.COLOR}}:&nbsp;</span>
+			<span id="color-selector" class="popup-selector">
+				<a href="#" class="open">
+					<div on-tap="tapped_selector:color-selector" class="selected {{task.color}}"/>
+					<div class="content">
+					{{#COLORS:i}}
+						<div on-tap='tapped_selector_item:{"selector_id":"color-selector","value":"{{.}}"}' class="color hoverable {{.}} box-{{i}}"/>
+					{{/COLORS}}
+					</div>
+				</a>
+			</span>
+		</p>
+		<p class="attribute">
+			<span class="label">{{constants.en_US.STORY}}:&nbsp;</span>
+			<span id="story-selector" class="popup-selector line-selector">
+				<a href="#" class="open">
+					<span on-tap="tapped_selector:story-selector" class="selected">{{story.title}}</span>
+					<div class="content">
+					{{#stories}}
+						<div on-tap='tapped_selector_item:{"selector_id":"story-selector","value":"{{_id}}"}' class="line">{{title}}</div>
+					{{/stories}}
+					</div>
+				</a>
+			</span>
+		</p>
+		<p class="attribute">
+			<span class="label">{{constants.en_US.INITIAL_ESTIMATION}}:&nbsp;</span>
+			<input id="initial_estimation" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{task.initial_estimation}}"/>
+			<span class="error-popup">
+				<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
+			</span>
+		</p>
+		<p class="attribute">
+			<span class="label">{{constants.en_US.REMAINING_TIME}}&nbsp;(</span><span id="remaining_time_index" class="date-selector popup-selector">
+				<a href="#" class="open">
+					<span on-tap="tapped_selector:remaining_time_index" class="selected" data-date="{{remaining_time_index}}">{{formatDateIndex(remaining_time_index)}}</span><div class="content"/>
+				</a>
+			</span><span class="label">):&nbsp;</span>
+			<input id="remaining_time" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{formatRemainingTime(task.remaining_time, remaining_time_index, sprint)}}"/>
+			<span class="error-popup">
+				<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
+			</span>
+		</p>
+		<p class="attribute">
+			<span class="label">{{constants.en_US.TIME_SPENT}}&nbsp;(</span><span id="time_spent_index" class="date-selector popup-selector">
+				<a href="#" class="open">
+					<span on-tap="tapped_selector:time_spent_index" class="selected" data-date="{{time_spent_index}}">{{formatDateIndex(time_spent_index)}}</span><div class="content"/>
+				</a>
+			</span><span class="label">):&nbsp;</span>
+			<input id="time_spent" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{formatTimeSpent(task.time_spent, time_spent_index)}}"/>
+			<span class="error-popup">
+				<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
+			</span>
+		</p>
+	</form>
+</div>
+<div id="button-bar">
+	<form class="buttons">
+		<input on-tap='tapped_button:task_remove' class="button remove" type="button" value="{{constants.en_US.REMOVE}}">
+	</form>
+</div>
+<div class="modal" id="error-dialog">
+	<div class="message error">{{error_message}}</div>
+	<div class="popup-buttons">
+		<form class="buttons">
+			<input on-tap='tapped_button:error_ok' class="button" type="button" value="{{constants.en_US.OK}}">
+		</form>
+	</div>
+</div>
