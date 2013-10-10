@@ -23,39 +23,6 @@ describe 'TaskModel.getDateIndex', ->
     indexDate = @taskModel.getDateIndex(@sprint)
     assert.equal indexDate, '2013-01-03'
 
-describe 'TaskModel.formatRemainingTime', ->
-
-  before ->
-
-    @sprint = {start: '2013-01-01'}
-    @taskModel = new TaskModel {}, {}, {start: '2013-01-01'}
-    @remainingTime = 
-
-      initial: 10
-      '2013-01-03': 7.5
-      '2013-01-05': 3
-      '2013-01-07': 0
-  it 'should return the value for an existing date entry', ->
-
-    value = @taskModel.formatRemainingTime(@remainingTime, '2013-01-03', @sprint)
-    assert.equal value, 7.5
-  it 'should return the value of a date entry before it for a non-existing date', ->
-
-    value = @taskModel.formatRemainingTime(@remainingTime, '2013-01-06', @sprint)
-    assert.equal value, 3
-  it 'should return the initial value for a non-existing date with no entry before it', ->
-
-    value = @taskModel.formatRemainingTime(@remainingTime, '2013-01-02', @sprint)
-    assert.equal value, 10
-  it 'should return the last date entry for a date after the sprint', ->
-
-    value = @taskModel.formatRemainingTime(@remainingTime, '2013-01-08', @sprint)
-    assert.equal value, 0
-  it 'should return the initial entry for a date before the sprint', ->
-
-    value = @taskModel.formatRemainingTime(@remainingTime, '2012-12-01', @sprint)
-    assert.equal value, 10
-
 describe 'TaskViewModel.openSelectorPopup', ->
 
   before ->

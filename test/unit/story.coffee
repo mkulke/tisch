@@ -122,6 +122,61 @@ describe 'StoryModel.buildSprintRange', ->
     assert.equal range.start, '2010-01-01'
     assert.equal range.end, '2010-01-08'
 
+describe 'StoryModel.buildRemainingTimeChartData', ->
+
+  before ->
+
+    @model = new StoryModel
+    @story = {estimation: 1}
+    @range = start: '2010-01-01', end: '2010-01-08'
+
+  it 'should return the story\'s estimation, if there are no remaining_time values specified', ->
+
+    tasks = [
+
+      { remaining_time: {initial: 1} }
+    ] 
+    chartData = @model.buildRemainingTimeChartData @story, tasks, @range
+    assert.deepEqual chartData, [{x: moment('2010-01-01').unix(), y: 1}]    
+  it 'should return the story\'s estimation, if none of the remaining_time values specified are within the sprint range', ->
+
+    tasks = [
+
+      { remaining_time: {initial: 1, '2010-01-08': 1, '2010-01-09': 1.5, '2010-01-09': 0.5} }
+    ] 
+    chartData = @model.buildRemainingTimeChartData @story, tasks, @range
+    assert.deepEqual chartData, [{x: moment('2010-01-01').unix(), y: 1}] 
+  it 'should return add up remaining_time values from several tasks', ->
+
+    tasks = [
+
+      { remaining_time: {initial: 1, '2010-01-01': 2, '2010-01-02': 1.5, '2010-01-04': 0.5} }
+      { remaining_time: {initial: 1, '2010-01-01': 1, '2010-01-02': 0.5, '2010-01-03': 0.25} }
+    ]
+    chartData = @model.buildRemainingTimeChartData @story, tasks, @range
+    assert.deepEqual chartData, [
+      {x: moment('2010-01-01').unix(), y: 3}, 
+      {x: moment('2010-01-02').unix(), y: 2},
+      {x: moment('2010-01-03').unix(), y: 1.75},
+      {x: moment('2010-01-04').unix(), y: 0.75},
+    ]
+  it 'should exclude remaining_time values, which are not within sprint range', ->
+
+    tasks = [
+
+      { remaining_time: {initial: 1, '2010-01-02': 0.75, '2010-01-08': 0.25} }
+    ]
+    chartData = @model.buildRemainingTimeChartData @story, tasks, @range
+    assert.deepEqual chartData, [{x: moment('2010-01-01').unix(), y: 1}, {x: moment('2010-01-02').unix(), y: 0.75}]
+  it 'should sort remaining_time values', ->
+
+    tasks = [
+
+      { remaining_time: {initial: 1, '2010-01-02': 0.5, '2010-01-01': 0.75} }
+    ]
+    chartData = @model.buildRemainingTimeChartData @story, tasks, @range
+    assert.deepEqual chartData, [{x: moment('2010-01-01').unix(), y: 0.75}, {x: moment('2010-01-02').unix(), y: 0.5}]
+
 ###describe 'StoryModel.buildChartData', ->
 
   before ->

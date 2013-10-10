@@ -203,6 +203,23 @@ class Model
       error: (data, textStatus, jqXHR) ->
 
         errorCb? "#{common.constants.en_US.ERROR_UPDATE_TASK} #{jqXHR}"
+  _getClosestValueByDateIndex: (object, index, startIndex) ->
+
+    if object[index]?
+
+      object[index]
+    else
+
+      sortedKeys = Object.keys(object).sort()
+      filteredKeys = sortedKeys.filter (key) -> 
+
+        index > key >= startIndex
+      if filteredKeys.length > 0 
+
+        object[filteredKeys.pop()]
+      else
+
+        object.initial
   get: (key) => @[@type]?[key]
   set: (key, value) => @[@type]?[value]
 

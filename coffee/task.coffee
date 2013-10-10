@@ -34,7 +34,10 @@ class TaskView extends View
 
       if timeSpent[index]? then timeSpent[index]
       else 0
-    formatRemainingTime: @model.formatRemainingTime
+    formatRemainingTime: (remainingTime, index, sprint) => 
+
+      startIndex = moment(sprint.start).format('YYYY-MM-DD')      
+      @model._getClosestValueByDateIndex remainingTime, index, startIndex
     formatDateIndex: (dateIndex) -> moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
     error_message: "Dummy message"
 class TaskModel extends Model
@@ -52,23 +55,6 @@ class TaskModel extends Model
       else if currentDate > sprintInclusiveEnd then sprintInclusiveEnd 
       else currentDate
     dateIndex.format('YYYY-MM-DD')
-  formatRemainingTime: (remainingTime, index, sprint) ->
-
-    if remainingTime[index]? then remainingTime[index]
-    else
-
-      # in this case check for the next date w/ a value *before*, but *within* the sprint
-      value = remainingTime.initial
-      start = moment(sprint.start)
-
-      indexDate = moment(index)
-      while indexDate.subtract('days', 1) >= start
-
-        if remainingTime[indexDate.format('YYYY-MM-DD')]?
-
-          value = remainingTime[indexDate.format('YYYY-MM-DD')]
-          break
-      value
   set: (key, value, index) =>
 
     if index? then @[@type][key][index] = value

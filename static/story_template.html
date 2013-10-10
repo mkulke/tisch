@@ -44,21 +44,32 @@
 				<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
 			</span>
 		</p>
-		<div class="stats">
-
-		</div>
-		<!--<table>
+		<!--<div class="stats">
+		<table>
 			<tr>
 				<th>date</th>
-				<th>cummulative value</th>
+				<th>all time_spent</th>
 			</tr>
-			{{#buildStatMatrix(children, buildSprintRange(sprint))}}
+			{{#buildTSMatrix(children, buildSprintRange(sprint))}}
 				<tr>
 					<td>{{date}}</td>
 					<td>{{time_spent}}</td>
 				</tr>
-			{{/buildStatMatrix}}
-		</table>-->
+			{{/buildTSMatrix}}
+		</table>
+		<table>
+			<tr>
+				<th>date</th>
+				<th>all remaining_time</th>
+			</tr>
+			{{#buildRTMatrix(children, buildSprintRange(sprint))}}
+				<tr>
+					<td>{{date}}</td>
+					<td>{{remaining_time}}</td>
+				</tr>
+			{{/buildRTMatrix}}
+		</table>
+		</div>-->
 		<ul id="well">
 			{{#children:i}}
 				<li class="panel">

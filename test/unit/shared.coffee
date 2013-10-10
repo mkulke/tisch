@@ -106,6 +106,40 @@ describe 'Model.getStories', ->
     assert ractive.set.calledWith('stories', [{_id: 'a'}, {_id: 'b'}, {_id: 'c'}]), 'stories not set (correctly)'
   ###
 
+describe 'Model._getClosestValueByDateIndex', ->
+
+  before ->
+
+    @startIndex = '2013-01-01'
+    @model = new Model
+    @remainingTime = 
+
+      initial: 10
+      '2013-01-03': 7.5
+      '2013-01-05': 3
+      '2013-01-07': 0
+  it 'should return the value for an existing date entry', ->
+
+    value = @model._getClosestValueByDateIndex(@remainingTime, '2013-01-03', @startIndex)
+    assert.equal value, 7.5
+  it 'should return the value of a date entry before it for a non-existing date', ->
+
+    value = @model._getClosestValueByDateIndex(@remainingTime, '2013-01-06', @startIndex)
+    assert.equal value, 3
+  it 'should return the initial value for a non-existing date with no entry before it', ->
+
+    value = @model._getClosestValueByDateIndex(@remainingTime, '2013-01-02', @startIndex)
+    assert.equal value, 10
+  it 'should return the last date entry for a date after the sprint', ->
+
+    value = @model._getClosestValueByDateIndex(@remainingTime, '2013-01-08', @startIndex)
+    assert.equal value, 0
+  it 'should return the initial entry for a date before the sprint', ->
+
+    value = @model._getClosestValueByDateIndex(@remainingTime, '2012-12-01', @startIndex)
+    assert.equal value, 10
+
+
 describe 'ViewModel.triggerUpdate', ->
 
   before ->
