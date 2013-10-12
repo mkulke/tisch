@@ -51,17 +51,17 @@ class StoryView extends View
       (key for key, value of tasks).length
     calculateRemainingTime: (tasks, range, buildFunction) ->
 
-      tasks.reduce (count, task) -> 
+      _.reduce tasks, (count, task) -> 
 
         count + (buildFunction task.remaining_time, range)
       , 0
     buildAllTimeSpent: (tasks, range, buildFunction) ->
 
-      tasks.reduce (count, task) -> 
+      _.reduce tasks, (count, task) -> 
 
         count + (buildFunction task.time_spent, range)
       ,0
-    buildTSMatrix: (tasks, range) ->
+    ###buildTSMatrix: (tasks, range) ->
 
       timeSpent = tasks.reduce (object, task) ->
 
@@ -72,7 +72,7 @@ class StoryView extends View
         object
       , {}
       ({date: key, time_spent: value} for key, value of timeSpent)
-    ###buildRTMatrix: (tasks, range) ->
+    buildRTMatrix: (tasks, range) ->
 
       testo = (remainingTime, index) ->
 
@@ -139,8 +139,10 @@ class StoryModel extends Model
   buildTimeSpentChartData: (tasks, range) ->
 
     initial = {}
-    timeSpent = tasks.reduce (object, task) ->
+    timeSpent = _.reduce tasks, (object, task) ->
 
+      #x = ({date: key, value} for key, value of task.time_spent)
+      #y = _filter x (z) -> range.start <= z.date < range.end
       for key, value of task.time_spent when range.start <= key < range.end
 
         if object[key]? then object[key] += value
@@ -148,35 +150,34 @@ class StoryModel extends Model
       object
     , initial
 
-    if !$.isEmptyObject(timeSpent) && !timeSpent[range.start] then timeSpent[range.start] = 0
+    if !_.isEmpty(timeSpent) && !timeSpent[range.start] then timeSpent[range.start] = 0
 
-    sortedData = ({date: key, value: value} for key, value of timeSpent).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
+    data = ({date: key, value: value} for key, value of timeSpent).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
 
     # make it cumulative
-    sortedData.map (object) ->
+    counter = 0
+    _.map data, (object) ->
 
-      {date: object.date, value: @valueSeed += object.value}
-    , {valueSeed: 0}
+      {date: object.date, value: counter += object.value}
   buildRemainingTimeChartData: (story, tasks, range) ->
 
-    # simulate a set with an object
-    indices = tasks.reduce (object, task) ->
+    indices = _.map tasks, (task) ->
 
-      object[index] = true for index of task.remaining_time when range.start <= index < range.end
-      object
-    , {}
+      (index for index of task.remaining_time when range.start <= index < range.end)
+    indices = _.flatten indices
+    indices = _.uniq indices
 
-    remainingTimes = {}
-    for index of indices
+    remainingTimes = _.reduce indices, (object, index) =>
 
-      remainingTimes[index] = tasks.reduce (count, task) =>
+      object[index] = _.reduce tasks, (count, task) =>
 
         count += @_getClosestValueByDateIndex task.remaining_time, index, range.start
       , 0
-
+      object
+    , {}        
     if !remainingTimes[range.start] then remainingTimes[range.start] = story.estimation
 
-    ({date: key, value: value} for key, value of remainingTimes).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
+    ({date: key, value} for key, value of remainingTimes).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
 
 class StoryViewModel extends ChildViewModel
 
