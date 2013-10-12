@@ -72,7 +72,7 @@ class StoryView extends View
         object
       , {}
       ({date: key, time_spent: value} for key, value of timeSpent)
-    buildRTMatrix: (tasks, range) ->
+    ###buildRTMatrix: (tasks, range) ->
 
       testo = (remainingTime, index) ->
 
@@ -104,7 +104,7 @@ class StoryView extends View
 
           count += testo task.remaining_time, index
         , 0
-      ({date: key, remaining_time: value} for key, value of remainingTime)
+      ({date: key, remaining_time: value} for key, value of remainingTime)###
   buildTimeSpent: (timeSpent, range) ->
 
     spentTimes = (value for key, value of timeSpent when range.start <= key < range.end)
@@ -139,7 +139,6 @@ class StoryModel extends Model
   buildTimeSpentChartData: (tasks, range) ->
 
     initial = {}
-    initial[range.start] = 0
     timeSpent = tasks.reduce (object, task) ->
 
       for key, value of task.time_spent when range.start <= key < range.end
@@ -149,38 +148,15 @@ class StoryModel extends Model
       object
     , initial
 
-    ###length = moment(range.end).diff(moment(range.start), 'days')
-    allDates = {}
-    allDates[moment(range.start).add('days', i).unix()] = 0 for i in [0..length]
+    if !$.isEmptyObject(timeSpent) && !timeSpent[range.start] then timeSpent[range.start] = 0
 
-    for task in tasks
+    sortedData = ({date: key, value: value} for key, value of timeSpent).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
 
-      for key, value of task.time_spent when range.start <= key < range.end
-
-        allDates[moment(key).unix()] += value###
-
-    ###timeSpent_test = tasks.reduce (object, task) ->
-
-      for key, value of task.time_spent when range.start <= key < range.end
-
-        if object[key]? then object[key] += value
-        else object[key] = value
-      object
-    , {}###
-
-    sortedData = ({x: moment(key).unix(), y: value} for key, value of timeSpent).sort (a, b) -> a.x - b.x
-    
     # make it cumulative
-    sortedData.map (coord) ->
+    sortedData.map (object) ->
 
-      {x: coord.x, y: @ySeed += coord.y}
-    , {ySeed: 0}
-
-    ###chartData = ({x: parseInt(key, 10), y: value} for key, value of allDates)
-    chartData.map (coord) ->
-
-      {x: coord.x, y: @ySeed += coord.y}
-    , {ySeed: 0}###
+      {date: object.date, value: @valueSeed += object.value}
+    , {valueSeed: 0}
   buildRemainingTimeChartData: (story, tasks, range) ->
 
     # simulate a set with an object
@@ -190,17 +166,17 @@ class StoryModel extends Model
       object
     , {}
 
-    remainingTime = {}
+    remainingTimes = {}
     for index of indices
 
-      remainingTime[index] = tasks.reduce (count, task) =>
+      remainingTimes[index] = tasks.reduce (count, task) =>
 
         count += @_getClosestValueByDateIndex task.remaining_time, index, range.start
       , 0
 
-    if !remainingTime[range.start] then remainingTime[range.start] = story.estimation
+    if !remainingTimes[range.start] then remainingTimes[range.start] = story.estimation
 
-    ({x: moment(key).unix(), y: value} for key, value of remainingTime).sort (a, b) -> a.x - b.x
+    ({date: key, value: value} for key, value of remainingTimes).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
 
 class StoryViewModel extends ChildViewModel
 
@@ -214,6 +190,7 @@ class StoryViewModel extends ChildViewModel
     $('#estimation').data 'validation', (value) -> value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
 
     @_initPopupSelectors()
+    @chart = new Chart ['reference', 'remainingTime', 'timeSpent']
   selectPopupItem: (ractiveEvent, args) =>
 
     super ractiveEvent, args
@@ -256,56 +233,24 @@ class StoryViewModel extends ChildViewModel
 	      @view.set 'sprints', data
 	      @_showPopup(id)
 	    else @_showPopup(id)
-  updateChart: =>
-
-    range = @model.buildSprintRange @model.sprint
-
-    series = [{
-        
-      color: 'steelblue'
-      data: @model.buildTimeSpentChartData @model.children.objects, range
-    },{
-      color: 'orange'
-      data: [
-
-        {x: moment(range.start).unix(), y: @model.story.estimation}
-        {x: moment(range.end).unix(), y: 0}
-      ]
-    },{
-      color: 'red'
-      data: @model.buildRemainingTimeChartData @model.story, @model.children.objects, range
-    }]
-
-    if @graph?
-
-      @graph.configure
-
-        series: series
-    else
-
-      @graph = new Rickshaw.Graph
-
-        element: $('#chart').get(0)
-        width: $('#stats-dialog .content').width() - $('#stats-dialog .textbox').width()
-        height: 200
-        series: series
-        renderer: 'line'
-        stroke: true
-        interpolation: 'linear'
-      #@graph.renderer.unstack = true
-      @graph.render()
-
-      xAxis = new Rickshaw.Graph.Axis.Time
-
-        graph: @graph
-        timeFixture: new Rickshaw.Fixtures.Time.Local()
-      xAxis.render()
   hideStats: =>
 
     @_hideModal 'stats'
   showStats: => 
 
-    @updateChart()
+    range = @model.buildSprintRange @model.sprint
+    remainingTime = @model.buildRemainingTimeChartData @model.story, @model.children.objects, range
+    timeSpent = @model.buildTimeSpentChartData @model.children.objects, range
+
+    @chart.refresh 
+
+      remainingTime: remainingTime
+      timeSpent: timeSpent
+      reference: [
+
+        {date: range.start, value: @model.story.estimation}
+        {date: moment(range.end).subtract('days', 1).format('YYYY-MM-DD'), value: 0}
+      ]
     @_showModal 'stats'
   handleButton: (ractiveEvent, action) => 
 

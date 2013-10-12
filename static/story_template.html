@@ -123,11 +123,13 @@
 				<span class="label">No. of Tasks:&nbsp;</span>
 				<span class="value">{{countTasks(children)}}</span>
 			</p>
-			<p class="stat">
+			<p class="stat remainingTime">
+				<span class="indicator blue"></span>
 				<span class="label">Remaining time:&nbsp;</span>
 				<span class="value">{{calculateRemainingTime(children, buildSprintRange(sprint), buildRemainingTime)}}</span>
 			</p>
-			<p class="stat">
+			<p class="stat timeSpent">
+				<span class="indicator red"></span>
 				<span class="label">Time spent:&nbsp;</span>
 				<span class="value">{{buildAllTimeSpent(children, buildSprintRange(sprint), buildTimeSpent)}}</span>
 			</p>

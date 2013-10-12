@@ -285,5 +285,40 @@ describe 'ChildViewModel._handleSortstop', ->
     @viewModel._handleSortstop 1, 2
     assert.equal @model.children.objects[1].priority, 2
 
+describe 'Chart.calculateChartRange', ->
+
+  before ->
+
+    @chart = new Chart
+    @object = 
+
+      a: [
+
+        {date: '2010-02-01', value: 1}
+        {date: '2010-02-02', value: 2}
+      ]
+      b: [
+
+        {date: '2010-01-01', value: 1}
+        {date: '2010-01-02', value: 8}
+      ]
+      c: [
+
+        {date: '2010-03-01', value: 1}
+        {date: '2010-03-02', value: 2}
+      ]
+
+  it 'should calculate a maximum date', ->
+
+    [yMax, xMin, xMax] = @chart._calculateChartRange @object
+    assert.equal moment(xMax).unix(), moment('2010-03-02').unix()
+  it 'should calculate a minimum date', ->
+
+    [yMax, xMin, xMax] = @chart._calculateChartRange @object
+    assert.equal moment(xMin).unix(), moment('2010-01-01').unix()
+  it 'should calculate a maximum value', ->
+
+    [yMax, xMin, xMax] = @chart._calculateChartRange @object
+    assert.equal yMax, 8
 
     

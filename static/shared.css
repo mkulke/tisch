@@ -325,7 +325,7 @@ span {
   left: 80px;
 }
 
-#color-selector .selected {
+#color-selector .selected, #stats-dialog .indicator {
 
 	padding-top: 2px;
 	padding-left: 2px;
@@ -788,4 +788,46 @@ ul#sprints li:first-child {
 #content > form > .stats {
 
 	padding: 10px;
+}
+
+#stats-dialog #chart .line {
+
+  fill: none;
+  stroke-width: 1.5px;
+}
+
+#stats-dialog #chart .circle {
+
+  fill: white;
+  stroke-width: 1.5px;
+}
+
+#stats-dialog #chart .remainingTime {
+
+	stroke: #3498DB;
+}
+
+#stats-dialog #chart .reference {
+
+	stroke: #E98813;
+}
+
+#stats-dialog #chart .timeSpent {
+
+	stroke: #D2315D;
+}
+
+#stats-dialog #chart .axis path, #chart .axis line {
+
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges;
+}
+
+#stats-dialog #chart .axis text {
+
+	font-weight: 200;
+	font-family: inherit;
+  /*font-family: sans-serif;*/
+  font-size: 11px;
 }

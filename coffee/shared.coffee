@@ -81,6 +81,103 @@ class View
 
     @ractive.get keypath
 
+class Chart 
+
+  constructor: (lines = []) ->
+
+    format = d3.time.format("%Y-%m-%d")
+
+    #chart = {}
+    @valueFn = (d) -> d.value
+    @dateFn = (d) -> format.parse d.date
+
+    @xScale = d3.time.scale().range([25, 395])
+    @yScale = d3.scale.linear().range([180, 5])
+
+    @yAxis = d3.svg.axis()
+      .scale(@yScale)
+      .orient("left")
+      .ticks(5)
+
+    @xAxis = d3.svg.axis()
+      .scale(@xScale)
+      .orient("bottom")
+      .tickFormat(d3.time.format('%e'))
+
+    @lineGn = d3.svg.line()
+      .x((d) => @xScale(@dateFn(d)))
+      .y((d) => @yScale(@valueFn(d)))
+
+    @svg = d3.select("#chart").append("svg:svg")
+      .attr("width", 400)
+      .attr("height", 200)
+
+    @svg.append("svg:path").attr('class', "#{line} line") for line in lines
+
+    @svg.append("g")         
+      .attr("class", "y axis")
+      .attr("transform", "translate(25, 0)")
+    @svg.append("g")         
+      .attr("class", "x axis")
+      .attr("transform", "translate(0, 180)")
+
+  _calculateChartRange: (object) =>
+
+    allData = (value for key, value of object)
+
+    yMax = allData.reduce (biggestMax, data) =>
+
+      max = d3.max(data, @valueFn)
+      if max > biggestMax then max
+      else biggestMax
+    , 0
+    xMin = allData.reduce (smallestMin, data) =>
+
+      min = d3.min(data, @dateFn)
+      if !smallestMin? then smallestMin = min
+      if min < smallestMin then min
+      else smallestMin
+    , null
+    xMax = allData.reduce (biggestMax, data) =>
+
+      max = d3.max(data, @dateFn)
+      if max > biggestMax then max
+      else biggestMax
+    , 0
+    return [yMax, xMin, xMax]
+
+  refresh: (object) =>
+
+    [yMax, xMin, xMax] = @_calculateChartRange object
+
+    @xScale.domain([xMin, xMax])
+    @yScale.domain([0, yMax])
+
+    do (=>
+
+      circles = @svg.selectAll("circle.#{path}").data(data)
+  
+      circles.transition()
+        .attr("cx", (d) => @xScale(@dateFn(d)))
+        .attr("cy", (d) => @yScale(@valueFn(d)))
+
+      circles.enter()
+        .append("svg:circle")
+        .attr('class', "circle #{path}")
+        .attr("r", 4)
+        .attr("cx", (d) => @xScale(@dateFn(d)))
+        .attr("cy", (d) => @yScale(@valueFn(d)))
+
+      @svg.select("path.#{path}").datum(data)
+        .transition()
+        .attr("d", @lineGn)
+
+      @svg.selectAll('g.y.axis')
+        .call(@yAxis)
+      @svg.selectAll('g.x.axis')
+        .call(@xAxis)
+    ) for path, data of object
+
 class Model
 
   # TODO: consolidate
