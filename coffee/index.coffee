@@ -13,7 +13,7 @@ class IndexView extends View
     confirm_message: "Dummy message"
     format_date: (displayDate) -> 
 
-      $.datepicker.formatDate common.DATE_DISPLAY_FORMAT, new Date(displayDate)
+      moment(displayDate).format(common.DATE_DISPLAY_FORMAT)
     calculate_end_date: (start, length) ->
 
       startDate = new Date(start)

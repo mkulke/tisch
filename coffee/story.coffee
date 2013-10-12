@@ -85,9 +85,9 @@ class StoryView extends View
           indexDate = moment(index)
           while indexDate.subtract('days', 1) >= range.start
 
-            if remainingTime[indexDate.format('YYYY-MM-DD')]?
+            if remainingTime[indexDate.format('common.DATE_DB_FORMAT')]?
 
-              value = remainingTime[indexDate.format('YYYY-MM-DD')]
+              value = remainingTime[indexDate.format('common.DATE_DB_FORMAT')]
               break
           value
 
@@ -135,7 +135,7 @@ class StoryModel extends Model
 
     start = moment sprint.start
     end = moment(start).add 'days', sprint.length
-    start: start.format('YYYY-MM-DD'), end: end.format('YYYY-MM-DD')
+    start: start.format('common.DATE_DB_FORMAT'), end: end.format(common.DATE_DB_FORMAT)
   buildTimeSpentChartData: (tasks, range) ->
 
     initial = {}
@@ -249,7 +249,7 @@ class StoryViewModel extends ChildViewModel
       reference: [
 
         {date: range.start, value: @model.story.estimation}
-        {date: moment(range.end).subtract('days', 1).format('YYYY-MM-DD'), value: 0}
+        {date: moment(range.end).subtract('days', 1).format('common.DATE_DB_FORMAT'), value: 0}
       ]
     @_showModal 'stats'
   handleButton: (ractiveEvent, action) => 
