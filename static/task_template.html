@@ -7,10 +7,10 @@
 <div id="content">
 	<form>
 		<p>
-			<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="summary" class="identifier" value="{{task.summary}}"/>
+			<input on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" id="summary" class="identifier" value="{{task.summary}}"/>
 		</p>
 		<p>
-			<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description" value="{{task.description}}"/>
+			<textarea on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" id="description" value="{{task.description}}"/>
 		</p>
 		<p class="attribute">
 			<span class="label">{{constants.en_US.COLOR}}:&nbsp;</span>
@@ -40,7 +40,7 @@
 		</p>
 		<p class="attribute">
 			<span class="label">{{constants.en_US.INITIAL_ESTIMATION}}:&nbsp;</span>
-			<input id="initial_estimation" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{task.initial_estimation}}"/>
+			<input id="initial_estimation" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" value="{{task.initial_estimation}}"/>
 			<span class="error-popup">
 				<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
 			</span>
@@ -51,7 +51,7 @@
 					<span on-tap="tapped_selector:remaining_time_index" class="selected" data-date="{{remaining_time_index}}">{{formatDateIndex(remaining_time_index)}}</span><div class="content"/>
 				</a>
 			</span><span class="label">):&nbsp;</span>
-			<input id="remaining_time" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{formatRemainingTime(task.remaining_time, remaining_time_index, sprint)}}"/>
+			<input id="remaining_time" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" value="{{formatRemainingTime(task.remaining_time, remaining_time_index, sprint)}}"/>
 			<span class="error-popup">
 				<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
 			</span>
@@ -62,7 +62,7 @@
 					<span on-tap="tapped_selector:time_spent_index" class="selected" data-date="{{time_spent_index}}">{{formatDateIndex(time_spent_index)}}</span><div class="content"/>
 				</a>
 			</span><span class="label">):&nbsp;</span>
-			<input id="time_spent" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{formatTimeSpent(task.time_spent, time_spent_index)}}"/>
+			<input id="time_spent" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" value="{{formatTimeSpent(task.time_spent, time_spent_index)}}"/>
 			<span class="error-popup">
 				<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
 			</span>

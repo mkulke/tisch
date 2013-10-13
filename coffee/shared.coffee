@@ -88,7 +88,6 @@ class Chart
 
     format = d3.time.format("%Y-%m-%d")
 
-    #chart = {}
     @valueFn = (d) -> d.value
     @dateFn = (d) -> format.parse d.date
 
@@ -327,12 +326,17 @@ class ViewModel
 
     ractiveHandlers =
 
+      execute_pending_update: @executePendingUpdate
+      set_before_value: @setBeforeValue
       trigger_update: @triggerUpdate
       tapped_selector: @openSelectorPopup
       tapped_selector_item: @selectPopupItem
       tapped_button: @handleButton
     @view.setRactiveHandlers ractiveHandlers
+  setBeforeValue: (ractiveEvent) ->
 
+    node = ractiveEvent.node
+    $(node).data 'before_value', #{$(node).val()
   _initDatePickers: (options) =>
 
     $('.date-selector .content').datepicker
@@ -439,28 +443,47 @@ class ViewModel
 
         @view.set "#{@model.type}.#{key}", value
         @model.update key, successCb, errorCb
+  _abortCall: (timer) ->
 
-  triggerUpdate: (ractiveEvent, delayed) =>
+    clearTimeout timer?.id
+    call = timer?.call
+    timer = null
+    call
+  _delayCall: (call) ->
 
-    clearTimeout @keyboardTimer
+    id = setTimeout call, common.KEYUP_UPDATE_DELAY
+    {id, call}
+
+  executePendingUpdate: (ractiveEvent) =>
+
+    call = @_abortCall @keyboardTimer
+    if call? then do call
+
+  triggerUpdate: (ractiveEvent) =>
 
     event = ractiveEvent.original
     node = ractiveEvent.node
+    value = $(node).val()
 
-    if (node.localName == 'input') && (event.which == 13) then event.preventDefault()
+    if $(node).data('before_value') != value
 
-    updateCall = @_buildUpdateCall node
+      $(node).removeData('before_value')
 
-    if (node.localName.match /^input$|^textarea$/)? && $(node).data('validation')?
+      @_abortCall @keyboardTimer
 
-      if !$(node).data('validation') $(node).val() 
+      if (node.localName == 'input') && (event.which == 13) then event.preventDefault()
 
-        @_resetToConfirmedValue(node)
-        updateCall = -> $(node).next().show()  
-      else $(node).next().hide()
+      updateCall = @_buildUpdateCall node
 
-    if delayed? then @keyboardTimer = setTimeout updateCall, common.KEYUP_UPDATE_DELAY 
-    else do updateCall
+      if (node.localName.match /^input$|^textarea$/)? && $(node).data('validation')?
+
+        if !$(node).data('validation') value 
+
+          @_resetToConfirmedValue(node)
+          updateCall = -> $(node).next().show()  
+        else $(node).next().hide()
+
+      @keyboardTimer = @_delayCall updateCall
 
 class ChildViewModel extends ViewModel
 

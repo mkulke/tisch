@@ -14,7 +14,7 @@ class TaskSocketIO extends SocketIO
           when 'sprint_id' then @model.getSprint data.data.value, (data) => @view.set 'sprint', data
 
 class TaskView extends View
-
+ 
   _buildRactiveData: =>
 
     breadcrumbs: 
@@ -38,7 +38,9 @@ class TaskView extends View
 
       startIndex = moment(sprint.start).format(common.DATE_DB_FORMAT)      
       @model._getClosestValueByDateIndex remainingTime, index, startIndex
-    formatDateIndex: (dateIndex) -> moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
+    formatDateIndex: (dateIndex) -> 
+
+      moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
     error_message: "Dummy message"
 class TaskModel extends Model
 

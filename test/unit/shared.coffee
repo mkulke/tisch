@@ -144,9 +144,13 @@ describe 'ViewModel.triggerUpdate', ->
 
   before ->
 
+    $('body').append '<input id="summary"/>'
+    $('body').append '<input id="with_validation"/>'
+    $('#with_validation').data('validation', (value) -> return false)
+
     @ractiveEvent = {
 
-      node: {localName: 'input', id: 'summary'}
+      node: $('#summary').get(0)
       original: {which: 13, preventDefault: ->}
     }
     sinon.stub @ractiveEvent.original, 'preventDefault'
@@ -168,18 +172,14 @@ describe 'ViewModel.triggerUpdate', ->
     @clock.restore()
     @model.update.restore()
     $('#with_validation').remove()
+    $('#summary').remove()
   it 'should prevent a submit action on input fields when return is pressed', ->
   
     sinon.stub @model, 'update'
-    @viewModel.triggerUpdate(@ractiveEvent)
+    @viewModel.triggerUpdate @ractiveEvent
     assert @ractiveEvent.original.preventDefault.calledOnce, 'preventDefault not called'
-  it 'should call Model.update', ->
+  it 'should call Model.update after 1500ms', ->
   
-    assert @model.update.calledWith('summary'), 'update not called with the correct arguments'
-  it 'should call Model.update after 1500ms when called with delay=true', ->
-  
-    @model.update.reset()
-    @viewModel.triggerUpdate(@ractiveEvent, true)
     @clock.tick 1500
     assert @model.update.calledWith('summary'), 'update not called after 1500ms with the correct arguments'
   it 'should not call Model.update when the node has a validation which fails' , ->
@@ -193,9 +193,10 @@ describe 'ChildViewModel.triggerUpdate', ->
 
   before ->
 
+    $('body').append '<input id="summary-0"/>'
     @ractiveEvent = {
 
-      node: {localName: 'input', id: 'summary-0'}
+      node: $('#summary-0').get(0)
       original: {which: 13, preventDefault: ->}
     }
 
@@ -209,12 +210,16 @@ describe 'ChildViewModel.triggerUpdate', ->
     @viewModel.model = @model
     @viewModel.view = {set: (->), get: -> 'abc'}
     sinon.stub @model, 'updateChild'
+    @clock = sinon.useFakeTimers()
   after -> 
 
+    @clock.restore()
+    $('#summary-0').remove()
     @model.updateChild.restore()
-  it 'should call Model.updateChild when called the node id is has a child index', ->
+  it 'should call Model.updateChild after 1500ms when called and the node id has a child index', ->
   
-    @viewModel.triggerUpdate(@ractiveEvent)
+    @viewModel.triggerUpdate @ractiveEvent
+    @clock.tick 1500
     assert @model.updateChild.calledWith('0', 'summary'), 'updateChild not called with the correct arguments'
 
 describe 'ChildViewModel._calculatePriority', ->

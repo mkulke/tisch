@@ -9,9 +9,9 @@
 					<h2>{{format_date(start)}} &ndash; {{format_date(calculate_end_date(start, length))}}</h2>
 					<div class="panel">
 						<div class="header {{color}}">
-							<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="title-{{i}}" value="{{title}}"/>
+							<input id="title-{{i}}" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" value="{{title}}"/>
 						</div>
-						<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description-{{i}}" class="body" value="{{description}}"/>
+						<textarea id="description-{{i}}" class="body" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" value="{{description}}"/>
 						<div class="button-bar">
 							<div class="buttons">
 								<input on-tap="tapped_button:sprint_open" class="button open" type="button" value="{{constants.en_US.OPEN}}">

@@ -5,10 +5,10 @@
 <div id="content">
 	<form>
 		<p>
-			<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="title" class="identifier" value="{{sprint.title}}"/>
+			<input id="title" class="identifier" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" value="{{sprint.title}}"/>
 		</p>
 		<p>
-			<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description" value="{{sprint.description}}"/>
+			<textarea id="description" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" value="{{sprint.description}}"/>
 		</p>
 		<p class="attribute">
 			<span class="label">{{constants.en_US.COLOR}}:&nbsp;</span>
@@ -41,7 +41,7 @@
 			{{#children:i}}
 				<li class="panel">
 					<div class="header {{color}} hoverable">
-						<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="title-{{i}}" value="{{title}}"/>
+						<input id="title-{{i}}" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" value="{{title}}"/>
 						<div class="stats">
 							{{#remaining_time[_id]}}
 								<img src="/clock_white_30.png">
@@ -52,7 +52,7 @@
 							{{/remaining_time[_id] == 0}}
 						</div>
 					</div>
-					<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description-{{i}}" class="body" value="{{description}}"/>
+					<textarea id="description-{{i}}" class="body" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" value="{{description}}"/>
 					<div class="button-bar">
 						<div class="buttons">
 							<input on-tap="tapped_button:story_open" class="button open" type="button" value="{{constants.en_US.OPEN}}">

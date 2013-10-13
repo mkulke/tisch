@@ -6,10 +6,10 @@
 <div id="content">
 	<form>
 		<p>
-			<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="title" class="identifier" value="{{story.title}}"/>
+			<input id="title" class="identifier" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update"  value="{{story.title}}"/>
 		</p>
 		<p>
-			<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description" value="{{story.description}}"/>
+			<textarea id="description" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" value="{{story.description}}"/>
 		</p>
 		<p class="attribute">
 			<span class="label">{{constants.en_US.COLOR}}:&nbsp;</span>
@@ -39,7 +39,7 @@
 		</p>
 		<p class="attribute">
 			<span class="label">{{constants.en_US.ESTIMATION}}:&nbsp;</span>
-			<input id="estimation" on-keyup="trigger_update:true" on-focusout="trigger_update" value="{{story.estimation}}"/>
+			<input id="estimation" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" value="{{story.estimation}}"/>
 			<span class="error-popup">
 				<div class="content error">{{constants.en_US.VALID_TIME_MESSAGE}}</div>
 			</span>
@@ -74,13 +74,13 @@
 			{{#children:i}}
 				<li class="panel">
 					<div class="header {{color}} hoverable">
-						<input on-keyup="trigger_update:true" on-focusout="trigger_update" id="summary-{{i}}" value="{{summary}}"/>
+						<input id="summary-{{i}}" on-keyup="trigger_update" on-keydown="set_before_value" on-focusout="execute_pending_update" value="{{summary}}"/>
 						<div class="stats">
 							<img src="/{{buildRemainingTime(remaining_time, buildSprintRange(sprint)) > 0 ? 'clock_white_30.png' : 'done_white_30.png'}}">
 							<div class="text">{{buildRemainingTime(remaining_time, buildSprintRange(sprint)) > 0 ? buildRemainingTime(remaining_time, buildSprintRange(sprint)) : ''}}</div>
 						</div>
 					</div>
-					<textarea on-keyup="trigger_update:true" on-focusout="trigger_update" id="description-{{i}}" class="body" value="{{description}}"/>
+					<textarea id="description-{{i}}" class="body" on-keyup="trigger_update" on-keydown="set_before_value"  on-focusout="execute_pending_update" c value="{{description}}"/>
 					<div class="button-bar">
 						<div class="buttons">
 							<input on-tap="tapped_button:task_open" class="button open" type="button" value="{{constants.en_US.OPEN}}">
