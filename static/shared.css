@@ -558,7 +558,8 @@ form {
 
 .modal {
 
-	display: none;
+	visibility: hidden;
+	/*display: none;*/
 	position: fixed;
 	z-index: 3;
 }
@@ -567,15 +568,16 @@ form {
 
 	top: 50%;
 	left: 50%;
-	width: auto;
-	margin-top: -125px;
+	width: 560px;
+	height: 280px;
+	margin-top: -140px;
 	margin-left: -280px;
 }
 
 #stats-dialog .content {
 
 	background-color: #dcdcdc;
-	padding: 10px;
+	padding: 15px;
 	border-top-right-radius: 3px;
 	-moz-border-top-right-radius: 3px;
   border-top-left-radius: 3px;
@@ -587,18 +589,18 @@ form {
 	/*border: 1px solid black;*/
 	display: inline-block;
 	vertical-align: top;
+	/*padding: 15px;*/
 }
 
 #stats-dialog .textbox > p {
 
 	font-weight: 300;
-	padding: 0px;
 	margin: 0 0 15 0px;
 }
 
 #stats-dialog .chartbox {
 
-	margin-left: 10px;
+	/*margin-left: 10px;*/
 	display: inline-block;
 	/*border: 1px solid black;*/
 }
@@ -819,9 +821,9 @@ ul#sprints li:first-child {
 
 #stats-dialog #chart .axis path, #chart .axis line {
 
-    fill: none;
-    stroke: black;
-    shape-rendering: crispEdges;
+  fill: none;
+  stroke: black;
+  shape-rendering: crispEdges;
 }
 
 #stats-dialog #chart .axis text {

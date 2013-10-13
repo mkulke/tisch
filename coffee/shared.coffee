@@ -91,8 +91,14 @@ class Chart
     @valueFn = (d) -> d.value
     @dateFn = (d) -> format.parse d.date
 
-    @xScale = d3.time.scale().range([25, 395])
-    @yScale = d3.scale.linear().range([180, 5])
+    padding = $('#stats-dialog .content').css('padding')
+    width = $('#stats-dialog .content').width() - $('#stats-dialog .textbox').width()
+    height = $('#stats-dialog').height() - $('#stats-dialog .popup-buttons').height() - 2 * parseInt(padding)
+
+    console.log "width: #{width}, height: #{height}"
+
+    @xScale = d3.time.scale().range([30, width - 5])
+    @yScale = d3.scale.linear().range([height - 20, 5])
 
     @yAxis = d3.svg.axis()
       .scale(@yScale)
@@ -109,17 +115,17 @@ class Chart
       .y((d) => @yScale(@valueFn(d)))
 
     @svg = d3.select("#chart").append("svg:svg")
-      .attr("width", 400)
-      .attr("height", 200)
+      .attr("width", width)
+      .attr("height", height)
 
     @svg.append("svg:path").attr('class', "#{line} line") for line in lines
 
     @svg.append("g")         
       .attr("class", "y axis")
-      .attr("transform", "translate(25, 0)")
+      .attr("transform", "translate(30, 0)")
     @svg.append("g")         
       .attr("class", "x axis")
-      .attr("transform", "translate(0, 180)")
+      .attr("transform", "translate(0, #{height - 20})")
 
   _calculateChartRange: (object) =>
 
@@ -403,10 +409,15 @@ class ViewModel
 
     if message? then @view.set("#{type}_message", message)
     $('#overlay').css({height: $(window).height() + 'px'}).show()
-    $("##{type}-dialog").show()
+    #$("##{type}-dialog").show()
+    $("##{type}-dialog").css('visibility','visible')
   showConfirm: (message) => @_showModal 'confirm', message
   showError: (message) => @_showModal 'error', message
-  _hideModal: (type) -> $("##{type}-dialog, #overlay").hide()
+  _hideModal: (type) -> 
+
+    $("##{type}-dialog").css('visibility','hidden')
+    $("#overlay").hide()
+    #$("##{type}-dialog, #overlay").hide()
   hideConfirm: -> @_hideModal 'confirm'
   hideError: -> @_hideModal 'error'
   openSelectorPopup: (ractiveEvent, id) =>
