@@ -95,8 +95,6 @@ class Chart
     width = $('#stats-dialog .content').width() - $('#stats-dialog .textbox').width()
     height = $('#stats-dialog').height() - $('#stats-dialog .popup-buttons').height() - 2 * parseInt(padding)
 
-    console.log "width: #{width}, height: #{height}"
-
     @xScale = d3.time.scale().range([30, width - 5])
     @yScale = d3.scale.linear().range([height - 20, 5])
 

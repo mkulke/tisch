@@ -15,7 +15,7 @@
 
 .red.hoverable:hover {
 
-  background-color: #C2214D;
+  background-color: #F2416D;
 }
 
 .green {
@@ -25,7 +25,7 @@
 
 .green.hoverable:hover {
 
-  background-color: #78B124;
+  background-color: #98D144;
 }
 
 .yellow {
@@ -35,7 +35,7 @@
 
 .yellow.hoverable:hover {
 
-  background-color: #E1B400;
+  background-color: #FFD41F;
 }
 
 .orange {
@@ -45,7 +45,7 @@
 
 .orange.hoverable:hover {
 
-  background-color: #D97803;	
+  background-color: #F99823;	
 }
 
 .purple {
@@ -55,7 +55,7 @@
 
 .purple.hoverable:hover {
 
-  background-color: #775796;	
+  background-color: #9777B6;	
 }
 
 .blue {
@@ -65,7 +65,7 @@
 
 .blue.hoverable:hover {
 
-  background-color: #2488CB;
+  background-color: #44A8EB;
 }
 
 .panel .header input {
