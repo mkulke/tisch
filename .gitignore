@@ -1,10 +1,10 @@
 
 static/.DS_Store
 
-coffee/*coffee.js.map
-coffee/*coffee.js
-test/unit/*coffee.js.map
-test/unit/*coffee.js
+coffee/*.js.map
+coffee/*.js
+test/unit/*.js.map
+test/unit/*.js
 
 .DS_Store
 
