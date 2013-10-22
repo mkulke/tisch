@@ -54,11 +54,8 @@ class SocketIO
 
   constructor: (@view, @model) ->
 
-    socket = io.connect "http://#{window.location.hostname}"
-    socket.on 'connect', -> socket.emit 'register', {client_uuid: common.uuid}
-    socket.on 'message', @messageHandler    
-  messageHandler: ->
-
+    @socket = io.connect "http://#{window.location.hostname}"   
+    @socket.on 'connect', @_register
 class View
 
   constructor: (ractiveTemplate, @model) ->

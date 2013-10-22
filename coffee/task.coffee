@@ -1,6 +1,12 @@
 class TaskSocketIO extends SocketIO
   
-  messageHandler: (data) =>
+  constructor: (@view, @model) ->
+
+    super @view, @model
+  _register: =>
+
+    @socket.emit 'register', @model.task._id
+  ###messageHandler: (data) =>
 
     if data.message == 'update'
         
@@ -11,7 +17,7 @@ class TaskSocketIO extends SocketIO
         switch data.data.key
 
           when 'story_id' then @model.getStory data.data.value, (data) => @view.set 'story', data
-          when 'sprint_id' then @model.getSprint data.data.value, (data) => @view.set 'sprint', data
+          when 'sprint_id' then @model.getSprint data.data.value, (data) => @view.set 'sprint', data###
 
 class TaskView extends View
  

@@ -1008,9 +1008,10 @@ app.start = function() {
 
     client.on('register', function(data) {
 
-      key = data.client_uuid;
+      console.log("id: " + data);
+      /*key = data.client_uuid;
       clients[key] = client;
-      console.log(key + ' registered. ' + Object.keys(clients).length + ' clients connected now.');
+      console.log(key + ' registered. ' + Object.keys(clients).length + ' clients connected now.');*/
     });
 
     client.on('disconnect', function() {
