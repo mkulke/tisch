@@ -1,23 +1,42 @@
 class TaskSocketIO extends SocketIO
   
-  constructor: (@view, @model) ->
+  _onUpdate: (data) =>
 
-    super @view, @model
-  _register: =>
+    # TODO: update breadcrumbs also?
 
-    @socket.emit 'register', @model.task._id
-  ###messageHandler: (data) =>
+    update = (path) =>
 
-    if data.message == 'update'
-        
-      for item in ['task', 'story', 'sprint'] when data.recipient == @model[item]._id
+      @view.set "#{path}._rev", data.rev
+      @view.set "#{path}.#{data.key}", data.value
 
-        @view.set "#{item}._rev", data.data.rev
-        @view.set "#{item}.#{data.data.key}", data.data.value
-        switch data.data.key
+    if data.id == @view.get 'task._id' 
 
-          when 'story_id' then @model.getStory data.data.value, (data) => @view.set 'story', data
-          when 'sprint_id' then @model.getSprint data.data.value, (data) => @view.set 'sprint', data###
+      update 'task'
+      if data.key == 'story_id' then @model.getStory data.value, (data) => 
+
+        @view.set 'story', data
+    else if data.id == @view.get 'story._id' 
+
+      update 'story'
+      if data.key == 'sprint_id' 
+
+        @model.getSprint data.value, (data) => 
+
+          @view.set 'sprint', data
+        #also get new stories for the selector
+        @model.getStories data.value, (data) =>
+
+          @view.set 'stories', data
+
+    else if data.id == @view.get 'sprint._id' then update 'sprint'
+    
+    # stories from the selector
+    storyIndex = index for story, index in @view.get 'stories' when story._id == data.id
+    if storyIndex? then update "stories[#{storyIndex}]"
+
+    # breadcrumbs
+    if @view.get 'breadcrumbs.story.id' == data.id && data.key == 'title' then @view.set 'breadcrumbs.story.title', data.value
+    else if @view.get 'breadcrumbs.sprint.id' == data.id && data.key == 'title' then @view.set 'breadcrumbs.sprint.title', data.value
 
 class TaskView extends View
  

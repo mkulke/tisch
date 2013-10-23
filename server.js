@@ -11,6 +11,7 @@ var Q = require('q');
 var io = require('socket.io');
 var moment = require('moment');
 var curry = require('curry');
+var _ = require('underscore')._;
 
 var cwd = process.cwd();
 var options = { pretty: false, filename: 'sprint_ractive.jade' };
@@ -23,6 +24,19 @@ options.filename = 'index_ractive.jade';
 var index_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 
 var clients = {};
+
+function broadcastUpdateToOtherClients(sourceUUID, data) {
+
+  for (var key in clients) {
+
+    if (key != sourceUUID) {
+
+      var client = clients[key];
+      console.log('emit update to ' + key);
+      client.emit('update', data);
+    }
+  }
+}
 
 function broadcastToClients(sourceUUID, data) {
 
@@ -517,12 +531,13 @@ function processRequest(request, response) {
 
     answer = function(result) {
 
-      var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
+      var data = {rev: result._rev, id: id, parent_id: result.story_id, key: request.body.key, value: result[request.body.key]};
       
-      respondWithJson(data, response);      
-      broadcastToClients(request.headers.client_uuid, {message: 'update', recipient: id, data: data});
+      respondWithJson(data, response);
+      broadcastUpdateToOtherClients(request.headers.client_uuid, data);
+      //broadcastToClients(request.headers.client_uuid, {message: 'update', recipient: id, data: data});
 
-      if (request.body.key == 'story_id') {
+      /*if (request.body.key == 'story_id') {
 
         // remove from old story view and add to new one, and trigger calculation updates.
         broadcastToClients(request.headers.client_uuid, {message: 'deassign', recipient: id, data: id});
@@ -533,7 +548,7 @@ function processRequest(request, response) {
       else if (request.body.key == 'remaining_time') {
 
         broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
-      }
+      }*/
     };
   } 
   else if ((type == 'task') && (request.method == 'PUT')) {
@@ -670,17 +685,18 @@ function processRequest(request, response) {
 
     answer = function(result) {
 
-      var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
+      var data = {rev: result._rev, id: id, parent_id: result.sprint_id, key: request.body.key, value: result[request.body.key]};
       
       respondWithJson(data, response);
-      broadcastToClients(request.headers.client_uuid, {message: 'update', recipient: id, data: data});
-      
-      if (request.body.key == 'sprint_id') {
+      //broadcastToClients(request.headers.client_uuid, {message: 'update', recipient: id, data: data});
+      broadcastUpdateToOtherClients(request.headers.client_uuid, data);
 
-      // remove from old story view and add to new one.
+      /*if (request.body.key == 'sprint_id') {
+
+        // remove from old story view and add to new one.
         broadcastToClients(request.headers.client_uuid, {message: 'deassign', recipient: id, data: id});
         broadcastToClients(request.headers.client_uuid, {message: 'assign', recipient: result.sprint_id, data: result});
-      }
+      }*/
     };
   }
   else if ((type == 'story') && (request.method == 'PUT')) {
@@ -1004,20 +1020,22 @@ app.start = function() {
 
   socket.on('connection', function(client) {
     
-    var key;
+    var clientUUID;
 
     client.on('register', function(data) {
 
-      console.log("id: " + data);
-      /*key = data.client_uuid;
-      clients[key] = client;
-      console.log(key + ' registered. ' + Object.keys(clients).length + ' clients connected now.');*/
+      /*console.log("socket id: " + this.id + ", item ids: " + JSON.stringify(data));
+      clientUUID = data.clientUUID;
+      clients[clientUUID] = data.item_ids;*/
+      clientUUID = data;
+      clients[clientUUID] = client;
+      console.log(clientUUID + ' registered. ' + Object.keys(clients).length + ' clients connected now.');
     });
 
     client.on('disconnect', function() {
     
-      delete clients[key];
-      console.log(key + ' disconnected. ' + Object.keys(clients).length + ' clients connected now.');
+      delete clients[clientUUID];
+      console.log(clientUUID + ' disconnected. ' + Object.keys(clients).length + ' clients connected now.');
     });
   });
 }
