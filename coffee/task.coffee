@@ -2,8 +2,6 @@ class TaskSocketIO extends SocketIO
   
   _onUpdate: (data) =>
 
-    # TODO: update breadcrumbs also?
-
     update = (path) =>
 
       @view.set "#{path}._rev", data.rev
@@ -35,8 +33,12 @@ class TaskSocketIO extends SocketIO
     if storyIndex? then update "stories[#{storyIndex}]"
 
     # breadcrumbs
-    if @view.get 'breadcrumbs.story.id' == data.id && data.key == 'title' then @view.set 'breadcrumbs.story.title', data.value
-    else if @view.get 'breadcrumbs.sprint.id' == data.id && data.key == 'title' then @view.set 'breadcrumbs.sprint.title', data.value
+    if (@view.get 'breadcrumbs.story.id') == data.id && data.key == 'title'
+
+      @view.set 'breadcrumbs.story.title', data.value
+    else if (@view.get 'breadcrumbs.sprint.id') == data.id && data.key == 'title' 
+
+      @view.set 'breadcrumbs.sprint.title', data.value
 
 class TaskView extends View
  
