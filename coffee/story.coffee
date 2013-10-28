@@ -1,8 +1,68 @@
 class StorySocketIO extends SocketIO
 
-  messageHandler: (data) =>
+  _sort: (a, b) -> 
 
-    if data.message == 'update'
+    a.priority > b.priority ? -1 : 1
+  _onAdd: (data) =>
+
+    if data.story_id == @view.get 'story._id'
+
+      @model.children.objects.push(data)
+  _onRemove: (data) =>
+
+    if data.story_id == @view.get 'story._id'
+
+      children = @view.get 'children'
+      child = _.findWhere children, {_id: data.id}
+      if child? 
+
+        index = _.indexOf children, child
+        children.splice index, 1
+  _onUpdate: (data) =>
+
+    update = (path) =>
+
+      @view.set "#{path}._rev", data.rev
+      @view.set "#{path}.#{data.key}", data.value
+
+    if data.id == @view.get 'story._id' 
+
+      update 'story'
+      if data.key == 'sprint_id' 
+
+        @model.getSprint data.value, (data) => 
+
+          @view.set 'sprint', data
+    else if data.id == @view.get 'sprint._id' then update 'sprint'
+    
+    # sprints from the selector
+    sprintIndex = index for sprint, index in @view.get 'sprints' when sprint._id == data.id
+    if sprintIndex? then update "sprints[#{sprintIndex}]"
+
+    # tasks
+    taskIndex = index for task, index in @view.get 'children' when task._id == data.id
+    if taskIndex? 
+
+      before = (child.priority for child in @view.get('children'))
+      console.log "before: #{before}"
+
+      update "children[#{taskIndex}]"
+      if data.key == 'priority'
+
+        @view.get('children').sort(@_sort)
+        @view.update('children')
+
+      after = (child.priority for child in @view.get('children'))
+      console.log "after: #{after}"
+
+    # breadcrumbs
+    if (@view.get 'breadcrumbs.sprint.id') == data.id && data.key == 'title' 
+
+      @view.set 'breadcrumbs.sprint.title', data.value
+
+  ###messageHandler: (data) =>
+
+    #if data.message == 'update'
         
       #TODO: tasks
       if @view.get('story')._id == data.recipient
@@ -26,7 +86,7 @@ class StorySocketIO extends SocketIO
 
           @view.set "children.#{index}._rev", data.data.rev
           @view.set "children.#{index}.#{data.data.key}", data.data.value
-          if data.data.key == 'priority' then @view.get('children').sort (a, b) -> a.priority > b.priority ? -1 : 1
+          if data.data.key == 'priority' then @view.get('children').sort (a, b) -> a.priority > b.priority ? -1 : 1###
 
 class StoryView extends View
 
@@ -46,6 +106,12 @@ class StoryView extends View
     buildRemainingTime: @buildRemainingTime
     buildTimeSpent: @buildTimeSpent
     buildSprintRange: @model.buildSprintRange
+    sortChildren: (children) ->
+
+      children = children.slice()
+      children.sort (a, b) ->
+
+        a.priority > b.priority ? -1 : 1
     countTasks: (tasks) -> 
 
       (key for key, value of tasks).length

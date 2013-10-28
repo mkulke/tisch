@@ -25,18 +25,22 @@ var index_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), opt
 
 var clients = {};
 
-function broadcastUpdateToOtherClients(sourceUUID, data) {
+var broadcastToOtherClients = curry(function(type, sourceUUID, data) {
 
   for (var key in clients) {
 
     if (key != sourceUUID) {
 
       var client = clients[key];
-      console.log('emit update to ' + key);
-      client.emit('update', data);
+      console.log('emit ' + type + ' to ' + key);
+      client.emit(type, data);
     }
   }
-}
+});
+
+var broadcastUpdateToOtherClients = broadcastToOtherClients('update');
+var broadcastAddToOtherClients = broadcastToOtherClients('add');
+var broadcastRemoveToOtherClients = broadcastToOtherClients('remove');
 
 function broadcastToClients(sourceUUID, data) {
 
@@ -575,8 +579,9 @@ function processRequest(request, response) {
     answer = function(result) {
 
       respondWithJson(result, response);
-      broadcastToClients(request.headers.client_uuid, {message: 'add', recipient: request.headers.parent_id, data: result});
-      broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
+      broadcastAddToOtherClients(request.headers.client_uuid, result);
+      //broadcastToClients(request.headers.client_uuid, {message: 'add', recipient: request.headers.parent_id, data: result});
+      //broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
     };
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
@@ -594,8 +599,10 @@ function processRequest(request, response) {
     answer = function(result) {
 
       respondWithJson(id, response);
-      broadcastToClients(request.headers.client_uuid, {message: 'remove', recipient: id, data: id});
-      broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
+      //broadcastToClients(request.headers.client_uuid, {message: 'remove', recipient: id, data: id});
+      var data = {id: id, story_id: result.story_id};
+      broadcastRemoveToOtherClients(request.headers.client_uuid, data);
+      //broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
     };
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
@@ -854,7 +861,8 @@ function processRequest(request, response) {
       var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
       
       respondWithJson(data, response);
-      broadcastToClients(request.headers.client_uuid, {message: 'update', recipient: id, data: data});  
+      broadcastUpdateToOtherClients(request.headers.client_uuid, data);
+      //broadcastToClients(request.headers.client_uuid, {message: 'update', recipient: id, data: data});  
     };
   }
   else if ((type == 'sprint') && (request.method == 'PUT')) {
