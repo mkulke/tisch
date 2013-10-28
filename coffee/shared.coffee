@@ -59,6 +59,11 @@ class SocketIO
 
       @emit 'register', common.uuid
     @server.on 'update', @_onUpdate
+    @server.on 'add', @_onAdd
+    @server.on 'remove', @_onRemove
+  _onUpdate: (data) ->
+  _onAdd: (data) ->
+  _onRemove: (data) ->
 class View
 
   constructor: (ractiveTemplate, @model) ->
@@ -512,8 +517,6 @@ class ChildViewModel extends ViewModel
       originalIndex = ui.item.index()
       $('ul#well').one 'sortstop', (event, ui) =>
 
-        console.log 'sort stop'
-
         index = ui.item.index()
         if index != originalIndex then @_handleSortstop originalIndex, index
   _calculatePriority: (originalIndex, index) =>
@@ -561,6 +564,11 @@ class ChildViewModel extends ViewModel
       ,(data) =>
 
         @model.children.objects[originalIndex]._rev = data.rev
+        children = @model.children.objects.slice()
+        children.sort (a, b) -> 
+
+          a.priority > b.priority ? -1 : 1
+        @model.children.objects = children
       ,(message) =>
 
         @model.children.objects[originalIndex].priority = undoValue
