@@ -72,14 +72,12 @@ class View
 
       el: 'output'
       template: ractiveTemplate
+      modifyArrays: false
       data: @_buildRactiveData(model)
   _buildRactiveData: ->
   setRactiveHandlers: (ractiveHandlers) =>
 
     @ractive.on ractiveHandlers
-  update: (keypath) =>
-
-    @ractive.update(keypath)
   set: (keypath, value) => 
 
     @ractive.set keypath, value
@@ -519,9 +517,9 @@ class ChildViewModel extends ViewModel
 
         index = ui.item.index()
         if index != originalIndex then @_handleSortstop originalIndex, index
-  _calculatePriority: (originalIndex, index) =>
+  _calculatePriority: (children, originalIndex, index) =>
 
-    objects = @model.children.objects.slice()
+    objects = children
     object = objects[originalIndex]
     objects.splice(originalIndex, 1)
     objects.splice(index, 0, object)
@@ -556,7 +554,7 @@ class ChildViewModel extends ViewModel
     value == $(node).data('confirmed_value')
   _handleSortstop: (originalIndex, index) => 
 
-    priority = @_calculatePriority originalIndex, index
+    priority = @_calculatePriority @model.children.objects, @originalIndex, index
     undoValue = @model.children.objects[originalIndex].priority
     @model.children.objects[originalIndex].priority = priority
     @model.updateChild originalIndex, 'priority'
@@ -569,6 +567,7 @@ class ChildViewModel extends ViewModel
 
           a.priority > b.priority ? -1 : 1
         @model.children.objects = children
+        @view.set 'children', children
       ,(message) =>
 
         @model.children.objects[originalIndex].priority = undoValue

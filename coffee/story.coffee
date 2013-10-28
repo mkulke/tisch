@@ -12,12 +12,13 @@ class StorySocketIO extends SocketIO
 
     if data.story_id == @view.get 'story._id'
 
-      children = @view.get 'children'
+      children = @model.children.objects
       child = _.findWhere children, {_id: data.id}
       if child? 
 
         index = _.indexOf children, child
         children.splice index, 1
+      @view.set 'children', children
   _onUpdate: (data) =>
 
     update = (path) =>
@@ -49,8 +50,10 @@ class StorySocketIO extends SocketIO
       update "children[#{taskIndex}]"
       if data.key == 'priority'
 
-        @view.get('children').sort(@_sort)
-        @view.update('children')
+        children = @model.children.objects.slice()
+        children.sort(@_sort)
+        @model.children.objects = children
+        @view.set 'children', children
 
       after = (child.priority for child in @view.get('children'))
       console.log "after: #{after}"
