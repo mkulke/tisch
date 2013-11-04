@@ -249,7 +249,7 @@ span {
 	padding: 5px;
 	left: -11px;
 	top: 32px;
-	display: none;
+	/*display: none;*/
 	z-index: 3;
 }
 
@@ -334,7 +334,11 @@ span {
 	height: 16px;
 	width: 16px;
 	border-radius: 50%;
-	/*border: 1px solid #333333;*/
+}
+
+.attribute .label {
+
+	margin-right: 5px;
 }
 
 body {
@@ -378,6 +382,7 @@ textarea#description {
 .attribute {
 
 	margin-left: 10px;
+	margin-bottom: 10px;
 }
 
 .attribute input {
@@ -631,6 +636,7 @@ form {
   top: 0;
   left: 0;
   width: 100%;
+  height: 100%;
   opacity: 0.6;
   background: white;
   display: none;

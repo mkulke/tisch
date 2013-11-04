@@ -91,6 +91,38 @@ class TaskModel extends Model
 
 class TaskViewModel extends ViewModel
 
+  constructor: (@model) ->
+
+    @summary = ko.observable @model.task.summary
+    @description = ko.observable @model.task.description
+    @color = ko.observable @model.task.color
+    @storyTitle = ko.observable @model.story.title
+    @initialEstimation = ko.observable @model.task.initial_estimation
+    @stories = ko.observable [@model.story]
+    @model.getStories @model.story.sprint_id, (data) =>
+      @stories data
+    @common = common
+    @modal = ko.observable(0)
+    # set this initially
+    @remainingTimeIndex = @model.getDateIndex @model.sprint
+    @remainingTimeIndexString = ko.computed =>
+
+      @_formatDateIndex @remainingTimeIndex
+    ,@
+
+    @test = ko.computed
+
+      read: -> 'bla'
+      write: ->
+      owner: @
+      
+  _formatDateIndex: (dateIndex) -> 
+
+    moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
+
+    #formatDateIndex(remaining_time_index)
+
+  ###
   constructor: (@model, ractiveTemplate) ->
 
     @view = new TaskView ractiveTemplate, @model
@@ -208,4 +240,4 @@ class TaskViewModel extends ViewModel
 
       when 'task_remove' 
 
-        @showError 'Move along. This functionality is not implemented yet.'
+        @showError 'Move along. This functionality is not implemented yet.'###

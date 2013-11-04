@@ -18,7 +18,7 @@ var options = { pretty: false, filename: 'sprint_ractive.jade' };
 var sprint_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'story_ractive.jade';
 var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
-options.filename = 'task_ractive.jade';
+options.filename = 'task.jade';
 var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'index_ractive.jade';
 var index_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
@@ -496,7 +496,7 @@ function processRequest(request, response) {
 
       answer = function(result) {
       
-        var html = task_template({task: result.task, story: result.story, sprint: result.sprint});
+        var html = task_template({task: result.task, story: result.story, sprint: result.sprint, messages: messages});
         respondWithHtml(html, response);
       };  
     }

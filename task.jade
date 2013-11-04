@@ -1,0 +1,59 @@
+html
+	head
+		title Task details
+		link(rel='stylesheet', href='/shared.css', type='text/css')
+		include shared_ractive
+		script(type='text/javascript', src='/task.coffee.js')
+	body
+		#breadcrumb-bar
+			a(href="/").breadcrumb.index Index
+		#content
+			form
+				p
+					input(data-bind="value: summary()")#summary.identifier
+				p
+					textarea(data-bind="value: description()")#description
+				.attribute
+					span.label
+						=messages.en.COLOR+':'
+					span#color-selector.popup-selector
+						a(href="#").open
+							span(data-bind="css: color()").selected
+							div(data-bind="foreach: common.COLORS, visible: modal() === common.COLOR_SELECTOR").content
+								div(data-bind="css: $data + ' box-' + $index()").color.hoverable
+				.attribute
+					span.label
+						=messages.en.STORY+':'
+					span#story-selector.popup-selector.line-selector
+						a(href="#").open
+							span(data-bind="text: storyTitle()").selected
+							div(data-bind="foreach: stories(), visible: modal() === common.STORY_SELECTOR").content
+								div(data-bind="text: title").line
+				.attribute
+					span.label
+						=messages.en.INITIAL_ESTIMATION+':'
+					input(data-bind="value: initialEstimation()")
+					span.error-popup
+						.content.error
+							=messages.en.VALID_TIME_MESSAGE
+				.attribute
+					span.label
+						=messages.en.REMAINING_TIME+':'
+					span#remaining_time_index.popup-selector.date-selector
+						a(href='#').open
+							span(data-bind="text: remainingTimeIndexString()").selected
+		#button-bar
+			form.buttons
+				input(type='button', value=messages.en.REMOVE).button.remove
+		#error-dialog.modal
+			div(data-bind="text: 'bla'").message.error
+			.popup-buttons
+				form.buttons
+					input(type='button', value=messages.en.OK).button
+		#overlay
+		script(type='text/javascript')
+			
+			var model, viewModel;
+			model = new TaskModel(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
+			viewModel = new TaskViewModel(model)
+			ko.applyBindings(viewModel);
