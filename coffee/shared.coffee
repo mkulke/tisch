@@ -44,7 +44,7 @@ common = (->
     uuid: uuid
     constants: constants
     MS_TO_DAYS_FACTOR: 86400000
-    KEYUP_UPDATE_DELAY: 1500
+    KEYUP_UPDATE_DELAY: 500
     DATE_DISPLAY_FORMAT: 'MM/DD/YY'
     DATE_DB_FORMAT: 'YYYY-MM-DD'
     COLOR_SELECTOR: 1

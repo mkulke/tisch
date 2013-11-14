@@ -91,31 +91,91 @@ class TaskModel extends Model
 
 class TaskViewModel extends ViewModel
 
+  _createObservable: (object, property) ->
+
+    observable = ko.observable object[property]
+    observable.subscribe (value) ->
+
+      if !observable.hasError
+      
+        alert "#{property} set to #{value}"    
+    observable
+
+  _createThrottledObservable: (object, property, numeric) ->
+
+    instantaneousProperty = ko.observable(object[property])
+    observable = ko.computed(instantaneousProperty).extend({throttle: common.KEYUP_UPDATE_DELAY})
+    observable.subscribe (value) ->
+
+      if !instantaneousProperty.hasError()
+
+        object[property] = if numeric? then parseFloat value, 10 else value
+        alert "#{property} set to #{value}"
+    instantaneousProperty
+
   constructor: (@model) ->
 
-    @summary = ko.observable @model.task.summary
-    @description = ko.observable @model.task.description
-    @color = ko.observable @model.task.color
-    @storyTitle = ko.observable @model.story.title
-    @initialEstimation = ko.observable @model.task.initial_estimation
+    ko.extenders.matches = (target, regex) ->
+
+      target.hasError = ko.observable()
+      target.validationMessage = ko.observable()
+
+      validate = (newValue) ->
+
+        target.hasError(newValue.toString().search(regex) != 0)
+      validate target()
+      target.subscribe(validate)
+      target
+
+    @modal = ko.observable(0)
+    showSelector = curry (selector) =>
+
+      @modal selector
+
+    @common = common
+
+    @summary = @_createThrottledObservable @model.task, 'summary'
+    @description = @_createThrottledObservable @model.task, 'description'
+    @color = @_createObservable @model.task, 'color'
+    @showColorSelector = => @modal common.COLOR_SELECTOR
+    @selectColor = (color) =>
+
+      @modal 0
+      @color color
+
+    @story = ko.observable @model.story
+    @showStorySelector = => @modal common.STORY_SELECTOR
+    @selectStory = (story) =>
+
+      @modal 0
+      @model.task.story_id = story._id
+      @story story
+
     @stories = ko.observable [@model.story]
     @model.getStories @model.story.sprint_id, (data) =>
+
       @stories data
-    @common = common
-    @modal = ko.observable(0)
+
+    @initialEstimation = @_createThrottledObservable(@model.task, 'initial_estimation', true)
+      .extend({matches: /^\d{1,2}(\.\d{1,2}){0,1}$/})
+
     # set this initially
     @remainingTimeIndex = @model.getDateIndex @model.sprint
     @remainingTimeIndexString = ko.computed =>
 
       @_formatDateIndex @remainingTimeIndex
-    ,@
 
-    @test = ko.computed
+    # the remaining time field
+    startIndex = moment(@model.sprint.start).format(common.DATE_DB_FORMAT)      
+    @remainingTime = ko.observable(@model._getClosestValueByDateIndex @model.task.remaining_time, @remainingTimeIndex, startIndex)
+    throttled = ko.computed(@remainingTime).extend({throttle: common.KEYUP_UPDATE_DELAY})
+    throttled.subscribe (value) =>
 
-      read: -> 'bla'
-      write: ->
-      owner: @
-      
+      if !@remainingTime.hasError()
+
+        @model.task.remaining_time[@remainingTimeIndex] = parseFloat value, 10
+    @remainingTime.extend {matches: /^\d{1,2}(\.\d{1,2}){0,1}$/}
+
   _formatDateIndex: (dateIndex) -> 
 
     moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)

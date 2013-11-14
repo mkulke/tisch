@@ -156,7 +156,7 @@
   display: inline-block;
   font-weight: 200;
   /*border-bottom: 1px DimGray solid;*/
-  display: none;
+  /*display: none;*/
 }
 
 .error-popup > .content {
@@ -169,11 +169,11 @@
   -moz-box-shadow: 0px 0px 15px #999;*/
   position: absolute;
   padding: 5px;
-  top: 25px;
+  top: 10px;
   margin-bottom: 15px;
   z-index: 2;
   border-radius: 3px;
-	-moz-border-radius: 3px;
+  -moz-border-radius: 3px;
 }
 
 .error-popup > .content:before, .error-popup .content:after {
@@ -639,7 +639,7 @@ form {
   height: 100%;
   opacity: 0.6;
   background: white;
-  display: none;
+  /*display: none;*/
   z-index: 2
 }
 
@@ -762,6 +762,11 @@ ul#well:empty {
 h2 {
 
 	font-weight: 300;
+}
+
+span.date-selector {
+
+	font-weight: 200;
 }
 
 ul#sprints li:not(:first-child) {
