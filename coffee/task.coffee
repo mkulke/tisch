@@ -42,7 +42,7 @@ class TaskSocketIO extends SocketIO
 
 class TaskView extends View
  
-  _buildRactiveData: =>
+  ###_buildRactiveData: =>
 
     breadcrumbs: 
 
@@ -68,7 +68,7 @@ class TaskView extends View
     formatDateIndex: (dateIndex) -> 
 
       moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
-    error_message: "Dummy message"
+    error_message: "Dummy message"###
 class TaskModel extends Model
 
   type: 'task'
@@ -181,28 +181,48 @@ class TaskViewModel extends ViewModel
       @stories data
 
     @initialEstimation = @_createThrottledObservable(@model.task, 'initial_estimation', true)
-      .extend({matches: /^\d{1,2}(\.\d{1,2}){0,1}$/})
+      .extend({matches: common.TIME_REGEX})
 
-    # TEMP: to be fetched from datapicker!
+    @sprint = ko.observable @model.sprint
+    @startIndex = ko.computed =>
+
+      moment(@sprint().start).format(common.DATE_DB_FORMAT)
+
+    # TODO: to be fetched from datapicker!
     @remainingTimeIndex = ko.observable @model.getDateIndex(@model.sprint)
     @remainingTimeIndexFormatted = ko.computed =>
 
       @_formatDateIndex @remainingTimeIndex()
 
     @remainingTime = ko.observable @model.task.remaining_time
-    @sprint = ko.observable @model.sprint
-    @startIndex = ko.computed =>
-
-      moment(@sprint().start).format(common.DATE_DB_FORMAT)
     read = =>
 
       @model._getClosestValueByDateIndex @remainingTime(), @remainingTimeIndex(), @startIndex()
     write = (value) =>
     
+      # we need to clone that, b/c otherwise it would not be updated
       object = _.clone @remainingTime()
       object[@remainingTimeIndex()] = parseFloat value, 10
       @remainingTime(object)
-    @indexedRemainingTime = @_createIndexedComputed read, write, @, /^\d{1,2}(\.\d{1,2}){0,1}$/
+    @indexedRemainingTime = @_createIndexedComputed read, write, @, common.TIME_REGEX
+
+    # TODO: to be fetched from datapicker!
+    @timeSpentIndex = ko.observable @model.getDateIndex(@model.sprint)
+    @timeSpentIndexFormatted = ko.computed =>    
+
+      @_formatDateIndex @timeSpentIndex()
+    @timeSpent = ko.observable @model.task.time_spent
+    read = =>
+
+      value = @timeSpent()[@timeSpentIndex()]
+      if value? then value
+      else 0
+    write = (value) =>
+
+      object = _.clone @timeSpent()
+      object[@timeSpentIndex()] = parseFloat value, 10
+      @timeSpent(object) 
+    @indexedTimeSpent = @_createIndexedComputed read, write, @, common.TIME_REGEX
 
   _formatDateIndex: (dateIndex) -> 
 

@@ -48,6 +48,18 @@ html
 					span(data-bind="visible: indexedRemainingTime.hasError").error-popup
 						.content.error
 							=messages.en.VALID_TIME_MESSAGE
+				.attribute
+					span.label
+						=messages.en.TIME_SPENT
+					span#time_spent_index.popup-selector.date-selector
+						|(
+						a(href='#').open
+							span(data-bind="text: '' + timeSpentIndexFormatted() + ''").selected
+						|):&nbsp;
+					input(data-bind="value: indexedTimeSpent, valueUpdate: ['afterkeydown','propertychange','input']")
+					span(data-bind="visible: indexedTimeSpent.hasError").error-popup
+						.content.error
+							=messages.en.VALID_TIME_MESSAGE
 		#button-bar
 			form.buttons
 				input(type='button', value=messages.en.REMOVE).button.remove

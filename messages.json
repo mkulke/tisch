@@ -11,6 +11,7 @@
     "REMAINING_TIME": "Remaining time",
     "REMOVE": "Remove",
     "STORY": "Story",
+    "TIME_SPENT": "Spent time",
     "VALID_TIME_MESSAGE": "This attribute has to be specified as a positive number < 100 with two or less precision digits (e.g. '1' or '99.25')."
   }
 }
