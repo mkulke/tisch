@@ -113,6 +113,30 @@ class TaskViewModel extends ViewModel
         alert "#{property} set to #{value}"
     instantaneousProperty
 
+  _createIndexedComputed: (read, write, owner, regex) =>
+
+    # Create a throttled observable and a writable computed. In the write fn there is a immediate
+    # regex validation, the hasError observable property is set accordingly. Then the throttled
+    # observable is updated, which triggers a subscribe fn to be called. In that fn the actual
+    # write fn is called when the hasError observable property is false. 
+
+    throttled = ko.observable().extend({throttle: common.KEYUP_UPDATE_DELAY})   
+    indexed = ko.computed
+
+      read: read
+      write: (value) ->
+
+        indexed.hasError(value.toString().search(regex) != 0)
+        throttled(value)
+      owner: owner
+    indexed.hasError = ko.observable()
+    throttled.subscribe (value) ->
+
+      if !indexed.hasError()
+
+        write value   
+    indexed
+
   constructor: (@model) ->
 
     ko.extenders.matches = (target, regex) ->
@@ -159,22 +183,26 @@ class TaskViewModel extends ViewModel
     @initialEstimation = @_createThrottledObservable(@model.task, 'initial_estimation', true)
       .extend({matches: /^\d{1,2}(\.\d{1,2}){0,1}$/})
 
-    # set this initially
-    @remainingTimeIndex = @model.getDateIndex @model.sprint
-    @remainingTimeIndexString = ko.computed =>
+    # TEMP: to be fetched from datapicker!
+    @remainingTimeIndex = ko.observable @model.getDateIndex(@model.sprint)
+    @remainingTimeIndexFormatted = ko.computed =>
 
-      @_formatDateIndex @remainingTimeIndex
+      @_formatDateIndex @remainingTimeIndex()
 
-    # the remaining time field
-    startIndex = moment(@model.sprint.start).format(common.DATE_DB_FORMAT)      
-    @remainingTime = ko.observable(@model._getClosestValueByDateIndex @model.task.remaining_time, @remainingTimeIndex, startIndex)
-    throttled = ko.computed(@remainingTime).extend({throttle: common.KEYUP_UPDATE_DELAY})
-    throttled.subscribe (value) =>
+    @remainingTime = ko.observable @model.task.remaining_time
+    @sprint = ko.observable @model.sprint
+    @startIndex = ko.computed =>
 
-      if !@remainingTime.hasError()
+      moment(@sprint().start).format(common.DATE_DB_FORMAT)
+    read = =>
 
-        @model.task.remaining_time[@remainingTimeIndex] = parseFloat value, 10
-    @remainingTime.extend {matches: /^\d{1,2}(\.\d{1,2}){0,1}$/}
+      @model._getClosestValueByDateIndex @remainingTime(), @remainingTimeIndex(), @startIndex()
+    write = (value) =>
+    
+      object = _.clone @remainingTime()
+      object[@remainingTimeIndex()] = parseFloat value, 10
+      @remainingTime(object)
+    @indexedRemainingTime = @_createIndexedComputed read, write, @, /^\d{1,2}(\.\d{1,2}){0,1}$/
 
   _formatDateIndex: (dateIndex) -> 
 

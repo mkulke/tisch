@@ -42,10 +42,10 @@ html
 					span#remaining_time_index.popup-selector.date-selector
 						|(
 						a(href='#').open
-							span(data-bind="text: '' + remainingTimeIndexString() + ''").selected
+							span(data-bind="text: '' + remainingTimeIndexFormatted() + ''").selected
 						|):&nbsp;
-					input(data-bind="value: remainingTime, valueUpdate: ['afterkeydown','propertychange','input']")
-					span(data-bind="visible: remainingTime.hasError").error-popup
+					input(data-bind="value: indexedRemainingTime, valueUpdate: ['afterkeydown','propertychange','input']")
+					span(data-bind="visible: indexedRemainingTime.hasError").error-popup
 						.content.error
 							=messages.en.VALID_TIME_MESSAGE
 		#button-bar
