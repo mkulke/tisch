@@ -151,27 +151,83 @@ class TaskViewModel extends ViewModel
       target.subscribe(validate)
       target
 
-    @modal = ko.observable(0)
+    ko.bindingHandlers.datepicker = 
+
+      init: (element, valueAccessor, allBindingsAccessor) =>
+
+        options =
+
+          inline: true
+          showOtherMonths: true
+          dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+          nextText: '<div class="arrow right"></div>'
+          prevText: '<div class="arrow left"></div>'
+          dateFormat: $.datepicker.ISO_8601
+          gotoCurrent: true
+          minDate: new Date(allBindingsAccessor().datepickerMin)
+          maxDate: new Date(allBindingsAccessor().datepickerMax)
+          onSelect: (dateText, inst) => 
+
+            @modal null
+            observable = valueAccessor()
+            observable(dateText)
+        $(element).datepicker(options)
+      update: (element, valueAccessor, allBindingsAccessor) ->
+
+        value = ko.utils.unwrapObservable valueAccessor()
+        dateValue = $(element).datepicker().val()
+        if value? && value != dateValue
+
+          $(element).datepicker 'setDate', value
+        min = allBindingsAccessor().datepickerMin
+
+        if moment($(element).datepicker('option', 'minDate')).format(common.DATE_DB_FORMAT) != allBindingsAccessor().datepickerMin
+
+          $(element).datepicker('option', 'minDate', new Date(allBindingsAccessor().datepickerMin))
+        if moment($(element).datepicker('option', 'maxDate')).format(common.DATE_DB_FORMAT) != allBindingsAccessor().datepickerMax
+
+          $(element).datepicker('option', 'maxDate', new Date(allBindingsAccessor().datepickerMax))
+
+    @modal = ko.observable null
     showSelector = curry (selector) =>
 
       @modal selector
+
+    # we need that recalculation, so the footer stays on bottom even
+    # with the absolute positionen popups.  
+    @modal.subscribe (value) ->
+
+      console.log "modal changed to #{value}"
+      if value?
+
+        contentHeight = $('#content').height()
+        popupHeight = $("##{value} .content").height()
+        footerHeight = $("#button-bar").height()
+        popupTop = $("##{value}").position()?.top
+
+        if (popupTop + popupHeight) > (contentHeight + footerHeight)
+
+          $('#content').css 'height', popupTop + popupHeight - footerHeight
+      else
+
+        $('#content').css 'height', 'auto'
 
     @common = common
 
     @summary = @_createThrottledObservable @model.task, 'summary'
     @description = @_createThrottledObservable @model.task, 'description'
     @color = @_createObservable @model.task, 'color'
-    @showColorSelector = => @modal common.COLOR_SELECTOR
+    @showColorSelector = => @modal 'color-selector'
     @selectColor = (color) =>
 
-      @modal 0
+      @modal null
       @color color
 
     @story = ko.observable @model.story
-    @showStorySelector = => @modal common.STORY_SELECTOR
+    @showStorySelector = => @modal 'story-selector'
     @selectStory = (story) =>
 
-      @modal 0
+      @modal null
       @model.task.story_id = story._id
       @story story
 
@@ -183,10 +239,15 @@ class TaskViewModel extends ViewModel
     @initialEstimation = @_createThrottledObservable(@model.task, 'initial_estimation', true)
       .extend({matches: common.TIME_REGEX})
 
-    @sprint = ko.observable @model.sprint
+    @sprintStart = ko.observable @model.sprint.start
+    @sprintLength = ko.observable @model.sprint.length
     @startIndex = ko.computed =>
 
-      moment(@sprint().start).format(common.DATE_DB_FORMAT)
+      moment(@sprintStart()).format(common.DATE_DB_FORMAT)
+    @endIndex = ko.computed =>
+
+      moment(@sprintStart()).add('days', @sprintLength() - 1).format(common.DATE_DB_FORMAT)
+    @showRemainingTimeDatePicker = => @modal 'remaining_time-index'
 
     # TODO: to be fetched from datapicker!
     @remainingTimeIndex = ko.observable @model.getDateIndex(@model.sprint)
@@ -200,7 +261,7 @@ class TaskViewModel extends ViewModel
       @model._getClosestValueByDateIndex @remainingTime(), @remainingTimeIndex(), @startIndex()
     write = (value) =>
     
-      # we need to clone that, b/c otherwise it would not be updated
+      # we need to clone the obj, b/c otherwise the observable would not be updated
       object = _.clone @remainingTime()
       object[@remainingTimeIndex()] = parseFloat value, 10
       @remainingTime(object)

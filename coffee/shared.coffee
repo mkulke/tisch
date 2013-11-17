@@ -48,8 +48,9 @@ common = (->
     DATE_DISPLAY_FORMAT: 'MM/DD/YY'
     DATE_DB_FORMAT: 'YYYY-MM-DD'
     TIME_REGEX: /^\d{1,2}(\.\d{1,2}){0,1}$/
-    COLOR_SELECTOR: 1
+    ###COLOR_SELECTOR: 1
     STORY_SELECTOR: 2
+    REMAINING_TIME_DATEPICKER: 3###
   }
 )()
 
