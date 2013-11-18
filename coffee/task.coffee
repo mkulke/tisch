@@ -197,7 +197,6 @@ class TaskViewModel extends ViewModel
     # with the absolute positionen popups.  
     @modal.subscribe (value) ->
 
-      console.log "modal changed to #{value}"
       if value?
 
         contentHeight = $('#content').height()
@@ -213,6 +212,12 @@ class TaskViewModel extends ViewModel
         $('#content').css 'height', 'auto'
 
     @common = common
+
+    @cancelPopup = (data, event) =>
+
+      if event.keyCode == 27 && @modal != null
+
+        @modal null
 
     @summary = @_createThrottledObservable @model.task, 'summary'
     @description = @_createThrottledObservable @model.task, 'description'
@@ -249,7 +254,6 @@ class TaskViewModel extends ViewModel
       moment(@sprintStart()).add('days', @sprintLength() - 1).format(common.DATE_DB_FORMAT)
     @showRemainingTimeDatePicker = => @modal 'remaining_time-index'
 
-    # TODO: to be fetched from datapicker!
     @remainingTimeIndex = ko.observable @model.getDateIndex(@model.sprint)
     @remainingTimeIndexFormatted = ko.computed =>
 
@@ -267,11 +271,13 @@ class TaskViewModel extends ViewModel
       @remainingTime(object)
     @indexedRemainingTime = @_createIndexedComputed read, write, @, common.TIME_REGEX
 
-    # TODO: to be fetched from datapicker!
     @timeSpentIndex = ko.observable @model.getDateIndex(@model.sprint)
     @timeSpentIndexFormatted = ko.computed =>    
 
       @_formatDateIndex @timeSpentIndex()
+
+    @showTimeSpentDatePicker = => @modal 'time_spent-index'
+
     @timeSpent = ko.observable @model.task.time_spent
     read = =>
 

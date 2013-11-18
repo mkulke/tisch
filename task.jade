@@ -4,7 +4,7 @@ html
 		link(rel='stylesheet', href='/shared.css', type='text/css')
 		include shared_ractive
 		script(type='text/javascript', src='/task.coffee.js')
-	body
+	body(data-bind="event: {keyup: cancelPopup}")
 		#container
 			#breadcrumb-bar
 				a(href="/").breadcrumb.index Index
@@ -18,18 +18,17 @@ html
 						span.label
 							=messages.en.COLOR+':'
 						span#color-selector.popup-selector
-							a(href="#").open
-								span(data-bind="click: showColorSelector, css: color").selected 
-								div(data-bind="foreach: common.COLORS, visible: modal() == 'color-selector'").content
-									div(data-bind="click: $parent.selectColor, css: $data + ' box-' + $index()").color.hoverable
+							button(data-bind="click: showColorSelector, css: color")
+								span(data-bind="css: color").selected
+							div(data-bind="foreach: common.COLORS, visible: modal() == 'color-selector'").content
+								div(data-bind="click: $parent.selectColor, css: $data + ' box-' + $index()").color.hoverable							
 					.attribute
 						span.label
 							=messages.en.STORY+':'
 						span#story-selector.popup-selector.line-selector
-							a(href="#").open
-								span(data-bind="click: showStorySelector, text: story().title").selected 
-								div(data-bind="foreach: stories, visible: modal() == 'story-selector'").content
-									div(data-bind="click: $parent.selectStory, text: title").line
+							button(data-bind="click: showStorySelector, text: story().title").selected
+							div(data-bind="foreach: stories, visible: modal() == 'story-selector'").content
+								div(data-bind="click: $parent.selectStory, text: title").line
 					.attribute
 						span.label
 							=messages.en.INITIAL_ESTIMATION+':'
@@ -42,9 +41,8 @@ html
 							=messages.en.REMAINING_TIME
 						span#remaining_time-index.popup-selector.date-selector
 							|(
-							a(href='#').open
-								span(data-bind="click: showRemainingTimeDatePicker, text: '' + remainingTimeIndexFormatted() + ''").selected
-								div(data-bind="datepicker: remainingTimeIndex, datepickerMin: startIndex(), datepickerMax: endIndex(), visible: modal() == 'remaining_time-index'").content
+							button(data-bind="click: showRemainingTimeDatePicker, text: remainingTimeIndexFormatted()").selected
+							div(data-bind="datepicker: remainingTimeIndex, datepickerMin: startIndex(), datepickerMax: endIndex(), visible: modal() == 'remaining_time-index'").content
 							|):&nbsp;
 						input(data-bind="value: indexedRemainingTime, valueUpdate: ['afterkeydown','propertychange','input']")
 						span(data-bind="visible: indexedRemainingTime.hasError").error-popup
@@ -53,10 +51,10 @@ html
 					.attribute
 						span.label
 							=messages.en.TIME_SPENT
-						span#time_spent_index.popup-selector.date-selector
+						span#time_spent-index.popup-selector.date-selector
 							|(
-							a(href='#').open
-								span(data-bind="text: '' + timeSpentIndexFormatted() + ''").selected
+							button(data-bind="click: showTimeSpentDatePicker, text: timeSpentIndexFormatted()").selected
+							div(data-bind="datepicker: timeSpentIndex, datepickerMin: startIndex(), datepickerMax: endIndex(), visible: modal() == 'time_spent-index'").content
 							|):&nbsp;
 						input(data-bind="value: indexedTimeSpent, valueUpdate: ['afterkeydown','propertychange','input']")
 						span(data-bind="visible: indexedTimeSpent.hasError").error-popup
