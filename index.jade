@@ -13,12 +13,13 @@ html
 						li.sprint
 							h2(data-bind="html: $parent.formatStart($data) + '&nbsp;&ndash;&nbsp;' + $parent.formatEnd($data)")
 							.panel
-								div(data-bind="css: $data.color + ' header'")
+								div(data-bind="css: $data.color() + ' header'")
 									input(data-bind="value: $data.title")
 								textarea(data-bind="value: $data.description").body
 								.button-bar
 									.buttons
-										input(type='button', value=messages.en.OPEN).button.open
+										a(data-bind="attr: {href: $parent.sprintUrl($data)}").button.open
+											=messages.en.OPEN
 										input(type='button', value=messages.en.REMOVE).button.remove						
 			#button-bar
 				form.buttons

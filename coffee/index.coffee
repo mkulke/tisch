@@ -1,24 +1,5 @@
 class IndexSocketIO extends SocketIO
 
-  messageHandler: (data) =>
-
-###class IndexView extends View
-
-  _buildRactiveData: =>
-
-    children: @model.children.objects
-    COLORS: common.COLORS
-    constants: common.constants
-    error_message: "Dummy message"
-    confirm_message: "Dummy message"
-    format_date: (displayDate) -> 
-
-      moment(displayDate).format(common.DATE_DISPLAY_FORMAT)
-    calculate_end_date: (start, length) ->
-
-      startDate = new Date(start)
-      new Date(startDate.getTime() + (length * common.MS_TO_DAYS_FACTOR))###
-
 class IndexModel extends Model
 
   constructor: (sprints) ->
@@ -31,13 +12,25 @@ class IndexViewModel extends ChildViewModel
 
     @common = common
 
-    @sprints = ko.observableArray @model.children.objects
+    sprints = _.map @model.children.objects, (sprint) ->
+
+      _id: ko.observable sprint._id
+      start: ko.observable sprint.start
+      length: ko.observable sprint.length
+      title: ko.observable sprint.title
+      description: ko.observable sprint.description
+      color: ko.observable sprint.color
+
+    @sprints = ko.observableArray sprints
     @formatStart = (sprint) ->
 
-      moment(sprint.start).format(common.DATE_DISPLAY_FORMAT)
+      moment(sprint.start()).format(common.DATE_DISPLAY_FORMAT)
     @formatEnd = (sprint) ->
 
-      moment(sprint.start).add('days', sprint.length).format(common.DATE_DISPLAY_FORMAT)
+      moment(sprint.start()).add('days', sprint.length()).format(common.DATE_DISPLAY_FORMAT)
+    @sprintUrl = (sprint) ->
+
+      '/sprint/' + sprint._id()
 
     ###@view = new IndexView ractiveTemplate, @model
     super(@view, @model)

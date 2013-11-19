@@ -535,9 +535,14 @@ form {
 .panel .button {
 
 	font-size: 14px;
-	margin: 5 2 5 0px;
+	margin: 5 2 5 3px;
 	height: 30px;
 	padding: 0 15 2 15px;
+}
+
+.panel a.button.open {
+
+	padding: 5 15 7 15px;
 }
 
 .panel .header input {
