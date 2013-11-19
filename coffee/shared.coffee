@@ -307,10 +307,12 @@ class Model
         jqXHR.setRequestHeader 'rev', getRev()
       success: (data, textStatus, jqXHR) ->
 
+        object._rev = data.rev
         successCb? data
-      error: (data, textStatus, jqXHR) ->
+      error: (jqXHR, textStatus, errorThrown) ->
 
-        errorCb? "#{common.constants.en_US.ERROR_UPDATE_TASK} #{jqXHR}"
+        # TODO: i18n
+        errorCb? (if errorThrown == "" then 'Error: Unknown communications problem with server.' else errorThrown)
   _getClosestValueByDateIndex: (object, index, startIndex) ->
 
     if object[index]?

@@ -91,29 +91,31 @@ class TaskModel extends Model
 
 class TaskViewModel extends ViewModel
 
-  _createObservable: (object, property) ->
+  _createObservable: (object, property, updateModel) ->
 
     observable = ko.observable object[property]
     observable.subscribe (value) ->
 
-      if !observable.hasError
+      if !observable.hasError && object[property] != value
       
-        alert "#{property} set to #{value}"    
+        updateModel observable, object, property, value 
     observable
 
-  _createThrottledObservable: (object, property, numeric) ->
+  _createThrottledObservable: (object, property, updateModel, numeric) ->
 
     instantaneousProperty = ko.observable(object[property])
     observable = ko.computed(instantaneousProperty).extend({throttle: common.KEYUP_UPDATE_DELAY})
     observable.subscribe (value) ->
 
-      if !instantaneousProperty.hasError()
+      if !instantaneousProperty.hasError? || !instantaneousProperty.hasError() 
 
-        object[property] = if numeric? then parseFloat value, 10 else value
-        alert "#{property} set to #{value}"
+        value = if numeric? then parseFloat value, 10 else value
+        if object[property] != value
+
+          updateModel observable, object, property, value
     instantaneousProperty
 
-  _createIndexedComputed: (read, write, owner, regex) =>
+  _createIndexedComputed: (read, write, owner) ->
 
     # Create a throttled observable and a writable computed. In the write fn there is a immediate
     # regex validation, the hasError observable property is set accordingly. Then the throttled
@@ -126,7 +128,7 @@ class TaskViewModel extends ViewModel
       read: read
       write: (value) ->
 
-        indexed.hasError(value.toString().search(regex) != 0)
+        indexed.hasError(value.toString().search(common.TIME_REGEX) != 0)
         throttled(value)
       owner: owner
     indexed.hasError = ko.observable()
@@ -188,6 +190,8 @@ class TaskViewModel extends ViewModel
 
           $(element).datepicker('option', 'maxDate', new Date(allBindingsAccessor().datepickerMax))
 
+    @common = common
+
     @modal = ko.observable null
     showSelector = curry (selector) =>
 
@@ -211,38 +215,72 @@ class TaskViewModel extends ViewModel
 
         $('#content').css 'height', 'auto'
 
-    @common = common
-
     @cancelPopup = (data, event) =>
 
       if event.keyCode == 27 && @modal != null
 
         @modal null
 
-    @summary = @_createThrottledObservable @model.task, 'summary'
-    @description = @_createThrottledObservable @model.task, 'description'
-    @color = @_createObservable @model.task, 'color'
+    @errorMessage = ko.observable()
+    @confirmError = => 
+
+      @modal null
+ 
+    updateModel = (observable, object, property, value) =>
+
+      oldValue = object[property]
+      object[property] = value
+      @model.update property, null, (message) =>
+
+        object[property] = oldValue
+        observable(oldValue)
+        @modal 'error-dialog'
+        @errorMessage message      
+
+    #summary
+
+    @summary = @_createThrottledObservable @model.task, 'summary', updateModel
+    
+    #description
+
+    @description = @_createThrottledObservable @model.task, 'description', updateModel
+    
+    #color
+
+    @color = @_createObservable @model.task, 'color', updateModel
     @showColorSelector = => @modal 'color-selector'
     @selectColor = (color) =>
 
       @modal null
       @color color
 
-    @story = ko.observable @model.story
-    @showStorySelector = => @modal 'story-selector'
-    @selectStory = (story) =>
-
-      @modal null
-      @model.task.story_id = story._id
-      @story story
+    # story_id
 
     @stories = ko.observable [@model.story]
     @model.getStories @model.story.sprint_id, (data) =>
 
       @stories data
 
-    @initialEstimation = @_createThrottledObservable(@model.task, 'initial_estimation', true)
+    @storyId = @_createObservable @model.task, 'story_id', updateModel
+    @storyIdFormatted = ko.computed =>
+
+      story = _.find @stories(), (story) =>
+
+        story._id == @storyId()
+      story?.title
+
+    @showStorySelector = => @modal 'story-selector'
+    @selectStory = (story) =>
+
+      @modal null
+      @storyId story._id
+
+    # initial_estimation
+
+    @initialEstimation = @_createThrottledObservable(@model.task, 'initial_estimation', updateModel, true)
       .extend({matches: common.TIME_REGEX})
+
+    # sprint specific observables
 
     @sprintStart = ko.observable @model.sprint.start
     @sprintLength = ko.observable @model.sprint.length
@@ -252,6 +290,28 @@ class TaskViewModel extends ViewModel
     @endIndex = ko.computed =>
 
       moment(@sprintStart()).add('days', @sprintLength() - 1).format(common.DATE_DB_FORMAT)
+
+    # shared write curry for indexed properties (remaining_time & time_spent)
+
+    writeIndexed = curry (property, observableObject, observableIndex, value) =>
+
+      # we need to clone the obj, b/c otherwise the observable would not be updated
+      oldObject = observableObject()
+      object = _.clone oldObject
+      object[observableIndex()] = parseFloat value, 10
+      if !_.isEqual(oldObject, object)
+      
+        observableObject(object)   
+        @model.task[property] = object
+        @model.update property, null, (message) =>
+
+          @model.task[property] = oldObject
+          observableObject(oldObject)
+          @modal 'error-dialog'
+          @errorMessage message
+
+    # remaining_time   
+
     @showRemainingTimeDatePicker = => @modal 'remaining_time-index'
 
     @remainingTimeIndex = ko.observable @model.getDateIndex(@model.sprint)
@@ -260,16 +320,13 @@ class TaskViewModel extends ViewModel
       @_formatDateIndex @remainingTimeIndex()
 
     @remainingTime = ko.observable @model.task.remaining_time
-    read = =>
+
+    readRemainingTime = =>
 
       @model._getClosestValueByDateIndex @remainingTime(), @remainingTimeIndex(), @startIndex()
-    write = (value) =>
-    
-      # we need to clone the obj, b/c otherwise the observable would not be updated
-      object = _.clone @remainingTime()
-      object[@remainingTimeIndex()] = parseFloat value, 10
-      @remainingTime(object)
-    @indexedRemainingTime = @_createIndexedComputed read, write, @, common.TIME_REGEX
+    @indexedRemainingTime = @_createIndexedComputed readRemainingTime, writeIndexed('remaining_time', @remainingTime, @remainingTimeIndex), @
+
+    # time_spent
 
     @timeSpentIndex = ko.observable @model.getDateIndex(@model.sprint)
     @timeSpentIndexFormatted = ko.computed =>    
@@ -279,17 +336,15 @@ class TaskViewModel extends ViewModel
     @showTimeSpentDatePicker = => @modal 'time_spent-index'
 
     @timeSpent = ko.observable @model.task.time_spent
-    read = =>
+    @timeSpent.subscribe (value) ->
+
+      console.log "time_spent: #{JSON.stringify(value)}"
+
+    readTimeSpent = =>
 
       value = @timeSpent()[@timeSpentIndex()]
-      if value? then value
-      else 0
-    write = (value) =>
-
-      object = _.clone @timeSpent()
-      object[@timeSpentIndex()] = parseFloat value, 10
-      @timeSpent(object) 
-    @indexedTimeSpent = @_createIndexedComputed read, write, @, common.TIME_REGEX
+      if value? then value else 0
+    @indexedTimeSpent = @_createIndexedComputed readTimeSpent, writeIndexed('time_spent', @timeSpent, @timeSpentIndex), @
 
   _formatDateIndex: (dateIndex) -> 
 

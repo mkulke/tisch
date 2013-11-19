@@ -26,7 +26,7 @@ html
 						span.label
 							=messages.en.STORY+':'
 						span#story-selector.popup-selector.line-selector
-							button(data-bind="click: showStorySelector, text: story().title").selected
+							button(data-bind="click: showStorySelector, text: storyIdFormatted()").selected
 							div(data-bind="foreach: stories, visible: modal() == 'story-selector'").content
 								div(data-bind="click: $parent.selectStory, text: title").line
 					.attribute
@@ -63,11 +63,11 @@ html
 			#button-bar
 				form.buttons
 					input(type='button', value=messages.en.REMOVE).button.remove
-		#error-dialog.modal
-			div(data-bind="text: 'bla'").message.error
+		div(data-bind="visible: modal() == 'error-dialog'")#error-dialog
+			div(data-bind="text: errorMessage()").message.error
 			.popup-buttons
 				form.buttons
-					input(type='button', value=messages.en.OK).button
+					input(data-bind="click: confirmError", type="button", value=messages.en.OK).button
 		div(data-bind="visible: modal() != null")#overlay
 		script(type='text/javascript')
 			
