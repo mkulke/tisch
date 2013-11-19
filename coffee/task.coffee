@@ -282,14 +282,23 @@ class TaskViewModel extends ViewModel
 
     # sprint specific observables
 
-    @sprintStart = ko.observable @model.sprint.start
-    @sprintLength = ko.observable @model.sprint.length
+    @sprint = ko.observable @model.sprint
+    @sprintUrl = ko.computed =>
+
+      '/sprint/' + @sprint()._id
     @startIndex = ko.computed =>
 
-      moment(@sprintStart()).format(common.DATE_DB_FORMAT)
+      moment(@sprint().start).format(common.DATE_DB_FORMAT)
     @endIndex = ko.computed =>
 
-      moment(@sprintStart()).add('days', @sprintLength() - 1).format(common.DATE_DB_FORMAT)
+      moment(@sprint().start).add('days', @sprint().length - 1).format(common.DATE_DB_FORMAT)
+
+    # story specific observables (note: this is for breadcrumbs, so it should not change with story rassignments)
+
+    @story = ko.observable @model.story
+    @storyUrl = ko.computed =>
+
+      '/story/' + @story()._id
 
     # shared write curry for indexed properties (remaining_time & time_spent)
 

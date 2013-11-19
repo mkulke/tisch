@@ -455,6 +455,7 @@ a.breadcrumb:hover {
 
 .breadcrumb.selected {
 
+	font-weight: 400;
 	cursor: default;
 	background-color: #000000;
 	color: #ffffff;

@@ -8,6 +8,9 @@ html
 		#container
 			#breadcrumb-bar
 				a(href="/").breadcrumb.index Index
+				a(data-bind="attr: {href: sprintUrl}, text: sprint().title").breadcrumb.sprint
+				a(data-bind="attr: {href: storyUrl}, text: story().title").breadcrumb.sprint
+				span(data-bind="text: summary").breadcrumb.task.selected
 			#content
 				form
 					p
