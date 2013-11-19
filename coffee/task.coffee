@@ -40,35 +40,6 @@ class TaskSocketIO extends SocketIO
 
       @view.set 'breadcrumbs.sprint.title', data.value
 
-class TaskView extends View
- 
-  ###_buildRactiveData: =>
-
-    breadcrumbs: 
-
-      story: title: @model.story.title, id: @model.story._id
-      sprint: title: @model.sprint.title, id: @model.sprint._id
-    task: @model.task
-    story: @model.story
-    COLORS: common.COLORS
-    constants: common.constants
-    sprint: @model.sprint
-    stories: [@model.story]
-    getDateIndex: @model.getDateIndex
-    time_spent_index: @model.getDateIndex(@model.sprint)
-    remaining_time_index: @model.getDateIndex(@model.sprint)
-    formatTimeSpent: (timeSpent, index) ->
-
-      if timeSpent[index]? then timeSpent[index]
-      else 0
-    formatRemainingTime: (remainingTime, index, sprint) => 
-
-      startIndex = moment(sprint.start).format(common.DATE_DB_FORMAT)      
-      @model._getClosestValueByDateIndex remainingTime, index, startIndex
-    formatDateIndex: (dateIndex) -> 
-
-      moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
-    error_message: "Dummy message"###
 class TaskModel extends Model
 
   type: 'task'
@@ -319,6 +290,10 @@ class TaskViewModel extends ViewModel
           @modal 'error-dialog'
           @errorMessage message
 
+    formatDateIndex = (dateIndex) -> 
+
+      moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
+
     # remaining_time   
 
     @showRemainingTimeDatePicker = => @modal 'remaining_time-index'
@@ -326,7 +301,7 @@ class TaskViewModel extends ViewModel
     @remainingTimeIndex = ko.observable @model.getDateIndex(@model.sprint)
     @remainingTimeIndexFormatted = ko.computed =>
 
-      @_formatDateIndex @remainingTimeIndex()
+      formatDateIndex @remainingTimeIndex()
 
     @remainingTime = ko.observable @model.task.remaining_time
 
@@ -340,7 +315,7 @@ class TaskViewModel extends ViewModel
     @timeSpentIndex = ko.observable @model.getDateIndex(@model.sprint)
     @timeSpentIndexFormatted = ko.computed =>    
 
-      @_formatDateIndex @timeSpentIndex()
+      formatDateIndex @timeSpentIndex()
 
     @showTimeSpentDatePicker = => @modal 'time_spent-index'
 
@@ -354,129 +329,3 @@ class TaskViewModel extends ViewModel
       value = @timeSpent()[@timeSpentIndex()]
       if value? then value else 0
     @indexedTimeSpent = @_createIndexedComputed readTimeSpent, writeIndexed('time_spent', @timeSpent, @timeSpentIndex), @
-
-  _formatDateIndex: (dateIndex) -> 
-
-    moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
-
-    #formatDateIndex(remaining_time_index)
-
-  ###
-  constructor: (@model, ractiveTemplate) ->
-
-    @view = new TaskView ractiveTemplate, @model
-    super(@view, @model)
-    @socketio = new TaskSocketIO @view, @model
-
-    $('#summary, #description, #initial_estimation, #remaining_time, #time_spent').each (index, element) => 
-
-      @_setConfirmedValue(element)
-    $('#initial_estimation, #remaining_time, #time_spent').data 'validation', (value) -> 
-
-      value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
-
-    @_initPopupSelectors()
-    @_initDatePickers 
-
-      minDate: new Date @model.sprint.start
-      maxDate: new Date ((new Date @model.sprint.start).getTime() + ((@model.sprint.length - 1) * common.MS_TO_DAYS_FACTOR))
-  _selectDate: (dateText, inst) =>
-
-    super(dateText, inst)
-    dateSelector = $(inst.input).parents('.date-selector')
-    id = dateSelector.attr('id')
-    @view.set id, dateText
-  _setConfirmedValue: (node) ->
-
-    key = node.id 
-    if key.match /^remaining_time$|^time_spent$/
-
-      valueObject = @model.get key
-      newObject = {}
-      for i of valueObject
-
-        newObject[i] = valueObject[i]
-      $(node).data 'confirmed_value', newObject
-    else
-
-      super node
-  _isConfirmedValue: (node) ->
-
-    key = node.id
-    value = @view.get "task.#{key}"
-    confirmedValue = $(node).data('confirmed_value')
-    if key.match /^remaining_time$|^time_spent$/
-
-        # ugly, but is sufficient here.
-        JSON.stringify(confirmedValue) == JSON.stringify(value) 
-    else 
-
-      confirmedValue == value
-  _buildUpdateCall: (node) =>
-
-    call = super node
-
-    key = node.id;
-    if key.match /^remaining_time$|^time_spent$/
-
-      #execute that stuff before the update call
-      =>
-      
-        index = $("##{key}_index .selected").data 'date'
-        value = parseFloat $(node).val(), 10
-        @model.set key, value, index
-        call()
-    else call
-  openSelectorPopup: (ractiveEvent, id) =>
-
-    switch id
-      
-      when 'story-selector' then @model.getStories @model.story.sprint_id, (data) =>
-
-        @view.set 'stories', data
-        @_showPopup(id)
-      else @_showPopup(id)
-  selectPopupItem: (ractiveEvent, args) =>
-
-    super ractiveEvent, args
-
-    switch args.selector_id
-
-      when 'color-selector' 
-
-        undoValue = @view.get 'color'
-        @view.set 'task.color', args.value
-        @model.update 'color'
-
-          ,(data) => 
-
-            @view.set 'task._rev', data.rev
-          ,(message) =>
-
-            @view.set 'task.color', undoValue
-            #TODO: show error
-      when 'story-selector' 
-
-        undoValue = @view.get 'task.story_id'
-        @view.set 'task.story_id', args.value
-        @model.update 'story_id'
-
-          ,(data) => 
-
-            @view.set 'task._rev', data.rev
-            @model.getStory data.value, (data) => 
-
-              @view.set 'story', data
-          ,(message) =>
-
-            @view.set 'task.story_id', undoValue
-            # TODO: show error
-  handleButton: (ractiveEvent, action) => 
-
-    super ractiveEvent, action
-
-    switch action
-
-      when 'task_remove' 
-
-        @showError 'Move along. This functionality is not implemented yet.'###
