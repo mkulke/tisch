@@ -76,5 +76,6 @@ html
 			
 			var model, viewModel;
 			model = new TaskModel(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
-			viewModel = new TaskViewModel(model)
+			viewModel = new TaskViewModel(model);
+			socketIO = new TaskSocketIO(model, viewModel);
 			ko.applyBindings(viewModel);

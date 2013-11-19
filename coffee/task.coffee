@@ -2,43 +2,37 @@ class TaskSocketIO extends SocketIO
   
   _onUpdate: (data) =>
 
-    update = (path) =>
+    if data.id == @model.task._id
 
-      @view.set "#{path}._rev", data.rev
-      @view.set "#{path}.#{data.key}", data.value
+      @model.task._rev = data.rev
+      @model.task[data.key] = data.value
+      switch data.key
 
-    if data.id == @view.get 'task._id' 
+        when 'story_id'
 
-      update 'task'
-      if data.key == 'story_id' then @model.getStory data.value, (data) => 
+          # if story is not there fetch new story
+          story = _.find @viewModel.stories(), (story) ->
 
-        @view.set 'story', data
-    else if data.id == @view.get 'story._id' 
+            story._id == data.value
+          if !story?
 
-      update 'story'
-      if data.key == 'sprint_id' 
+            @model.getStory data.value, (data) =>
 
-        @model.getSprint data.value, (data) => 
+              @viewModel.stories([data])
+              @viewModel.storyId(data.value)
+          else 
 
-          @view.set 'sprint', data
-        #also get new stories for the selector
-        @model.getStories data.value, (data) =>
+            @viewModel.storyId(data.value)
 
-          @view.set 'stories', data
+        when 'remaining_time'
 
-    else if data.id == @view.get 'sprint._id' then update 'sprint'
-    
-    # stories from the selector
-    storyIndex = index for story, index in @view.get 'stories' when story._id == data.id
-    if storyIndex? then update "stories[#{storyIndex}]"
+          @viewModel.remainingTime(data.value)
+        when 'time_spent'
 
-    # breadcrumbs
-    if (@view.get 'breadcrumbs.story.id') == data.id && data.key == 'title'
+          @viewModel.timeSpent(data.value)
+        else
 
-      @view.set 'breadcrumbs.story.title', data.value
-    else if (@view.get 'breadcrumbs.sprint.id') == data.id && data.key == 'title' 
-
-      @view.set 'breadcrumbs.sprint.title', data.value
+          @viewModel[data.key]?(data.value)
 
 class TaskModel extends Model
 
@@ -228,9 +222,6 @@ class TaskViewModel extends ViewModel
     # story_id
 
     @stories = ko.observable [@model.story]
-    @model.getStories @model.story.sprint_id, (data) =>
-
-      @stories data
 
     @storyId = @_createObservable @model.task, 'story_id', updateModel
     @storyIdFormatted = ko.computed =>
@@ -240,7 +231,13 @@ class TaskViewModel extends ViewModel
         story._id == @storyId()
       story?.title
 
-    @showStorySelector = => @modal 'story-selector'
+    @showStorySelector = => 
+
+      @model.getStories @model.story.sprint_id, (data) =>
+
+        @stories data
+        @modal 'story-selector'
+    
     @selectStory = (story) =>
 
       @modal null

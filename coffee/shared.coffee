@@ -56,7 +56,7 @@ common = (->
 
 class SocketIO
 
-  constructor: (@view, @model) ->
+  constructor: (@model, @viewModel) ->
 
     @server = io.connect "http://#{window.location.hostname}"   
     @server.on 'connect', ->
@@ -68,6 +68,7 @@ class SocketIO
   _onUpdate: (data) ->
   _onAdd: (data) ->
   _onRemove: (data) ->
+    
 class View
 
   constructor: (ractiveTemplate, @model) ->
