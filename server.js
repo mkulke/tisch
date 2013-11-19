@@ -20,7 +20,7 @@ options.filename = 'story_ractive.jade';
 var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'task.jade';
 var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
-options.filename = 'index_ractive.jade';
+options.filename = 'index.jade';
 var index_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 
 var clients = {};
@@ -956,7 +956,7 @@ function processRequest(request, response) {
     }
     answer = function(result) {
 
-      var html = index_template({sprints: result});
+      var html = index_template({sprints: result, messages: messages});
       respondWithHtml(html, response);
     };
   }

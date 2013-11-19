@@ -2,7 +2,7 @@ class IndexSocketIO extends SocketIO
 
   messageHandler: (data) =>
 
-class IndexView extends View
+###class IndexView extends View
 
   _buildRactiveData: =>
 
@@ -17,7 +17,7 @@ class IndexView extends View
     calculate_end_date: (start, length) ->
 
       startDate = new Date(start)
-      new Date(startDate.getTime() + (length * common.MS_TO_DAYS_FACTOR))
+      new Date(startDate.getTime() + (length * common.MS_TO_DAYS_FACTOR))###
 
 class IndexModel extends Model
 
@@ -27,9 +27,19 @@ class IndexModel extends Model
 
 class IndexViewModel extends ChildViewModel
 
-  constructor: (@model, ractiveTemplate) ->
+  constructor: (@model) ->
 
-    @view = new IndexView ractiveTemplate, @model
+    @common = common
+
+    @sprints = ko.observableArray @model.children.objects
+    @formatStart = (sprint) ->
+
+      moment(sprint.start).format(common.DATE_DISPLAY_FORMAT)
+    @formatEnd = (sprint) ->
+
+      moment(sprint.start).add('days', sprint.length).format(common.DATE_DISPLAY_FORMAT)
+
+    ###@view = new IndexView ractiveTemplate, @model
     super(@view, @model)
     @socketio = new IndexSocketIO @view, @model
 
@@ -61,4 +71,4 @@ class IndexViewModel extends ChildViewModel
 
               @showError message
         @showConfirm common.constants.en_US.CONFIRM_SPRINT_REMOVAL ractiveEvent.context.title
-      when 'confirm_confirm' then @onConfirm()
+      when 'confirm_confirm' then @onConfirm()###

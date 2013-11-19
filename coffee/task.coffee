@@ -33,7 +33,8 @@ class TaskSocketIO extends SocketIO
         else
 
           @viewModel[data.key]?(data.value)
-
+  # TODO: when sprint_id changes for story_id get new sprint!
+  # TODO: when title changes for story_id 
 class TaskModel extends Model
 
   type: 'task'
@@ -213,7 +214,9 @@ class TaskViewModel extends ViewModel
     #color
 
     @color = @_createObservable @model.task, 'color', updateModel
-    @showColorSelector = => @modal 'color-selector'
+    @showColorSelector = => 
+
+      @modal 'color-selector'
     @selectColor = (color) =>
 
       @modal null

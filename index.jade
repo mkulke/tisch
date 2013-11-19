@@ -1,0 +1,31 @@
+html
+	head
+		title Index
+		include shared_ractive
+		script(type='text/javascript', src='/index.coffee.js')
+	body
+		#container
+			#breadcrumb-bar
+				span.breadcrumb.index.selected Index
+			#content
+				form
+					ul(data-bind="foreach: sprints()")#sprints
+						li.sprint
+							h2(data-bind="html: $parent.formatStart($data) + '&nbsp;&ndash;&nbsp;' + $parent.formatEnd($data)")
+							.panel
+								div(data-bind="css: $data.color + ' header'")
+									input(data-bind="value: $data.title")
+								textarea(data-bind="value: $data.description").body
+								.button-bar
+									.buttons
+										input(type='button', value=messages.en.OPEN).button.open
+										input(type='button', value=messages.en.REMOVE).button.remove						
+			#button-bar
+				form.buttons
+					input(type='button', value=messages.en.ADD_SPRINT).button.add
+		script(type='text/javascript')
+			
+			var model, viewModel;
+			model = new IndexModel(!{JSON.stringify(sprints)});
+			viewModel = new IndexViewModel(model);
+			ko.applyBindings(viewModel);
