@@ -1,3 +1,5 @@
+
+db.sprint.remove({_id: ObjectId("528c95f4eab8b32b76efac0b")});
 var sprint = {
 
 	_id: ObjectId("528c95f4eab8b32b76efac0b"),
@@ -6,10 +8,11 @@ var sprint = {
 	start: ISODate("2013-01-01T00:00:00.000Z"),
 	length: 14,
 	color: "blue",
-	title: "New Sprint"
+	title: "Test Sprint A"
 };
 db.sprint.insert(sprint);
 
+db.story.remove({_id: ObjectId("528c961beab8b32b76efac0c")});
 var story = {
 
 	_id: ObjectId("528c961beab8b32b76efac0c"),
@@ -23,6 +26,21 @@ var story = {
 };
 db.story.insert(story);
 
+db.story.remove({_id: ObjectId("528cc5cb42a7877322b90c2c")});
+story = {
+
+	_id: ObjectId("528cc5cb42a7877322b90c2c"),
+	_rev: 0,
+	color: "red",
+	description: "dfdfdf",
+	estimation: 5,
+	priority: 2,
+	sprint_id: ObjectId("528c95f4eab8b32b76efac0b"),
+	title: "Test Story B"
+};
+db.story.insert(story);
+
+db.task.remove({_id: ObjectId("528c9639eab8b32b76efac0d")});
 var task = {
 
 	_id: ObjectId("528c9639eab8b32b76efac0d"),

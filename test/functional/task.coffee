@@ -9,7 +9,7 @@ casper.viewport 1024, 768
 
 casper.then ->
 
-	casper.test.info "Verify displayed values:"
+	casper.test.info 'Verify displayed values:'
 	values = casper.getFormValues('form')
 	casper.test.assertEquals values.summary, 'Test Task A', 'Summary field correct.'
 	casper.test.assertEquals values.description, 'Task A description', 'Description field correct.'
@@ -19,7 +19,31 @@ casper.then ->
 	casper.test.assertEquals casper.getElementInfo("button[name='color']").attributes.class, 'red', 'Color button correct.'
 	casper.test.assertEquals casper.getElementInfo("button[name='story_id']").text, 'Test Story A', 'Story button correct.'
 
+casper.then ->
+
+	casper.test.info 'Test color selector:'
+	casper.click "button[name='color']"
+	casper.test.assertVisible '#color-selector .content', 'Color popup appeared.'
+	casper.click "#color-selector .green"
+	casper.test.assertNotVisible '#color-selector .content', 'Color popup disappeared.'
+	casper.test.assertEquals casper.getElementInfo("button[name='color']").attributes.class, 'green', 'Color button correct.'
+
+casper.then ->
+
+	casper.test.info 'Test story selector:'
+	casper.click "button[name='story_id']"
+	casper.waitForResource taskUrl, ->
+		
+		casper.test.assertVisible '#story-selector .content', 'Story popup appeared.'
+		nLines = this.evaluate ->
+
+			$('#story-selector .content .line').length
+		casper.test.assertEquals nLines, 2, '2 lines visible.'
+		casper.click '#story-selector .content .line:nth-child(2)'
+		casper.test.assertNotVisible '#story-selector .content', 'Story popup disappeared.'
+		casper.test.assertEquals casper.getElementInfo("button[name='story_id']").text, 'Test Story B', 'Story button correct.'
+
 casper.run ->
 
-	@test.done 7
+	@test.done 14
 	@test.renderResults true

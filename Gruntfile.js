@@ -81,12 +81,8 @@ module.exports = function(grunt) {
   	grunt.log.writeln('Starting tisch server.');
   	require('./server.js').start();
 	});
-	  // A very basic default task.
-  grunt.registerTask('whack', 'Log some stuff.', function() {
 
-    grunt.log.write('Logging some stuff...').ok();
-  });
-	grunt.registerTask('functional_tests', ['shell:create_db_objects', 'ghost:task', 'shell:cleanup_db_objects']);
+	grunt.registerTask('functional', ['shell:create_db_objects', 'ghost:task', 'shell:cleanup_db_objects']);
 	//grunt.registerTask('test', ['coffee', 'server', 'ghost']);
-	grunt.registerTask('test', ['coffee', 'mocha_phantomjs', 'functional_tests']);
+	grunt.registerTask('test', ['coffee', 'mocha_phantomjs', 'functional']);
 };
