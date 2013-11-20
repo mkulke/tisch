@@ -43,7 +43,7 @@ html
 							=messages.en.REMAINING_TIME
 						span#remaining_time-index.popup-selector.date-selector
 							|(
-							button(data-bind="click: showRemainingTimeDatePicker, text: remainingTimeIndexFormatted()").selected
+							button(data-bind="click: showRemainingTimeDatePicker, text: remainingTimeIndexFormatted()", name="remaining_time-index").selected
 							div(data-bind="datepicker: remainingTimeIndex, datepickerMin: startIndex(), datepickerMax: endIndex(), visible: modal() == 'remaining_time-index'").content
 							|):&nbsp;
 						input(data-bind="value: indexedRemainingTime, valueUpdate: ['afterkeydown','propertychange','input']", name="remaining_time")
@@ -55,7 +55,7 @@ html
 							=messages.en.TIME_SPENT
 						span#time_spent-index.popup-selector.date-selector
 							|(
-							button(data-bind="click: showTimeSpentDatePicker, text: timeSpentIndexFormatted()").selected
+							button(data-bind="click: showTimeSpentDatePicker, text: timeSpentIndexFormatted()", name="time_spent-index").selected
 							div(data-bind="datepicker: timeSpentIndex, datepickerMin: startIndex(), datepickerMax: endIndex(), visible: modal() == 'time_spent-index'").content
 							|):&nbsp;
 						input(data-bind="value: indexedTimeSpent, valueUpdate: ['afterkeydown','propertychange','input']", name="time_spent")

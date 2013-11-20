@@ -51,14 +51,15 @@ var task = {
 	priority: 1,
 	remaining_time: {
 
-		initial:1, 
+		initial: 1, 
 		"2013-01-05": 10
 	},
 	story_id: ObjectId("528c961beab8b32b76efac0c"),
 	summary: "Test Task A",
 	time_spent: {
 
-		initial:0,
+		initial: 0,
+		"2013-01-01": 2
 	}
 };
 db.task.insert(task);
