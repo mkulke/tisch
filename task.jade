@@ -13,14 +13,14 @@ html
 			#content
 				form
 					p
-						input(data-bind="value: summary, valueUpdate: ['afterkeydown','propertychange','input']")#summary.identifier
+						input(data-bind="value: summary, valueUpdate: ['afterkeydown','propertychange','input']", name="summary")#summary.identifier
 					p
-						textarea(data-bind="value: description, valueUpdate: ['afterkeydown','propertychange','input']")#description
+						textarea(data-bind="value: description, valueUpdate: ['afterkeydown','propertychange','input']", name="description")#description
 					.attribute
 						span.label
 							=messages.en.COLOR+':'
 						span#color-selector.popup-selector
-							button(data-bind="click: showColorSelector, css: color")
+							button(data-bind="click: showColorSelector, css: color", name="color")
 								span(data-bind="css: color").selected
 							div(data-bind="foreach: common.COLORS, visible: modal() == 'color-selector'").content
 								div(data-bind="click: $parent.selectColor, css: $data + ' box-' + $index()").color.hoverable							
@@ -28,13 +28,13 @@ html
 						span.label
 							=messages.en.STORY+':'
 						span#story-selector.popup-selector.line-selector
-							button(data-bind="click: showStorySelector, text: storyIdFormatted()").selected
+							button(data-bind="click: showStorySelector, text: storyIdFormatted()", name="story_id").selected
 							div(data-bind="foreach: stories, visible: modal() == 'story-selector'").content
 								div(data-bind="click: $parent.selectStory, text: title").line
 					.attribute
 						span.label
 							=messages.en.INITIAL_ESTIMATION+':'
-						input(data-bind="value: initialEstimation, valueUpdate: ['afterkeydown','propertychange','input']")
+						input(data-bind="value: initialEstimation, valueUpdate: ['afterkeydown','propertychange','input']", name="initial_estimation")
 						span(data-bind="visible: initialEstimation.hasError").error-popup
 							.content.error
 								=messages.en.VALID_TIME_MESSAGE
@@ -46,7 +46,7 @@ html
 							button(data-bind="click: showRemainingTimeDatePicker, text: remainingTimeIndexFormatted()").selected
 							div(data-bind="datepicker: remainingTimeIndex, datepickerMin: startIndex(), datepickerMax: endIndex(), visible: modal() == 'remaining_time-index'").content
 							|):&nbsp;
-						input(data-bind="value: indexedRemainingTime, valueUpdate: ['afterkeydown','propertychange','input']")
+						input(data-bind="value: indexedRemainingTime, valueUpdate: ['afterkeydown','propertychange','input']", name="remaining_time")
 						span(data-bind="visible: indexedRemainingTime.hasError").error-popup
 							.content.error
 								=messages.en.VALID_TIME_MESSAGE
@@ -58,7 +58,7 @@ html
 							button(data-bind="click: showTimeSpentDatePicker, text: timeSpentIndexFormatted()").selected
 							div(data-bind="datepicker: timeSpentIndex, datepickerMin: startIndex(), datepickerMax: endIndex(), visible: modal() == 'time_spent-index'").content
 							|):&nbsp;
-						input(data-bind="value: indexedTimeSpent, valueUpdate: ['afterkeydown','propertychange','input']")
+						input(data-bind="value: indexedTimeSpent, valueUpdate: ['afterkeydown','propertychange','input']", name="time_spent")
 						span(data-bind="visible: indexedTimeSpent.hasError").error-popup
 							.content.error
 								=messages.en.VALID_TIME_MESSAGE
