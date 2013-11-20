@@ -82,7 +82,7 @@ module.exports = function(grunt) {
   	require('./server.js').start();
 	});
 
-	grunt.registerTask('functional', ['shell:create_db_objects', 'ghost:task', 'shell:cleanup_db_objects']);
+	grunt.registerTask('functional', ['shell:create_db_objects', 'server', 'ghost:task', 'shell:cleanup_db_objects']);
 	//grunt.registerTask('test', ['coffee', 'server', 'ghost']);
 	grunt.registerTask('test', ['coffee', 'mocha_phantomjs', 'functional']);
 };
