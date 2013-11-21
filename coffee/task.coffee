@@ -1,6 +1,6 @@
 class TaskSocketIO extends SocketIO
   
-  _onUpdate: (data) =>
+  _onupdate: (data) =>
 
     if data.id == @model.task._id
 
@@ -57,30 +57,6 @@ class TaskModel extends Model
 
 class TaskViewModel extends ViewModel
 
-  _createObservable: (object, property, updateModel) ->
-
-    observable = ko.observable object[property]
-    observable.subscribe (value) ->
-
-      if !observable.hasError && object[property] != value
-      
-        updateModel observable, object, property, value 
-    observable
-
-  _createThrottledObservable: (object, property, updateModel, numeric) ->
-
-    instantaneousProperty = ko.observable(object[property])
-    observable = ko.computed(instantaneousProperty).extend({throttle: common.KEYUP_UPDATE_DELAY})
-    observable.subscribe (value) ->
-
-      if !instantaneousProperty.hasError? || !instantaneousProperty.hasError() 
-
-        value = if numeric? then parseFloat value, 10 else value
-        if object[property] != value
-
-          updateModel observable, object, property, value
-    instantaneousProperty
-
   _createIndexedComputed: (read, write, owner) ->
 
     # Create a throttled observable and a writable computed. In the write fn there is a immediate
@@ -88,7 +64,7 @@ class TaskViewModel extends ViewModel
     # observable is updated, which triggers a subscribe fn to be called. In that fn the actual
     # write fn is called when the hasError observable property is false. 
 
-    throttled = ko.observable().extend({throttle: common.KEYUP_UPDATE_DELAY})   
+    throttled = ko.observable().extend({throttle: common.KEYuP_uPDATE_DELAY})   
     indexed = ko.computed
 
       read: read
@@ -119,102 +95,20 @@ class TaskViewModel extends ViewModel
       target.subscribe(validate)
       target
 
-    ko.bindingHandlers.datepicker = 
-
-      init: (element, valueAccessor, allBindingsAccessor) =>
-
-        options =
-
-          inline: true
-          showOtherMonths: true
-          dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-          nextText: '<div class="arrow right"></div>'
-          prevText: '<div class="arrow left"></div>'
-          dateFormat: $.datepicker.ISO_8601
-          gotoCurrent: true
-          minDate: new Date(allBindingsAccessor().datepickerMin)
-          maxDate: new Date(allBindingsAccessor().datepickerMax)
-          onSelect: (dateText, inst) => 
-
-            @modal null
-            observable = valueAccessor()
-            observable(dateText)
-        $(element).datepicker(options)
-      update: (element, valueAccessor, allBindingsAccessor) ->
-
-        value = ko.utils.unwrapObservable valueAccessor()
-        dateValue = $(element).datepicker().val()
-        if value? && value != dateValue
-
-          $(element).datepicker 'setDate', value
-        min = allBindingsAccessor().datepickerMin
-
-        if moment($(element).datepicker('option', 'minDate')).format(common.DATE_DB_FORMAT) != allBindingsAccessor().datepickerMin
-
-          $(element).datepicker('option', 'minDate', new Date(allBindingsAccessor().datepickerMin))
-        if moment($(element).datepicker('option', 'maxDate')).format(common.DATE_DB_FORMAT) != allBindingsAccessor().datepickerMax
-
-          $(element).datepicker('option', 'maxDate', new Date(allBindingsAccessor().datepickerMax))
-
-    @common = common
-
-    @modal = ko.observable null
-    showSelector = curry (selector) =>
-
-      @modal selector
-
-    # we need that recalculation, so the footer stays on bottom even
-    # with the absolute positionen popups.  
-    @modal.subscribe (value) ->
-
-      if value?
-
-        contentHeight = $('#content').height()
-        popupHeight = $("##{value} .content").height()
-        footerHeight = $("#button-bar").height()
-        popupTop = $("##{value}").position()?.top
-
-        if (popupTop + popupHeight) > (contentHeight + footerHeight)
-
-          $('#content').css 'height', popupTop + popupHeight - footerHeight
-      else
-
-        $('#content').css 'height', 'auto'
-
-    @cancelPopup = (data, event) =>
-
-      if event.keyCode == 27 && @modal != null
-
-        @modal null
-
-    @errorMessage = ko.observable()
-    @confirmError = => 
-
-      @modal null
- 
-    updateModel = (observable, object, property, value) =>
-
-      oldValue = object[property]
-      object[property] = value
-      @model.update property, null, (message) =>
-
-        object[property] = oldValue
-        observable(oldValue)
-        @modal 'error-dialog'
-        @errorMessage message      
+    super(@model)   
 
     #summary
 
-    @summary = @_createThrottledObservable @model.task, 'summary', updateModel
+    @summary = @_createThrottledObservable @model.task, 'summary', @_updateModel
     
     #description
 
-    @description = @_createThrottledObservable @model.task, 'description', updateModel
+    @description = @_createThrottledObservable @model.task, 'description', @_updateModel
     
     #color
 
-    @color = @_createObservable @model.task, 'color', updateModel
-    @showColorSelector = => 
+    @color = @_createObservable @model.task, 'color', @_updateModel
+    @showColorSelector = =>
 
       @modal 'color-selector'
     @selectColor = (color) =>
@@ -226,7 +120,7 @@ class TaskViewModel extends ViewModel
 
     @stories = ko.observable [@model.story]
 
-    @storyId = @_createObservable @model.task, 'story_id', updateModel
+    @storyId = @_createObservable @model.task, 'story_id', @_updateModel
     @storyIdFormatted = ko.computed =>
 
       story = _.find @stories(), (story) =>
@@ -248,7 +142,7 @@ class TaskViewModel extends ViewModel
 
     # initial_estimation
 
-    @initialEstimation = @_createThrottledObservable(@model.task, 'initial_estimation', updateModel, true)
+    @initialEstimation = @_createThrottledObservable(@model.task, 'initial_estimation', @_updateModel, true)
       .extend({matches: common.TIME_REGEX})
 
     # sprint specific observables
@@ -296,7 +190,9 @@ class TaskViewModel extends ViewModel
 
     # remaining_time   
 
-    @showRemainingTimeDatePicker = => @modal 'remaining_time-index'
+    @showRemainingTimeDatePicker = => 
+
+      @modal 'remaining_time-index'
 
     @remainingTimeIndex = ko.observable @model.getDateIndex(@model.sprint)
     @remainingTimeIndexFormatted = ko.computed =>

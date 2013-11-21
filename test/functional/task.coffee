@@ -10,7 +10,7 @@ casper.viewport 1024, 768
 casper.then ->
 
 	casper.test.info 'Verify displayed values:'
-	values = casper.getFormValues('form')
+	values = casper.getFormValues('#content form')
 	casper.test.assertEquals values.summary, 'Test Task A', 'Summary field correct.'
 	casper.test.assertEquals values.description, 'Task A description', 'Description field correct.'
 	casper.test.assertEquals values.initial_estimation, '3', 'Initial estimation field correct.'
@@ -72,12 +72,13 @@ casper.then ->
 
 casper.then ->
 
-	casper.test.info 'Fill summary, description & initial estimation fields:'
-	casper.fill 'form', 
+	casper.test.info 'Fill summary, description & initial estimation fields, then verify values after reload.'
+	casper.fill '#content form', 
 
 		'summary': 'Edited summary'
 		'description': 'Edited description'
 		'initial_estimation': '7'
+
 	casper.wait 500, ->
 	
 		casper.reload ->
@@ -86,8 +87,10 @@ casper.then ->
 			casper.test.assertEquals casper.getHTML('#breadcrumb-bar span.breadcrumb.task.selected'), 'Edited summary', 'Breadcrumb text correct.'
 			casper.test.assertField 'description', 'Edited description', 'Description field correct.'
 			casper.test.assertField 'initial_estimation', '7', 'Initial estimation field correct.'
+			casper.test.assertEquals casper.getElementInfo("button[name='color']").attributes.class, 'green', 'Color button correct.'
+			casper.test.assertEquals casper.getElementInfo("button[name='story_id']").text, 'Test Story B', 'Story button correct.'
 
 casper.run ->
 
-	@test.done 28
+	@test.done 30
 	@test.renderResults true

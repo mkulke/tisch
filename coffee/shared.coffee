@@ -68,7 +68,7 @@ class SocketIO
   _onUpdate: (data) ->
   _onAdd: (data) ->
   _onRemove: (data) ->
-    
+
 class View
 
   constructor: (ractiveTemplate, @model) ->
@@ -336,7 +336,121 @@ class Model
 
 class ViewModel
 
-  constructor: (@view, @model) ->
+  # knockout specific methods
+
+  _createObservable: (object, property, updateModel) ->
+
+    observable = ko.observable object[property]
+    observable.subscribe (value) ->
+
+      if !observable.hasError && object[property] != value
+      
+        updateModel observable, object, property, value 
+    observable
+  _createThrottledObservable: (object, property, updateModel, numeric) ->
+
+    instantaneousProperty = ko.observable(object[property])
+    observable = ko.computed(instantaneousProperty).extend({throttle: common.KEYUP_UPDATE_DELAY})
+    observable.subscribe (value) ->
+
+      if !instantaneousProperty.hasError? || !instantaneousProperty.hasError() 
+
+        value = if numeric? then parseFloat value, 10 else value
+        if object[property] != value
+
+          updateModel observable, object, property, value
+    instantaneousProperty
+  _updateModel: (observable, object, property, value) =>
+
+      oldValue = object[property]
+      object[property] = value
+      @model.update property, null, (message) =>
+
+        object[property] = oldValue
+        observable(oldValue)
+        @modal 'error-dialog'
+        @errorMessage message
+
+  cancelPopup: (data, event) =>
+
+    if event.keyCode == 27 && @modal != null
+
+      @modal null
+  confirmError: => 
+
+    @modal null
+  constructor: (@model) ->
+
+    ko.bindingHandlers.datepicker = 
+
+      init: (element, valueAccessor, allBindingsAccessor) =>
+
+        options =
+
+          inline: true
+          showOtherMonths: true
+          dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+          nextText: '<div class="arrow right"></div>'
+          prevText: '<div class="arrow left"></div>'
+          dateFormat: $.datepicker.ISO_8601
+          gotoCurrent: true
+          onSelect: (dateText, inst) => 
+
+            @modal null
+            observable = valueAccessor()
+            observable dateText
+
+        if allBindingsAccessor().datepickerMin? 
+
+          options.minDate = new Date(allBindingsAccessor().datepickerMin)
+        if allBindingsAccessor().datepickerMax?
+
+          options.maxDate = new Date(allBindingsAccessor().datepickerMax)
+        $(element).datepicker options
+      update: (element, valueAccessor, allBindingsAccessor) ->
+
+        value = ko.utils.unwrapObservable valueAccessor()
+        dateValue = $(element).datepicker().val()
+        if value? && value != dateValue
+
+          $(element).datepicker 'setDate', new Date(value)
+        min = allBindingsAccessor().datepickerMin
+
+        if allBindingsAccessor().datepickerMin? && moment($(element).datepicker('option', 'minDate')).format(common.DATE_DB_FORMAT) != allBindingsAccessor().datepickerMin
+
+          $(element).datepicker('option', 'minDate', new Date(allBindingsAccessor().datepickerMin))
+        if allBindingsAccessor().datepickerMax? && moment($(element).datepicker('option', 'maxDate')).format(common.DATE_DB_FORMAT) != allBindingsAccessor().datepickerMax
+
+          $(element).datepicker('option', 'maxDate', new Date(allBindingsAccessor().datepickerMax))
+
+    @common = common
+
+    @modal = ko.observable null
+    
+    # we need that recalculation, so the footer stays on bottom even
+    # with the absolute positionen popups.  
+    @modal.subscribe (value) ->
+
+      if value?
+
+        contentHeight = $('#content').height()
+        popupHeight = $("##{value} .content").height()
+        footerHeight = $("#button-bar").height()
+        popupTop = $("##{value}").position()?.top
+
+        if (popupTop + popupHeight) > (contentHeight + footerHeight)
+
+          $('#content').css 'height', popupTop + popupHeight - footerHeight
+      else
+
+        $('#content').css 'height', 'auto'
+
+    @errorMessage = ko.observable()
+
+
+  # old ractive stuff
+
+  ###constructor: (@view, @model) ->
 
     ractiveHandlers =
 
@@ -346,7 +460,7 @@ class ViewModel
       tapped_selector: @openSelectorPopup
       tapped_selector_item: @selectPopupItem
       tapped_button: @handleButton
-    @view.setRactiveHandlers ractiveHandlers
+    @view.setRactiveHandlers ractiveHandlers###
   setBeforeValue: (ractiveEvent) ->
 
     node = ractiveEvent.node

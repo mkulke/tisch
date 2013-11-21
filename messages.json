@@ -2,6 +2,7 @@
   "en": {
   
     "ADD_SPRINT": "Add Sprint",
+    "ADD_STORY": "Add Story",
   	"COLOR": "Color",
     "ERROR_UPDATE_NOT_FOUND": "The item could not be updated. It might have been modified or removed before the changes were submitted. A page refresh will fetch the current state.",
     "ERROR_UPDATE_INVALID_INPUT": "The item could not be updated. The submitted changes were invalid.",
@@ -12,6 +13,7 @@
     "OPEN": "Open",
     "REMAINING_TIME": "Remaining time",
     "REMOVE": "Remove",
+    "START_DATE": "Start date",
     "STORY": "Story",
     "TIME_SPENT": "Spent time",
     "VALID_TIME_MESSAGE": "This attribute has to be specified as a positive number < 100 with two or less precision digits (e.g. '1' or '99.25')."

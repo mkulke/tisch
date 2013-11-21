@@ -28,9 +28,52 @@ class SprintModel extends Model
 
   	@children = {type: 'story', objects: stories}
 
-class SprintViewModel extends ChildViewModel
+class SprintViewModel extends ViewModel
 
-  constructor: (@model, ractiveTemplate) ->
+  constructor: (@model) ->
+
+    super(@model)
+
+    # title
+
+    @title = @_createThrottledObservable @model.sprint, 'title', @_updateModel
+
+    # description
+
+    @description = @_createThrottledObservable @model.sprint, 'description', @_updateModel
+
+    #color
+
+    @color = @_createObservable @model.sprint, 'color', @_updateModel
+    @showColorSelector = =>
+
+      @modal 'color-selector'
+    @selectColor = (color) =>
+
+      @modal null
+      @color color
+
+    #start
+
+    @showStartDatePicker = => 
+
+      @modal 'start-selector'
+    @start = @_createObservable @model.sprint, 'start', @_updateModel
+    @startDate = ko.computed
+
+      read: =>
+
+        @start()
+      write: (value) =>
+
+        # the datepicker binding returns a xxxx-xx-xx string, we need a Date, tho.
+        @start new moment(value).toDate()
+      owner: @
+    @startFormatted = ko.computed =>
+
+      moment(@start()).format(common.DATE_DISPLAY_FORMAT)
+
+  ###constructor: (@model, ractiveTemplate) ->
 
     @view = new SprintView ractiveTemplate, @model
     super(@view, @model)
@@ -129,4 +172,4 @@ class SprintViewModel extends ChildViewModel
 
               @showError message
         @showConfirm common.constants.en_US.CONFIRM_STORY_REMOVAL ractiveEvent.context.title
-      when 'confirm_confirm' then @onConfirm()
+      when 'confirm_confirm' then @onConfirm()###

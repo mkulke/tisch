@@ -4,7 +4,7 @@ var sprint = {
 
 	_id: ObjectId("528c95f4eab8b32b76efac0b"),
 	_rev: 0,
-	description: "Sprint description",
+	description: "Sprint A description",
 	start: ISODate("2013-01-01T00:00:00.000Z"),
 	length: 14,
 	color: "blue",

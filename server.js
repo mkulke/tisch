@@ -14,7 +14,7 @@ var curry = require('curry');
 var _ = require('underscore')._;
 
 var cwd = process.cwd();
-var options = { pretty: false, filename: 'sprint_ractive.jade' };
+var options = { pretty: false, filename: 'sprint.jade' };
 var sprint_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'story_ractive.jade';
 var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
@@ -813,7 +813,7 @@ function processRequest(request, response) {
 
         answer = function(result) {
 
-          var html = sprint_template({sprint: result.sprint, stories: result.stories, calculations: result.calculations});
+          var html = sprint_template({sprint: result.sprint, stories: result.stories, calculations: result.calculations, messages: messages});
           respondWithHtml(html, response);
         };
       }

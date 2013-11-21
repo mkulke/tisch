@@ -20,6 +20,10 @@ module.exports = function(grunt) {
 			task: {
 
 				filesSrc: ['test/functional/task.coffee.js']
+			},
+			sprint: {
+
+				filesSrc: ['test/functional/sprint.coffee.js']
 			}
 		},
 		coffee: {
@@ -42,7 +46,8 @@ module.exports = function(grunt) {
 		      'test/unit/task.coffee.js': 'test/unit/task.coffee',
 		      'test/unit/story.coffee.js': 'test/unit/story.coffee',
 		      'test/unit/shared.coffee.js': 'test/unit/shared.coffee',
-		      'test/functional/task.coffee.js': 'test/functional/task.coffee'
+		      'test/functional/task.coffee.js': 'test/functional/task.coffee',
+		      'test/functional/sprint.coffee.js': 'test/functional/sprint.coffee'
 		    }
   		},
 		},
@@ -82,7 +87,7 @@ module.exports = function(grunt) {
   	require('./server.js').start();
 	});
 
-	grunt.registerTask('functional', ['shell:create_db_objects', 'server', 'ghost:task', 'shell:cleanup_db_objects']);
+	grunt.registerTask('functional', ['shell:create_db_objects', 'server', 'ghost:task', 'ghost:sprint', 'shell:cleanup_db_objects']);
 	//grunt.registerTask('test', ['coffee', 'server', 'ghost']);
 	grunt.registerTask('test', ['coffee', 'mocha_phantomjs', 'functional']);
 };
