@@ -57,7 +57,6 @@ casper.then ->
 
 casper.then ->
 
-	@capture 'hallo.png'
 	@test.info 'Move story 2 to position 1:'
 
 	info1 = @getElementInfo('ul#well li:nth-of-type(1) .header');
