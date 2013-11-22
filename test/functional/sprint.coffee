@@ -27,6 +27,15 @@ casper.then ->
 
 casper.then ->
 
+	casper.test.info 'Change end date:'
+	casper.click "button[name='length']"
+	casper.test.assertVisible '#length .content', 'Datepicker appeared.'	
+	casper.click "#length .content tr:nth-of-type(2) td:nth-of-type(5) a"
+	casper.test.assertNotVisible '#length .content', 'Datepicker disappeared.'
+	casper.test.assertEquals casper.getElementInfo("button[name='length']").text, '01/10/13', 'Date button correct.'
+
+casper.then ->
+
 	casper.test.info 'Change start date:'
 	casper.click "button[name='start']"
 	casper.test.assertVisible '#start .content', 'Datepicker appeared.'	
@@ -49,9 +58,10 @@ casper.then ->
 			casper.test.assertEquals casper.getHTML('#breadcrumb-bar span.breadcrumb.sprint.selected'), 'Edited title', 'Breadcrumb text correct.'
 			casper.test.assertField 'description', 'Edited description', 'Description field correct.'
 			casper.test.assertEquals casper.getElementInfo("button[name='start']").text, '01/02/13', 'Date button correct.'
+			casper.test.assertEquals casper.getElementInfo("button[name='length']").text, '01/11/13', 'Date button correct.'
 			casper.test.assertEquals casper.getElementInfo("button[name='color']").attributes.class, 'green', 'Color button correct.'
 
 casper.run ->
 
-	@test.done 15
+	@test.done 19
 	@test.renderResults true

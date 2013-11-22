@@ -27,7 +27,13 @@ html
 							=messages.en.START_DATE+':'
 						span#start.popup-selector.date-selector
 							button(data-bind="click: showStartDatePicker, text: startFormatted()", name="start").selected
-							div(data-bind="datepicker: start, visible: modal() == 'start-selector'").content
+							div(data-bind="datepicker: startDate, visible: modal() == 'start-selector'").content
+					.attribute
+						span.label
+							=messages.en.END_DATE+':'
+						span#length.popup-selector.date-selector
+							button(data-bind="click: showLengthDatePicker, text: endFormatted()", name="length").selected
+							div(data-bind="datepicker: lengthDate, datepickerMin: startDate(), visible: modal() == 'length-selector'").content
 			#button-bar
 				form.buttons
 					input(type='button', value=messages.en.ADD_STORY).button.add

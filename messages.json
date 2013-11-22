@@ -4,6 +4,7 @@
     "ADD_SPRINT": "Add Sprint",
     "ADD_STORY": "Add Story",
   	"COLOR": "Color",
+    "END_DATE": "End Date",
     "ERROR_UPDATE_NOT_FOUND": "The item could not be updated. It might have been modified or removed before the changes were submitted. A page refresh will fetch the current state.",
     "ERROR_UPDATE_INVALID_INPUT": "The item could not be updated. The submitted changes were invalid.",
     "ERROR_REMOVE": "The item could not be removed. It might have been changed meanwhile. A page refresh will fetch the current state.",

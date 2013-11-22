@@ -2,7 +2,7 @@ class SprintSocketIO extends SocketIO
 
   messageHandler: (data) =>
 
-class SprintView extends View
+###class SprintView extends View
 
   _buildRactiveData: =>
 
@@ -19,7 +19,7 @@ class SprintView extends View
     calculate_end_date: (start, length) ->
 
       startDate = new Date(start)
-      new Date(startDate.getTime() + (length * common.MS_TO_DAYS_FACTOR))
+      new Date(startDate.getTime() + (length * common.MS_TO_DAYS_FACTOR))###
 
 class SprintModel extends Model
 
@@ -42,7 +42,7 @@ class SprintViewModel extends ViewModel
 
     @description = @_createThrottledObservable @model.sprint, 'description', @_updateModel
 
-    #color
+    # color
 
     @color = @_createObservable @model.sprint, 'color', @_updateModel
     @showColorSelector = =>
@@ -53,7 +53,7 @@ class SprintViewModel extends ViewModel
       @modal null
       @color color
 
-    #start
+    # start
 
     @showStartDatePicker = => 
 
@@ -63,7 +63,7 @@ class SprintViewModel extends ViewModel
 
       read: =>
 
-        @start()
+        new Date(@start())
       write: (value) =>
 
         # the datepicker binding returns a xxxx-xx-xx string, we need a Date, tho.
@@ -72,6 +72,29 @@ class SprintViewModel extends ViewModel
     @startFormatted = ko.computed =>
 
       moment(@start()).format(common.DATE_DISPLAY_FORMAT)
+
+    # length
+
+    @showLengthDatePicker = => 
+
+      @modal 'length-selector'
+    @length = @_createObservable @model.sprint, 'length', @_updateModel
+    @lengthDate = ko.computed
+
+      read: =>
+
+        moment(@start()).add('days', @length() - 1).toDate()
+      write: (value) =>
+
+        start = moment @start()
+        # since @start() as 'XXXX-XX-XXT00:00:00.000Z' is parsed w/o timezone offset, and value
+        # is 'XXXX-XX-XX' has the timezone offset, we need to use moment.utc here to calculate
+        # the delta here.
+        end = moment.utc value
+        @length moment.duration(end - start).days() + 1
+    @endFormatted = ko.computed =>
+
+      moment(@lengthDate()).format(common.DATE_DISPLAY_FORMAT)
 
   ###constructor: (@model, ractiveTemplate) ->
 
