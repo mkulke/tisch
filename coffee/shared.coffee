@@ -284,9 +284,9 @@ class Model
   getTasks: getMultiple 'task'
   getStories: getMultiple 'story'
   getSprints: getMultiple 'sprint', null
-  updateChild: (index, key, successCb, errorCb) => 
+  ###updateChild: (index, key, successCb, errorCb) => 
 
-    @_update @children.objects[index], key, @children.type, successCb, errorCb
+    @_update @children.objects[index], key, @children.type, successCb, errorCb###
   ###update: (key, successCb, errorCb) => 
 
     @_update @[@type], key, @type, successCb, errorCb###
