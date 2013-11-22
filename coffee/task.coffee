@@ -181,7 +181,7 @@ class TaskViewModel extends ViewModel
       
         observableObject(object)   
         @model.task[property] = object
-        @model.update property, null, (message) =>
+        @model.update @model.task, property, 'task', null, (message) =>
 
           @model.task[property] = oldObject
           observableObject(oldObject)
