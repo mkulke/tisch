@@ -287,10 +287,10 @@ class Model
   updateChild: (index, key, successCb, errorCb) => 
 
     @_update @children.objects[index], key, @children.type, successCb, errorCb
-  update: (key, successCb, errorCb) => 
+  ###update: (key, successCb, errorCb) => 
 
-    @_update @[@type], key, @type, successCb, errorCb
-  _update: (object, key, type, successCb, errorCb) =>
+    @_update @[@type], key, @type, successCb, errorCb###
+  update: (object, key, type, successCb, errorCb) =>
 
     getRev = ->
 
@@ -360,11 +360,11 @@ class ViewModel
 
           updateModel observable, object, property, value
     instantaneousProperty
-  _updateModel: (observable, object, property, value) =>
+  _updateModel: (observable, object, type, property, value) =>
 
       oldValue = object[property]
       object[property] = value
-      @model.update property, null, (message) =>
+      @model.update object, property, type, null, (message) =>
 
         object[property] = oldValue
         observable(oldValue)

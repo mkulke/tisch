@@ -1,7 +1,5 @@
 class SprintSocketIO extends SocketIO
 
-  messageHandler: (data) =>
-
 ###class SprintView extends View
 
   _buildRactiveData: =>
@@ -28,23 +26,58 @@ class SprintModel extends Model
 
   	@children = {type: 'story', objects: stories}
 
+  calculatePriority: (objects, originalIndex, index) =>
+
+    if index == 0 then prevPrio = 0
+    else prevPrio = objects[index - 1].priority()
+
+    last = objects.length - 1
+    if index == last 
+
+      Math.ceil objects[index - 1].priority() + 1
+    else
+
+      nextPrio = objects[index + 1].priority()
+      (nextPrio - prevPrio) / 2 + prevPrio
+
 class SprintViewModel extends ViewModel
+
+  _updateSprintModel: (observable, object, property, value) =>
+
+    @_updateModel observable, object, 'sprint', property, value
+  _updateStoryModel: (observable, object, property, value) =>
+
+    @_updateModel observable, object, 'story', property, value
 
   constructor: (@model) ->
 
     super(@model)
 
+    # set global options for jquery ui sortable
+
+    ko.bindingHandlers.sortable.options = 
+
+      tolerance: 'pointer'
+      delay: 150
+      cursor: 'move'
+      containment: 'ul#well'
+      handle: '.header'
+    ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
+
+      priority = @model.calculatePriority @stories(), arg.sourceIndex, arg.targetIndex
+      arg.item.priority priority
+
     # title
 
-    @title = @_createThrottledObservable @model.sprint, 'title', @_updateModel
+    @title = @_createThrottledObservable @model.sprint, 'title', @_updateSprintModel
 
     # description
 
-    @description = @_createThrottledObservable @model.sprint, 'description', @_updateModel
+    @description = @_createThrottledObservable @model.sprint, 'description', @_updateSprintModel
 
     # color
 
-    @color = @_createObservable @model.sprint, 'color', @_updateModel
+    @color = @_createObservable @model.sprint, 'color', @_updateSprintModel
     @showColorSelector = =>
 
       @modal 'color-selector'
@@ -58,7 +91,7 @@ class SprintViewModel extends ViewModel
     @showStartDatePicker = => 
 
       @modal 'start-selector'
-    @start = @_createObservable @model.sprint, 'start', @_updateModel
+    @start = @_createObservable @model.sprint, 'start', @_updateSprintModel
     @startDate = ko.computed
 
       read: =>
@@ -78,7 +111,7 @@ class SprintViewModel extends ViewModel
     @showLengthDatePicker = => 
 
       @modal 'length-selector'
-    @length = @_createObservable @model.sprint, 'length', @_updateModel
+    @length = @_createObservable @model.sprint, 'length', @_updateSprintModel
     @lengthDate = ko.computed
 
       read: =>
@@ -95,6 +128,31 @@ class SprintViewModel extends ViewModel
     @endFormatted = ko.computed =>
 
       moment(@lengthDate()).format(common.DATE_DISPLAY_FORMAT)
+
+    # calculations
+
+    remainingTimeCalculations = ko.observable @model.calculations.remaining_time
+
+    # stories
+
+    stories = _.map @model.children.objects, (story) =>
+
+      _id: story._id
+      title: @_createObservable story, 'title', @_updateStoryModel
+      description: @_createObservable story, 'description', @_updateStoryModel
+      color: @_createObservable story, 'color', @_updateStoryModel
+      priority: @_createObservable story, 'priority', @_updateStoryModel
+      _remaining_time: ko.computed =>
+
+        if remainingTimeCalculations()[story._id]? 
+
+          remainingTimeCalculations()[story._id]
+        else
+
+          null
+      _url: '/story/' + story._id
+
+    @stories = ko.observableArray stories
 
   ###constructor: (@model, ractiveTemplate) ->
 

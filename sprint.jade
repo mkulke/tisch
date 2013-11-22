@@ -2,6 +2,7 @@ html
 	head
 		title Sprint details
 		include shared_ractive
+		script(type='text/javascript', src='/knockout-sortable.min.js')
 		script(type='text/javascript', src='/sprint.coffee.js')
 	body(data-bind="event: {keyup: cancelPopup}")
 		#container
@@ -34,9 +35,27 @@ html
 						span#length.popup-selector.date-selector
 							button(data-bind="click: showLengthDatePicker, text: endFormatted()", name="length").selected
 							div(data-bind="datepicker: lengthDate, datepickerMin: startDate(), visible: modal() == 'length-selector'").content
+					ul(data-bind="sortable: stories")#well
+						li.panel
+							div(data-bind="css: $data.color() + ' header hoverable'")
+								input(data-bind="value: $data.title, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'title-' + $index()}")
+								.stats
+										div(data-bind="if: $data._remaining_time() !== null")
+											div(data-bind="ifnot: $data._remaining_time() > 0")
+												img(src="/done_white_30.png")
+											div(data-bind="if: $data._remaining_time() > 0")
+												img(src="/clock_white_30.png")
+												div(data-bind="text: $data._remaining_time()").text
+							textarea(data-bind="value: $data.description, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'description-' + $index()}").body
+							.button-bar
+								.buttons
+									a(data-bind="attr: {href: $data._url}").button.open
+										=messages.en.OPEN
+									input(type='button', value=messages.en.REMOVE).button.remove	
 			#button-bar
 				form.buttons
-					input(type='button', value=messages.en.ADD_STORY).button.add
+					input(type='button', value=messages.en.ADD_STORY, name="add-story").button.add
+					input(type='button', value=messages.en.REMOVE, name="remove").button.remove
 		div(data-bind="visible: modal() != null")#overlay
 		script(type='text/javascript')
 

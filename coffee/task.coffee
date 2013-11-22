@@ -81,6 +81,10 @@ class TaskViewModel extends ViewModel
         write value   
     indexed
 
+  _updateTaskModel: (observable, object, property, value) =>
+
+    @_updateModel observable, object, 'task', property, value
+
   constructor: (@model) ->
 
     ko.extenders.matches = (target, regex) ->
@@ -99,15 +103,15 @@ class TaskViewModel extends ViewModel
 
     #summary
 
-    @summary = @_createThrottledObservable @model.task, 'summary', @_updateModel
+    @summary = @_createThrottledObservable @model.task, 'summary', @_updateTaskModel
     
     #description
 
-    @description = @_createThrottledObservable @model.task, 'description', @_updateModel
+    @description = @_createThrottledObservable @model.task, 'description', @_updateTaskModel
     
     #color
 
-    @color = @_createObservable @model.task, 'color', @_updateModel
+    @color = @_createObservable @model.task, 'color', @_updateTaskModel
     @showColorSelector = =>
 
       @modal 'color-selector'
@@ -120,7 +124,7 @@ class TaskViewModel extends ViewModel
 
     @stories = ko.observable [@model.story]
 
-    @storyId = @_createObservable @model.task, 'story_id', @_updateModel
+    @storyId = @_createObservable @model.task, 'story_id', @_updateTaskModel
     @storyIdFormatted = ko.computed =>
 
       story = _.find @stories(), (story) =>
@@ -142,7 +146,7 @@ class TaskViewModel extends ViewModel
 
     # initial_estimation
 
-    @initialEstimation = @_createThrottledObservable(@model.task, 'initial_estimation', @_updateModel, true)
+    @initialEstimation = @_createThrottledObservable(@model.task, 'initial_estimation', @_updateTaskModel, true)
       .extend({matches: common.TIME_REGEX})
 
     # sprint specific observables

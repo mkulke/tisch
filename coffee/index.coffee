@@ -22,6 +22,7 @@ class IndexViewModel extends ChildViewModel
       color: ko.observable sprint.color
 
     @sprints = ko.observableArray sprints
+    
     @formatStart = (sprint) ->
 
       moment(sprint.start()).format(common.DATE_DISPLAY_FORMAT)
