@@ -67,11 +67,19 @@ module.exports = function(grunt) {
 
         create_db_objects: {
 
-            command: 'mongo test/functional/create_db_objects.js'
+            command: 'mongo test/functional/create_db_objects.js',
+            options: {
+
+                failOnError: true
+            }
         },
         cleanup_db_objects: {
 
-            command: 'mongo test/functional/cleanup_db_objects.js'
+            command: 'mongo test/functional/cleanup_db_objects.js',
+            options: {
+            	
+                failOnError: true
+            }
         }
     }
 	});
