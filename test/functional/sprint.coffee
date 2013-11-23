@@ -66,6 +66,9 @@ casper.then ->
 				document.querySelectorAll('ul#well li.panel').length == 3;
 		, '3 Story panels visible.'
 		@click 'ul#well li.panel:nth-of-type(3) input.button.remove'
+		@test.assertVisible '#confirm-dialog', 'Confirmation dialog appeared'
+		@click '#confirm-dialog input.button.confirm'
+		@test.assertNotVisible '#confirm-dialog', 'Confirmation dialog disappeared'
 		@waitForResource sprintUrl, ->
 
 			@test.assertEval ->
@@ -114,5 +117,5 @@ casper.then ->
 
 casper.run ->
 
-	@test.done 32
+	@test.done 34
 	@test.renderResults true

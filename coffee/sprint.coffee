@@ -67,6 +67,14 @@ class SprintViewModel extends ViewModel
       priority = @model.calculatePriority @stories(), arg.sourceIndex, arg.targetIndex
       arg.item.priority priority
 
+    # confirmation dialog specific
+
+    @confirmMessage = ko.observable()
+    @cancel = =>
+
+      @modal null
+    @confirm = ->
+
     # title
 
     @title = @_createThrottledObservable @model.sprint, 'title', @_updateSprintModel
@@ -151,10 +159,23 @@ class SprintViewModel extends ViewModel
 
           null
       _url: '/story/' + story._id
+      _js: story
 
     stories = _.map @model.children.objects, createObservablesObject
 
     @stories = ko.observableArray stories
+    @stories.subscribe (changes) =>
+
+      for change in changes
+
+        if change.status == 'added'
+
+          storyObservable = @stories()[change.index]
+          @model.children.objects.splice change.index, 0, storyObservable._js
+        else if change.status == 'deleted'
+
+          @model.children.objects.splice change.index, 1
+    , null, 'arrayChange'
 
     showErrorDialog = (message) =>
 
@@ -167,26 +188,28 @@ class SprintViewModel extends ViewModel
 
         , (story) => 
         
-          @model.children.objects.push story
           observableObject = createObservablesObject story
           @stories.push observableObject
           # TODO: sort after push?
         , showErrorDialog
 
-    # TODO: add confirm dialog.
     @removeStory = (storyObservable) =>
 
-      story = _.find @model.children.objects, (story) ->
+      @modal 'confirm-dialog'
+      # TODO: i18n
+      @confirmMessage 'Are you sure? All the stories and tasks assigned to the sprint will be permanently removed.'
+      @confirm = =>
 
-        storyObservable._id == story._id
-      @model.removeStory story
+        @modal null
+        story = storyObservable._js
+        @model.removeStory story
 
-        , =>
+          , =>
 
-          @stories.remove (item) =>
+            @stories.remove (item) =>
 
-            item._id == story._id
-        , showErrorDialog
+              item._id == story._id
+          , showErrorDialog
 
   ###constructor: (@model, ractiveTemplate) ->
 

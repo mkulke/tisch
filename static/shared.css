@@ -617,7 +617,7 @@ form {
 	z-index: 3;
 }
 
-#error-dialog {
+#error-dialog, #confirm-dialog {
 
 	position: fixed;
 	z-index: 3;	
