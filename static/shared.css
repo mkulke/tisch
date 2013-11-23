@@ -461,6 +461,12 @@ a.breadcrumb:hover {
 	color: #ffffff;
 }
 
+#breadcrumb-bar img.logo {
+
+	float: right;
+	margin: 4px;
+}
+
 html, body {
 
 	margin: 0;
