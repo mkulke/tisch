@@ -135,7 +135,7 @@ class SprintViewModel extends ViewModel
 
     # stories
 
-    stories = _.map @model.children.objects, (story) =>
+    createObservablesObject = (story) =>
 
       _id: story._id
       title: @_createObservable story, 'title', @_updateStoryModel
@@ -152,7 +152,41 @@ class SprintViewModel extends ViewModel
           null
       _url: '/story/' + story._id
 
+    stories = _.map @model.children.objects, createObservablesObject
+
     @stories = ko.observableArray stories
+
+    showErrorDialog = (message) =>
+
+      @modal 'error-dialog'
+      @errorMessage message
+
+    @addStory = =>
+
+      @model.createStory @model.sprint._id
+
+        , (story) => 
+        
+          @model.children.objects.push story
+          observableObject = createObservablesObject story
+          @stories.push observableObject
+          # TODO: sort after push?
+        , showErrorDialog
+
+    # TODO: add confirm dialog.
+    @removeStory = (storyObservable) =>
+
+      story = _.find @model.children.objects, (story) ->
+
+        storyObservable._id == story._id
+      @model.removeStory story
+
+        , =>
+
+          @stories.remove (item) =>
+
+            item._id == story._id
+        , showErrorDialog
 
   ###constructor: (@model, ractiveTemplate) ->
 

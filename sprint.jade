@@ -52,11 +52,16 @@ html
 								.buttons
 									a(data-bind="attr: {href: $data._url}").button.open
 										=messages.en.OPEN
-									input(type='button', value=messages.en.REMOVE).button.remove	
+									input(data-bind="click: $parent.removeStory.bind($data)", type='button', value=messages.en.REMOVE).button.remove	
 			#button-bar
 				form.buttons
-					input(type='button', value=messages.en.ADD_STORY, name="add-story").button.add
+					input(data-bind="click: addStory", type='button', value=messages.en.ADD_STORY, name="add-story").button.add
 					input(type='button', value=messages.en.REMOVE, name="remove").button.remove
+		div(data-bind="visible: modal() == 'error-dialog'")#error-dialog
+			div(data-bind="text: errorMessage()").message.error
+			.popup-buttons
+				form.buttons
+					input(data-bind="click: confirmError", type="button", value=messages.en.OK).button
 		div(data-bind="visible: modal() != null")#overlay
 		script(type='text/javascript')
 

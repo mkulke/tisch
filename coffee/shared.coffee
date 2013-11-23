@@ -212,10 +212,9 @@ class Model
       success: (data, textStatus, jqXHR) -> 
 
         successCb? data
-      error: (data, textStatus, jqXHR) -> 
+      error: (jqXHR, textStatus, errorThrown) -> 
 
-        msgFunction = common.constants.en_US["ERROR_REMOVE_#{type}"]
-        errorCb? msgFunction #{jqXHR}
+        errorCb? (if errorThrown == "" then 'Error: Unknown communications problem with server.' else errorThrown)
   create = curry (type, parentId, successCb, errorCb) ->
 
     headers = {client_uuid: common.uuid}

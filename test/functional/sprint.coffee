@@ -57,6 +57,24 @@ casper.then ->
 
 casper.then ->
 
+	@test.info 'Create and remove story:'
+	@click '#button-bar input.button.add'
+	@waitForResource sprintUrl, ->
+
+		@test.assertEval ->
+
+				document.querySelectorAll('ul#well li.panel').length == 3;
+		, '3 Story panels visible.'
+		@click 'ul#well li.panel:nth-of-type(3) input.button.remove'
+		@waitForResource sprintUrl, ->
+
+			@test.assertEval ->
+
+					document.querySelectorAll('ul#well li.panel').length == 2;
+			, '2 Story panels visible.'	
+
+casper.then ->
+
 	@test.info 'Move story 2 to position 1:'
 
 	info1 = @getElementInfo('ul#well li:nth-of-type(1) .header');
@@ -96,5 +114,5 @@ casper.then ->
 
 casper.run ->
 
-	@test.done 30
+	@test.done 32
 	@test.renderResults true
