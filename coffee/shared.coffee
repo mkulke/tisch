@@ -380,6 +380,18 @@ class ViewModel
     @modal null
   constructor: (@model) ->
 
+    ko.extenders.matches = (target, regex) ->
+
+      target.hasError = ko.observable()
+      target.validationMessage = ko.observable()
+
+      validate = (newValue) ->
+
+        target.hasError(newValue.toString().search(regex) != 0)
+      validate target()
+      target.subscribe(validate)
+      target
+
     ko.bindingHandlers.datepicker = 
 
       init: (element, valueAccessor, allBindingsAccessor) =>
@@ -446,6 +458,21 @@ class ViewModel
 
     @errorMessage = ko.observable()
 
+class ParentViewModel extends ViewModel
+
+  constructor: (@model) ->
+
+    super @model
+
+    # set global options for jquery ui sortable
+
+    ko.bindingHandlers.sortable.options = 
+
+      tolerance: 'pointer'
+      delay: 150
+      cursor: 'move'
+      containment: 'ul#well'
+      handle: '.header'
 
   # old ractive stuff
 
@@ -459,7 +486,7 @@ class ViewModel
       tapped_selector: @openSelectorPopup
       tapped_selector_item: @selectPopupItem
       tapped_button: @handleButton
-    @view.setRactiveHandlers ractiveHandlers###
+    @view.setRactiveHandlers ractiveHandlers
   setBeforeValue: (ractiveEvent) ->
 
     node = ractiveEvent.node
@@ -729,7 +756,7 @@ class ChildViewModel extends ViewModel
       if !@_isConfirmedValue(node) 
 
         if childIndex? then @model.updateChild childIndex, key, successCb, errorCb
-        else @model.update key, successCb, errorCb
+        else @model.update key, successCb, errorCb###
   ###_debug_printPrio: (objects = @model.children.objects) =>
 
     for task in objects

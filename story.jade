@@ -1,19 +1,64 @@
 html
 	head
-		title Sprint details
-		include shared_ractive
-		script(type='text/javascript', src='/sprint.coffee.js')
-	body
+		title Story details
+		link(rel='stylesheet', href='/shared.css', type='text/css')
+		include shared
+		script(type='text/javascript', src='/knockout-sortable.min.js')
+		script(type='text/javascript', src='/story.coffee.js')
+	body(data-bind="event: {keyup: cancelPopup}")
 		#container
 			#breadcrumb-bar
-				span.breadcrumb.index.selected Index
+				a(href="/").breadcrumb.index Index
+				a(data-bind="attr: {href: sprintUrl}, text: sprint().title").breadcrumb.sprint
+				span(data-bind="text: title").breadcrumb.story.selected
+				img(src="/logo_30.png").logo
 			#content
+				form
+					p
+						input(data-bind="value: title, valueUpdate: ['afterkeydown','propertychange','input']", name="title")#title.identifier
+					p
+						textarea(data-bind="value: description, valueUpdate: ['afterkeydown','propertychange','input']", name="description")#description
+					.attribute
+						span.label
+							=messages.en.COLOR+':'
+						span#color-selector.popup-selector
+							button(data-bind="click: showColorSelector, css: color", name="color")
+								span(data-bind="css: color").selected
+							div(data-bind="foreach: common.COLORS, visible: modal() == 'color-selector'").content
+								div(data-bind="click: $parent.selectColor, css: $data + ' box-' + $index()").color.hoverable
+					.attribute
+						span.label
+							=messages.en.SPRINT+':'
+						span#sprint-selector.popup-selector.line-selector
+							button(data-bind="click: showSprintSelector, text: sprintIdFormatted()", name="sprint_id").selected
+							div(data-bind="foreach: sprints, visible: modal() == 'sprint-selector'").content
+								div(data-bind="click: $parent.selectSprint, text: title").line
+					.attribute
+						span.label
+							=messages.en.ESTIMATION+':'
+						input(data-bind="value: estimation, valueUpdate: ['afterkeydown','propertychange','input']", name="estimation")
+						span(data-bind="visible: estimation.hasError").error-popup
+							.content.error
+								=messages.en.VALID_TIME_MESSAGE
 			#button-bar
 				form.buttons
-					input(type='button', value=messages.en.ADD_STORY).button.add
+					input(data-bind="click: addTask", type='button', value=messages.en.ADD_TASK, name="add-task").button.add
+					input(type='button', value=messages.en.REMOVE, name="remove").button.remove
+		div(data-bind="visible: modal() == 'error-dialog'")#error-dialog
+			div(data-bind="text: errorMessage()").message.error
+			.popup-buttons
+				form.buttons
+					input(data-bind="click: confirmError", type="button", value=messages.en.OK).button.confirm
+		div(data-bind="visible: modal() == 'confirm-dialog'")#confirm-dialog
+			div(data-bind="text: confirmMessage()").message.warning
+			.popup-buttons
+				form.buttons
+					input(data-bind="click: cancel", type="button", value=messages.en.CANCEL).button.cancel
+					input(data-bind="click: confirm", type="button", value=messages.en.CONFIRM).button.confirm
+		div(data-bind="visible: modal() != null")#overlay
 		script(type='text/javascript')
 			
-			/*var model, viewModel;
-			model = new IndexModel(!{JSON.stringify(sprints)});
-			viewModel = new IndexViewModel(model);
-			ko.applyBindings(viewModel);*/
+			var model, viewModel;
+			model = new StoryModel(!{JSON.stringify(tasks)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
+			viewModel = new StoryViewModel(model);	
+			ko.applyBindings(viewModel);

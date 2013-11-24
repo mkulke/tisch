@@ -248,7 +248,86 @@ class StoryModel extends Model
 
     ({date: key, value} for key, value of remainingTimes).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
 
-class StoryViewModel extends ChildViewModel
+class StoryViewModel extends ParentViewModel
+
+  _updateStoryModel: (observable, object, property, value) =>
+
+    @_updateModel observable, object, 'story', property, value
+  _updateTaskModel: (observable, object, property, value) =>
+
+    @_updateModel observable, object, 'task', property, value
+
+  constructor: (@model) ->
+
+    super(@model)
+
+    # breadcrumbs
+
+    @sprint = ko.observable @model.sprint
+    @sprintUrl = ko.computed =>
+
+      '/sprint/' + @sprint()._id
+
+    # title
+
+    @title = @_createThrottledObservable @model.story, 'title', @_updateStoryModel
+
+    # description
+
+    @description = @_createThrottledObservable @model.story, 'description', @_updateStoryModel
+
+    # color
+
+    @color = @_createObservable @model.story, 'color', @_updateStoryModel
+    @showColorSelector = =>
+
+      @modal 'color-selector'
+    @selectColor = (color) =>
+
+      @modal null
+      @color color
+
+    # sprint_id
+
+    @sprints = ko.observable [@model.sprint]
+
+    @sprintId = @_createObservable @model.story, 'sprint_id', @_updateStoryModel
+    @sprintIdFormatted = ko.computed =>
+
+      sprint = _.find @sprints(), (sprint) =>
+
+        sprint._id == @sprintId()
+      sprint?.title
+
+    @showSprintSelector = => 
+
+      @model.getSprints (data) =>
+
+        @sprints data
+        @modal 'sprint-selector'
+    
+    @selectSprint = (sprint) =>
+
+      @modal null
+      @sprintId sprint._id
+
+    # initial_estimation
+
+    @estimation = @_createThrottledObservable(@model.story, 'estimation', @_updateStoryModel, true)
+      .extend({matches: common.TIME_REGEX})
+
+    # confirmation dialog specific
+
+    @confirmMessage = ko.observable()
+    @cancel = =>
+
+      @modal null
+
+    # button handlers
+
+    @addTask = =>
+
+###class StoryViewModel extends ChildViewModel
 
   constructor: (@model, ractiveTemplate) ->
 
@@ -362,4 +441,4 @@ class StoryViewModel extends ChildViewModel
         @showStats()
       when 'stats_close' 
 
-        @hideStats()
+        @hideStats()###

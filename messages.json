@@ -3,6 +3,7 @@
   
     "ADD_SPRINT": "Add Sprint",
     "ADD_STORY": "Add Story",
+    "ADD_TASK": "Add Task",
     "CANCEL": "Cancel",
   	"COLOR": "Color",
     "CONFIRM": "Confirm",
@@ -11,6 +12,7 @@
     "ERROR_UPDATE_INVALID_INPUT": "The item could not be updated. The submitted changes were invalid.",
     "ERROR_REMOVE": "The item could not be removed. It might have been changed meanwhile. A page refresh will fetch the current state.",
     "ERROR_ADD": "Could not add the item. Its parent might have been removed meanwhile.",
+    "ESTIMATION": "Estimation",
     "INITIAL_ESTIMATION": "Initial estimation",
     "OK": "Ok",
     "OPEN": "Open",
@@ -18,6 +20,7 @@
     "REMOVE": "Remove",
     "START_DATE": "Start date",
     "STORY": "Story",
+    "SPRINT": "Sprint",
     "TIME_SPENT": "Spent time",
     "VALID_TIME_MESSAGE": "This attribute has to be specified as a positive number < 100 with two or less precision digits (e.g. '1' or '99.25')."
   }

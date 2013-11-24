@@ -87,18 +87,6 @@ class TaskViewModel extends ViewModel
 
   constructor: (@model) ->
 
-    ko.extenders.matches = (target, regex) ->
-
-      target.hasError = ko.observable()
-      target.validationMessage = ko.observable()
-
-      validate = (newValue) ->
-
-        target.hasError(newValue.toString().search(regex) != 0)
-      validate target()
-      target.subscribe(validate)
-      target
-
     super(@model)   
 
     #summary

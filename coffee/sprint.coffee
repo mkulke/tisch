@@ -40,7 +40,7 @@ class SprintModel extends Model
       nextPrio = objects[index + 1].priority()
       (nextPrio - prevPrio) / 2 + prevPrio
 
-class SprintViewModel extends ViewModel
+class SprintViewModel extends ParentViewModel
 
   _updateSprintModel: (observable, object, property, value) =>
 
@@ -53,15 +53,6 @@ class SprintViewModel extends ViewModel
 
     super(@model)
 
-    # set global options for jquery ui sortable
-
-    ko.bindingHandlers.sortable.options = 
-
-      tolerance: 'pointer'
-      delay: 150
-      cursor: 'move'
-      containment: 'ul#well'
-      handle: '.header'
     ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
 
       priority = @model.calculatePriority @stories(), arg.sourceIndex, arg.targetIndex

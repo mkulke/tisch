@@ -16,7 +16,7 @@ var _ = require('underscore')._;
 var cwd = process.cwd();
 var options = { pretty: false, filename: 'sprint.jade' };
 var sprint_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
-options.filename = 'story_ractive.jade';
+options.filename = 'story.jade';
 var story_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 options.filename = 'task.jade';
 var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
@@ -638,7 +638,7 @@ function processRequest(request, response) {
         
           return Q.fcall(function() {
  
-            var html = story_template({story: result.story, tasks: result.tasks, sprint: result.sprint});
+            var html = story_template({story: result.story, tasks: result.tasks, sprint: result.sprint, messages: messages});
             respondWithHtml(html, response);
           });
         };  

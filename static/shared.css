@@ -147,8 +147,8 @@
 
 .error-popup {
 
-  top: 3px;
-  left: -116px;
+  top: 5px;
+  left: -115px;
   position: relative;
   cursor: pointer;
   text-decoration: none;
@@ -250,7 +250,7 @@ span {
 	-moz-border-radius: 3px;
 	position: absolute;
 	padding: 5px;
-	left: -11px;
+	left: -10px;
 	top: 32px;
 	z-index: 3;
 }
@@ -270,7 +270,7 @@ span {
 	-moz-border-radius: 3px;
 	position: absolute;
 	padding: 5px;
-	left: -11px;
+	left: -12px;
 	top: 32px;
 	/*display: none;*/
 	z-index: 3;
