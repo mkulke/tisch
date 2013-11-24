@@ -42,7 +42,9 @@ casper.then ->
 		@test.assertEquals nLines, 2, '2 lines visible.'
 		@click '#story-selector .content .line:nth-child(2)'
 		@test.assertNotVisible '#story-selector .content', 'Story popup disappeared.'
-		@test.assertEquals @getElementInfo("button[name='story_id']").text, 'Test Story B', 'Story button correct.'
+		@waitForResource taskUrl, ->
+
+			@test.assertEquals @getElementInfo("button[name='story_id']").text, 'Test Story B', 'Story button correct.'
 
 casper.then ->
 
