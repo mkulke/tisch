@@ -1,4 +1,4 @@
-describe 'StoryViewModel.openSelectorPopup', ->
+###describe 'StoryViewModel.openSelectorPopup', ->
 
   before ->
 
@@ -223,4 +223,4 @@ describe 'StoryModel.buildTimeSpentChartData', ->
     ]
     chartData = @model.buildTimeSpentChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
     assert.deepEqual chartData, [{date: '2010-01-01', value: 1}, {date: '2010-01-02', value: 2.5}, {date: '2010-01-07', value: 4.25}]
-
+###

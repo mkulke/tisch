@@ -193,7 +193,7 @@ class StoryView extends View
       latest = dates[dates.length - 1]
       remainingTime[latest]
 
-class StoryModel extends Model
+class StoryModel extends ParentModel
 
   type: 'story'
   constructor: (tasks, @story, @sprint) ->
@@ -316,6 +316,39 @@ class StoryViewModel extends ParentViewModel
     @estimation = @_createThrottledObservable(@model.story, 'estimation', @_updateStoryModel, true)
       .extend({matches: common.TIME_REGEX})
 
+    # tasks
+
+    createObservablesObject = (task) =>
+
+      _id: task._id
+      summary: @_createObservable task, 'summary', @_updateTaskModel
+      description: @_createObservable task, 'description', @_updateTaskModel
+      color: @_createObservable task, 'color', @_updateTaskModel
+      priority: @_createObservable task, 'priority', @_updateTaskModel
+      _url: '/task/' + task._id
+      _js: task
+
+    tasks = _.map @model.children.objects, createObservablesObject
+
+    @tasks = ko.observableArray tasks
+    @tasks.subscribe (changes) =>
+
+      for change in changes
+
+        if change.status == 'added'
+
+          taskObservable = @tasks()[change.index]
+          @model.children.objects.splice change.index, 0, taskObservable._js
+        else if change.status == 'deleted'
+
+          @model.children.objects.splice change.index, 1
+    , null, 'arrayChange'
+
+    ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
+
+      priority = @model.calculatePriority @tasks(), arg.sourceIndex, arg.targetIndex
+      arg.item.priority priority
+
     # confirmation dialog specific
 
     @confirmMessage = ko.observable()
@@ -325,7 +358,39 @@ class StoryViewModel extends ParentViewModel
 
     # button handlers
 
+    showErrorDialog = (message) =>
+
+      @modal 'error-dialog'
+      @errorMessage message
+
     @addTask = =>
+
+      @model.createTask @model.story._id
+
+        , (task) => 
+        
+          observableObject = createObservablesObject task
+          @tasks.push observableObject
+          # TODO: sort after push?
+        , showErrorDialog
+
+    @removeTask = (taskObservable) =>
+
+      @modal 'confirm-dialog'
+      # TODO: i18n
+      @confirmMessage 'Are you sure? The task will be permanently removed.'
+      @confirm = =>
+
+        @modal null
+        task = taskObservable._js
+        @model.removeTask task
+
+          , =>
+
+            @tasks.remove (item) =>
+
+              item._id == task._id
+          , showErrorDialog
 
 ###class StoryViewModel extends ChildViewModel
 

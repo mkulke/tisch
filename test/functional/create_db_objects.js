@@ -1,5 +1,7 @@
+db.sprint.remove({"_meta.test": true});
+db.story.remove({"_meta.test": true});
+db.task.remove({"_meta.test": true});
 
-db.sprint.remove({_id: ObjectId("528c95f4eab8b32b76efac0b")});
 var sprint = {
 
 	_id: ObjectId("528c95f4eab8b32b76efac0b"),
@@ -8,15 +10,15 @@ var sprint = {
 	start: ISODate("2013-01-01"),
 	length: 14,
 	color: "blue",
-	title: "Test Sprint A"
+	title: "Test Sprint A",
+	_meta: {
+
+		test: true
+	}
 };
 db.sprint.insert(sprint);
 
-// There might be leftovers from a failed create & delete test.
-db.story.remove({sprint_id: ObjectId('528c95f4eab8b32b76efac0b')});
-
-db.story.remove({_id: ObjectId("528c961beab8b32b76efac0c")});
-var story = {
+var storyA = {
 
 	_id: ObjectId("528c961beab8b32b76efac0c"),
 	_rev: 0,
@@ -25,12 +27,15 @@ var story = {
 	estimation: 5,
 	priority: 1,
 	sprint_id: ObjectId("528c95f4eab8b32b76efac0b"),
-	title: "Test Story A"
-};
-db.story.insert(story);
+	title: "Test Story A",
+	_meta: {
 
-db.story.remove({_id: ObjectId("528cc5cb42a7877322b90c2c")});
-story = {
+		test: true
+	}
+};
+db.story.insert(storyA);
+
+var storyB = {
 
 	_id: ObjectId("528cc5cb42a7877322b90c2c"),
 	_rev: 0,
@@ -39,12 +44,15 @@ story = {
 	estimation: 5,
 	priority: 2,
 	sprint_id: ObjectId("528c95f4eab8b32b76efac0b"),
-	title: "Test Story B"
-};
-db.story.insert(story);
+	title: "Test Story B",
+	_meta: {
 
-db.task.remove({_id: ObjectId("528c9639eab8b32b76efac0d")});
-var task = {
+		test: true
+	}
+};
+db.story.insert(storyB);
+
+var taskA = {
 
 	_id: ObjectId("528c9639eab8b32b76efac0d"),
 	_rev: 0, 
@@ -63,6 +71,37 @@ var task = {
 
 		initial: 0,
 		"2013-01-01": 2
+	},
+	_meta: {
+
+		test: true
 	}
 };
-db.task.insert(task);
+db.task.insert(taskA);
+
+var taskB = {
+
+	_id: ObjectId("52933ac2c3a4f7e8f954e119"),
+	_rev: 0, 
+	color: "orange",
+	description: "Task B description",
+	initial_estimation: 5,
+	priority: 2,
+	remaining_time: {
+
+		initial: 1, 
+		"2013-01-04": 8.5
+	},
+	story_id: ObjectId("528c961beab8b32b76efac0c"),
+	summary: "Test Task B",
+	time_spent: {
+
+		initial: 0,
+		"2013-01-02": 1
+	},
+	_meta: {
+
+		test: true
+	}
+};
+db.task.insert(taskB);

@@ -40,6 +40,16 @@ html
 						span(data-bind="visible: estimation.hasError").error-popup
 							.content.error
 								=messages.en.VALID_TIME_MESSAGE
+					ul(data-bind="sortable: tasks")#well
+						li.panel
+							div(data-bind="css: $data.color() + ' header hoverable'")
+								input(data-bind="value: $data.summary, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'summary-' + $index()}")
+							textarea(data-bind="value: $data.description, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'description-' + $index()}").body
+							.button-bar
+								.buttons
+									a(data-bind="attr: {href: $data._url}").button.open
+										=messages.en.OPEN
+									input(data-bind="click: $parent.removeTask.bind($data)", type='button', value=messages.en.REMOVE).button.remove
 			#button-bar
 				form.buttons
 					input(data-bind="click: addTask", type='button', value=messages.en.ADD_TASK, name="add-task").button.add

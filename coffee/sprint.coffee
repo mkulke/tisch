@@ -19,26 +19,12 @@ class SprintSocketIO extends SocketIO
       startDate = new Date(start)
       new Date(startDate.getTime() + (length * common.MS_TO_DAYS_FACTOR))###
 
-class SprintModel extends Model
+class SprintModel extends ParentModel
 
   type: 'sprint'
   constructor: (stories, @sprint, @calculations) ->
 
   	@children = {type: 'story', objects: stories}
-
-  calculatePriority: (objects, originalIndex, index) =>
-
-    if index == 0 then prevPrio = 0
-    else prevPrio = objects[index - 1].priority()
-
-    last = objects.length - 1
-    if index == last 
-
-      Math.ceil objects[index - 1].priority() + 1
-    else
-
-      nextPrio = objects[index + 1].priority()
-      (nextPrio - prevPrio) / 2 + prevPrio
 
 class SprintViewModel extends ParentViewModel
 
@@ -52,11 +38,6 @@ class SprintViewModel extends ParentViewModel
   constructor: (@model) ->
 
     super(@model)
-
-    ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
-
-      priority = @model.calculatePriority @stories(), arg.sourceIndex, arg.targetIndex
-      arg.item.priority priority
 
     # confirmation dialog specific
 
@@ -168,6 +149,13 @@ class SprintViewModel extends ParentViewModel
           @model.children.objects.splice change.index, 1
     , null, 'arrayChange'
 
+    ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
+
+      priority = @model.calculatePriority @stories(), arg.sourceIndex, arg.targetIndex
+      arg.item.priority priority
+
+    # button handlers
+
     showErrorDialog = (message) =>
 
       @modal 'error-dialog'
@@ -188,7 +176,7 @@ class SprintViewModel extends ParentViewModel
 
       @modal 'confirm-dialog'
       # TODO: i18n
-      @confirmMessage 'Are you sure? All the stories and tasks assigned to the sprint will be permanently removed.'
+      @confirmMessage 'Are you sure? The story and the tasks assigned to it will be permanently removed.'
       @confirm = =>
 
         @modal null

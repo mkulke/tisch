@@ -333,6 +333,23 @@ class Model
   get: (key) => @[@type]?[key]
   set: (key, value) => @[@type]?[value]
 
+class ParentModel extends Model
+
+  # TODO: unit-test
+  calculatePriority: (objects, originalIndex, index) =>
+
+    if index == 0 then prevPrio = 0
+    else prevPrio = objects[index - 1].priority()
+
+    last = objects.length - 1
+    if index == last 
+
+      Math.ceil objects[index - 1].priority() + 1
+    else
+
+      nextPrio = objects[index + 1].priority()
+      (nextPrio - prevPrio) / 2 + prevPrio
+
 class ViewModel
 
   # knockout specific methods

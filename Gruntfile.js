@@ -5,18 +5,6 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON('package.json'),
 		ghost: {
 
-			test: {
-
-				filesSrc: ['test/functional/test.js']
-			},
-			two_clients: {
-
-				filesSrc: ['test/functional/two_clients.js']
-			},
-			index: {
-
-				filesSrc: ['test/functional/index.js']
-			},
 			task: {
 
 				filesSrc: ['test/functional/task.coffee.js']
@@ -24,7 +12,11 @@ module.exports = function(grunt) {
 			sprint: {
 
 				filesSrc: ['test/functional/sprint.coffee.js']
-			}
+			},
+			story: {
+
+				filesSrc: ['test/functional/story.coffee.js']
+			}			
 		},
 		coffee: {
 
@@ -47,7 +39,8 @@ module.exports = function(grunt) {
 		      'test/unit/story.coffee.js': 'test/unit/story.coffee',
 		      'test/unit/shared.coffee.js': 'test/unit/shared.coffee',
 		      'test/functional/task.coffee.js': 'test/functional/task.coffee',
-		      'test/functional/sprint.coffee.js': 'test/functional/sprint.coffee'
+		      'test/functional/sprint.coffee.js': 'test/functional/sprint.coffee',
+		      'test/functional/story.coffee.js': 'test/functional/story.coffee'
 		    }
   		},
 		},
@@ -96,7 +89,10 @@ module.exports = function(grunt) {
 	});
 
 	grunt.registerTask('unit', ['coffee', 'mocha_phantomjs']);
-	grunt.registerTask('functional', ['shell:create_db_objects', 'server', 'ghost:task', 'ghost:sprint', 'shell:cleanup_db_objects']);
+	grunt.registerTask('functional_task', ['shell:create_db_objects', 'ghost:task', 'shell:cleanup_db_objects']);
+	grunt.registerTask('functional_story', ['shell:create_db_objects', 'ghost:story', 'shell:cleanup_db_objects']);
+	grunt.registerTask('functional_sprint', ['shell:create_db_objects', 'ghost:sprint', 'shell:cleanup_db_objects']);
+	grunt.registerTask('functional', ['server', 'functional_task', 'functional_story', 'functional_sprint']);
 	//grunt.registerTask('test', ['coffee', 'server', 'ghost']);
 	grunt.registerTask('test', ['coffee', 'mocha_phantomjs', 'functional']);
 };
