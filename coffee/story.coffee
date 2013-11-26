@@ -174,7 +174,7 @@ class StoryView extends View
           count += testo task.remaining_time, index
         , 0
       ({date: key, remaining_time: value} for key, value of remainingTime)###
-  buildTimeSpent: (timeSpent, range) ->
+  ###buildTimeSpent: (timeSpent, range) ->
 
     spentTimes = (value for key, value of timeSpent when range.start <= key < range.end)
     spentTimes.reduce (count, spentTime) ->
@@ -191,7 +191,7 @@ class StoryView extends View
     else
 
       latest = dates[dates.length - 1]
-      remainingTime[latest]
+      remainingTime[latest]###
 
 class StoryModel extends ParentModel
 
@@ -200,6 +200,25 @@ class StoryModel extends ParentModel
 
   	@children = {type: 'task', objects: tasks}
 
+  buildTimeSpent: (timeSpent, range) ->
+
+    spentTimes = (value for key, value of timeSpent when range.start <= key < range.end)
+    spentTimes.reduce (count, spentTime) ->
+
+      count + spentTime
+    ,0
+
+  buildRemainingTime: (remainingTime, range) ->
+
+    dates = (key for key of remainingTime when range.start <= key < range.end).sort()
+
+    if dates.length == 0
+
+      remainingTime.initial
+    else
+
+      latest = dates[dates.length - 1]
+      remainingTime[latest]
   buildSprintRange: (sprint) ->
 
     start = moment sprint.start
@@ -325,8 +344,15 @@ class StoryViewModel extends ParentViewModel
       description: @_createObservable task, 'description', @_updateTaskModel
       color: @_createObservable task, 'color', @_updateTaskModel
       priority: @_createObservable task, 'priority', @_updateTaskModel
+      remaining_time: @_createObservable task, 'remaining_time', @_updateTaskModel
+      time_spent: @_createObservable task, 'time_spent', @_updateTaskModel
       _url: '/task/' + task._id
       _js: task
+      _remaining_time: => 
+
+        # TODO: verify the correct remaining_time object is used! (it should, tho)
+        @model.buildRemainingTime task.remaining_time, @model.buildSprintRange(@sprint())
+
 
     tasks = _.map @model.children.objects, createObservablesObject
 
@@ -391,6 +417,31 @@ class StoryViewModel extends ParentViewModel
 
               item._id == task._id
           , showErrorDialog
+
+    # stats
+
+    @calculateRemainingTime = =>
+
+      range = @model.buildSprintRange @sprint()
+      _.reduce @tasks(), (count, task) =>
+
+        count + @model.buildRemainingTime task.remaining_time(), range
+      , 0
+    @calculateTimeSpent = =>
+
+      range = @model.buildSprintRange @sprint()
+      _.reduce @tasks(), (count, task) -> 
+
+        count + @model.buildTimeSpent task.time_spent(), range
+      ,0
+
+    @showStats = =>
+
+      @modal 'stats-dialog'
+
+    @closeStats = =>
+
+      @modal null
 
 ###class StoryViewModel extends ChildViewModel
 

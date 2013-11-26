@@ -70,7 +70,9 @@ var taskA = {
 	time_spent: {
 
 		initial: 0,
-		"2013-01-01": 2
+		"2012-12-31": 1,
+		"2013-01-01": 2,
+		"2013-01-02": 3
 	},
 	_meta: {
 
@@ -89,8 +91,9 @@ var taskB = {
 	priority: 2,
 	remaining_time: {
 
-		initial: 1, 
-		"2013-01-04": 8.5
+		initial: 1,
+		"2013-01-04": 8.5,
+		"2012-01-15": 5
 	},
 	story_id: ObjectId("528c961beab8b32b76efac0c"),
 	summary: "Test Task B",

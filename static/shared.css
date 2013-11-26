@@ -75,7 +75,7 @@
 
 .date-selector.popup-selector .content {
 
-  background-color: #ffffff;
+	background-color: #ffffff;
 	padding: 0px;
 }
 
@@ -588,15 +588,14 @@ form {
 	background-color: #2accac;
 }
 
-.modal {
+/*.modal {
 
 	visibility: hidden;
-	/*display: none;*/
 	position: fixed;
 	z-index: 3;
-}
+}*/
 
-#error-dialog, #confirm-dialog {
+#error-dialog, #confirm-dialog, #stats-dialog {
 
 	position: fixed;
 	z-index: 3;	
@@ -628,6 +627,16 @@ form {
 	display: inline-block;
 	vertical-align: top;
 	/*padding: 15px;*/
+}
+
+#stats-dialog .textbox span.label {
+
+	margin-right: 5px;
+}
+
+#stats-dialog .textbox span.indicator {
+
+	margin-right: 5px;
 }
 
 #stats-dialog .textbox > p {
@@ -848,7 +857,7 @@ ul#sprints li:first-child {
   stroke-width: 1.5px;
 }
 
-#stats-dialog #chart .remainingTime {
+#stats-dialog #chart .remaining-time {
 
 	stroke: #3498DB;
 }
@@ -858,7 +867,7 @@ ul#sprints li:first-child {
 	stroke: #E98813;
 }
 
-#stats-dialog #chart .timeSpent {
+#stats-dialog #chart .time-spent {
 
 	stroke: #D2315D;
 }

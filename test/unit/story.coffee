@@ -68,21 +68,16 @@ describe 'StoryViewModel.selectPopupItem', ->
 
   it 'should set the view rev, value and story after successful requests', ->
 
-    assert @viewModel.view.set.calledThrice, 'view is not called three times'
+    assert @viewModel.view.set.calledThrice, 'view is not called three times'###
 
-describe 'StoryView.buildRemainingTime', ->
+describe 'StoryModel.buildRemainingTime', ->
 
   before ->
 
-    class StubView extends StoryView
-
-      constructor: ->
-
-        @model = {children: {}}
-    @view = new StubView
+    @model = new StoryModel
   it 'should return the initial remaining time when there are no date/number pairs', ->
 
-    ret = @view.buildRemainingTime {initial: 9.5}, {} 
+    ret = @model.buildRemainingTime {initial: 9.5}, {} 
     assert.equal ret, 9.5
   it 'should return the initial remaining time when none of the date/number pairs is within in the sprint', ->
 
@@ -95,7 +90,7 @@ describe 'StoryView.buildRemainingTime', ->
 
     range = start: '2010-01-05', end: '2010-01-10'
 
-    ret = @view.buildRemainingTime remainingTime, range
+    ret = @model.buildRemainingTime remainingTime, range
     assert.equal ret, 10
   it 'should return the number of the last date within in the sprint', ->
 
@@ -109,8 +104,47 @@ describe 'StoryView.buildRemainingTime', ->
 
     range = start: '2010-01-05', end: '2010-01-10'
 
-    ret = @view.buildRemainingTime remainingTime, range
+    ret = @model.buildRemainingTime remainingTime, range
     assert.equal ret, 5
+
+describe 'StoryModel.buildTimeSpent', ->
+
+  before ->
+
+    @model = new StoryModel
+  it 'should return 0 when there are no date/number pairs', ->
+
+    range = start: '2010-01-05', end: '2010-01-10'
+    ret = @model.buildTimeSpent {}, range 
+    assert.equal ret, 0
+  it 'should return 0 when none of the date/number pairs is within in the sprint', ->
+
+    timeSpent =
+
+      initial: 0
+      '2010-01-02': 1 
+      '2010-01-04': 2
+      '2010-01-10': 3
+
+    range = start: '2010-01-05', end: '2010-01-10'
+
+    ret = @model.buildTimeSpent timeSpent, range
+    assert.equal ret, 0
+  it 'should return the cumulative value of all dates within in the sprint', ->
+
+    timeSpent =
+
+      initial: 0
+      '2010-01-02': 1
+      '2010-01-04': 2
+      '2010-01-08': 3
+      '2010-01-09': 4
+
+    range = start: '2010-01-05', end: '2010-01-10'
+
+    ret = @model.buildTimeSpent timeSpent, range
+    assert.equal ret, 7
+
 describe 'StoryModel.buildSprintRange', ->
 
   before ->
@@ -223,4 +257,3 @@ describe 'StoryModel.buildTimeSpentChartData', ->
     ]
     chartData = @model.buildTimeSpentChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
     assert.deepEqual chartData, [{date: '2010-01-01', value: 1}, {date: '2010-01-02', value: 2.5}, {date: '2010-01-07', value: 4.25}]
-###
