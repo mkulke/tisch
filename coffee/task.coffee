@@ -89,6 +89,19 @@ class TaskViewModel extends ViewModel
 
     super(@model)   
 
+    @breadcrumbs =
+
+      story:
+
+        id: @model.story._id
+        label: @model.story.title
+        url: '/story/' + @model.story._id
+      sprint:
+
+        id: @model.sprint._id
+        label: @model.sprint.title
+        url: '/sprint/' + @model.sprint._id
+
     #summary
 
     @summary = @_createThrottledObservable @model.task, 'summary', @_updateTaskModel

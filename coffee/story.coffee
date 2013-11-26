@@ -219,53 +219,53 @@ class StoryModel extends ParentModel
 
       latest = dates[dates.length - 1]
       remainingTime[latest]
-  buildSprintRange: (sprint) ->
+  buildSprintRange: (sprintStart, sprintLength) ->
 
-    start = moment sprint.start
-    end = moment(start).add 'days', sprint.length
+    start = moment sprintStart
+    end = moment(start).add 'days', sprintLength
     start: start.format(common.DATE_DB_FORMAT), end: end.format(common.DATE_DB_FORMAT)
-  buildTimeSpentChartData: (tasks, range) ->
+  buildTimeSpentChartData: (timesSpent, range) ->
 
     initial = {}
-    timeSpent = _.reduce tasks, (object, task) ->
+    filteredTimesSpent = _.reduce timesSpent, (object, timeSpent) ->
 
-      #x = ({date: key, value} for key, value of task.time_spent)
-      #y = _filter x (z) -> range.start <= z.date < range.end
-      for key, value of task.time_spent when range.start <= key < range.end
+      for key, value of timeSpent when range.start <= key < range.end
 
         if object[key]? then object[key] += value
         else if value > 0 then object[key] = value
       object
     , initial
 
-    if !_.isEmpty(timeSpent) && !timeSpent[range.start] then timeSpent[range.start] = 0
+    if !_.isEmpty(filteredTimesSpent) && !filteredTimesSpent[range.start] then filteredTimesSpent[range.start] = 0
 
-    data = ({date: key, value: value} for key, value of timeSpent).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
+    data = ({date: key, value: value} for key, value of filteredTimesSpent).sort (a, b) -> 
+
+      moment(a.date).unix() - moment(b.date).unix()
 
     # make it cumulative
     counter = 0
     _.map data, (object) ->
 
       {date: object.date, value: counter += object.value}
-  buildRemainingTimeChartData: (story, tasks, range) ->
+  buildRemainingTimeChartData: (estimation, remainingTimes, range) ->
 
-    indices = _.map tasks, (task) ->
+    indices = _.map remainingTimes, (remainingTime) ->
 
-      (index for index of task.remaining_time when range.start <= index < range.end)
+      (index for index of remainingTime when range.start <= index < range.end)
     indices = _.flatten indices
     indices = _.uniq indices
 
-    remainingTimes = _.reduce indices, (object, index) =>
+    data = _.reduce indices, (object, index) =>
 
-      object[index] = _.reduce tasks, (count, task) =>
+      object[index] = _.reduce remainingTimes, (count, remainingTime) =>
 
-        count += @_getClosestValueByDateIndex task.remaining_time, index, range.start
+        count += @_getClosestValueByDateIndex remainingTime, index, range.start
       , 0
       object
     , {}        
-    if !remainingTimes[range.start] then remainingTimes[range.start] = story.estimation
+    if !data[range.start] then data[range.start] = estimation
 
-    ({date: key, value} for key, value of remainingTimes).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
+    ({date: key, value} for key, value of data).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
 
 class StoryViewModel extends ParentViewModel
 
@@ -282,10 +282,13 @@ class StoryViewModel extends ParentViewModel
 
     # breadcrumbs
 
-    @sprint = ko.observable @model.sprint
-    @sprintUrl = ko.computed =>
+    @breadcrumbs =
 
-      '/sprint/' + @sprint()._id
+      sprint:
+
+        id: @model.sprint._id
+        label: @model.sprint.title
+        url: '/sprint/' + @model.sprint._id
 
     # title
 
@@ -306,29 +309,40 @@ class StoryViewModel extends ParentViewModel
       @modal null
       @color color
 
+    # sprint specific stuff
+
+    @sprint = ko.observable @model.sprint
+    @sprintTitle = ko.computed =>
+
+      @sprint().title
+    @sprintStart = ko.computed =>
+
+      @sprint().start
+    @sprintLength = ko.computed =>
+
+      @sprint().length
+    @sprintRange = ko.computed =>
+
+      @model.buildSprintRange @sprintStart(), @sprintLength()
+
     # sprint_id
 
-    @sprints = ko.observable [@model.sprint]
+    @sprints = ko.observable()
 
     @sprintId = @_createObservable @model.story, 'sprint_id', @_updateStoryModel
-    @sprintIdFormatted = ko.computed =>
-
-      sprint = _.find @sprints(), (sprint) =>
-
-        sprint._id == @sprintId()
-      sprint?.title
 
     @showSprintSelector = => 
 
-      @model.getSprints (data) =>
+      @model.getSprints (sprints) =>
 
-        @sprints data
+        @sprints sprints
         @modal 'sprint-selector'
     
     @selectSprint = (sprint) =>
 
       @modal null
       @sprintId sprint._id
+      @sprint sprint
 
     # initial_estimation
 
@@ -348,11 +362,10 @@ class StoryViewModel extends ParentViewModel
       time_spent: @_createObservable task, 'time_spent', @_updateTaskModel
       _url: '/task/' + task._id
       _js: task
-      _remaining_time: => 
+      _remaining_time: ko.computed =>
 
         # TODO: verify the correct remaining_time object is used! (it should, tho)
-        @model.buildRemainingTime task.remaining_time, @model.buildSprintRange(@sprint())
-
+        @model.buildRemainingTime task.remaining_time, @sprintRange()
 
     tasks = _.map @model.children.objects, createObservablesObject
 
@@ -420,20 +433,53 @@ class StoryViewModel extends ParentViewModel
 
     # stats
 
-    @calculateRemainingTime = =>
+    @allRemainingTime = ko.computed =>
 
-      range = @model.buildSprintRange @sprint()
       _.reduce @tasks(), (count, task) =>
 
-        count + @model.buildRemainingTime task.remaining_time(), range
-      , 0
-    @calculateTimeSpent = =>
+        count + @model.buildRemainingTime task.remaining_time(), @sprintRange()
+      , 0      
 
-      range = @model.buildSprintRange @sprint()
-      _.reduce @tasks(), (count, task) -> 
+    @allTimeSpent = ko.computed =>
 
-        count + @model.buildTimeSpent task.time_spent(), range
+      _.reduce @tasks(), (count, task) => 
+
+        count + @model.buildTimeSpent task.time_spent(), @sprintRange()
       ,0
+
+    @remainingTimeChartData = ko.computed =>
+
+      remainingTimes = _.map @tasks(), (task) ->
+
+        task.remaining_time()
+      @model.buildRemainingTimeChartData @estimation(), remainingTimes, @sprintRange()
+
+    @timeSpentChartData = ko.computed =>
+
+      timesSpent = _.map @tasks(), (task) ->
+
+        task.time_spent()
+      @model.buildTimeSpentChartData timesSpent, @sprintRange()
+
+    chart = new Chart ['reference', 'remaining-time', 'time-spent']
+    refreshChart = =>
+
+      chart.refresh 
+
+        'remaining-time': @remainingTimeChartData()
+        'time-spent': @timeSpentChartData()
+        reference: [
+
+          {date: @sprintRange().start, value: @estimation()}
+          {date: moment(@sprintRange().end).subtract('days', 1).format(common.DATE_DB_FORMAT), value: 0}
+        ]
+    refreshChart()
+    @remainingTimeChartData.subscribe (value) =>
+
+      refreshChart()
+    @timeSpentChartData.subscribe (value) =>
+
+      refreshChart()      
 
     @showStats = =>
 

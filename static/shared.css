@@ -641,8 +641,9 @@ form {
 
 #stats-dialog .textbox > p {
 
+	width: 160px;
 	font-weight: 300;
-	margin: 0 0 15 0px;
+	margin: 0 5 15 0px;
 }
 
 #stats-dialog .chartbox {

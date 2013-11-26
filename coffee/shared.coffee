@@ -100,10 +100,11 @@ class Chart
     @dateFn = (d) -> format.parse d.date
 
     padding = $('#stats-dialog .content').css('padding')
-    width = $('#stats-dialog .content').width() - $('#stats-dialog .textbox').width()
+    width = 365
+    #width = $('#stats-dialog .content').width() - $('#stats-dialog .textbox').width()
     height = $('#stats-dialog').height() - $('#stats-dialog .popup-buttons').height() - 2 * parseInt(padding)
 
-    @xScale = d3.time.scale().range([30, width - 5])
+    @xScale = d3.time.scale().range([20, width - 10])
     @yScale = d3.scale.linear().range([height - 20, 5])
 
     @yAxis = d3.svg.axis()
@@ -128,7 +129,7 @@ class Chart
 
     @svg.append("g")         
       .attr("class", "y axis")
-      .attr("transform", "translate(30, 0)")
+      .attr("transform", "translate(20, 0)")
     @svg.append("g")         
       .attr("class", "x axis")
       .attr("transform", "translate(0, #{height - 20})")
