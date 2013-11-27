@@ -28,7 +28,7 @@ class IndexViewModel extends ParentViewModel
       moment(sprint.start()).format(common.DATE_DISPLAY_FORMAT)
     @formatEnd = (sprint) ->
 
-      moment(sprint.start()).add('days', sprint.length()).format(common.DATE_DISPLAY_FORMAT)
+      moment(sprint.start()).add('days', sprint.length() - 1).format(common.DATE_DISPLAY_FORMAT)
     @sprintUrl = (sprint) ->
 
       '/sprint/' + sprint._id()
