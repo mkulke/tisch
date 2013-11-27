@@ -39,17 +39,34 @@ class TaskModel extends Model
 
   type: 'task'
   constructor: (@task, @story, @sprint) ->
-  getDateIndex: (sprint) ->
+  getDateIndex: (sprintStart, sprintLength) ->
 
-    currentDate = new moment()
-    sprintStart = new moment sprint.start
-    sprintInclusiveEnd = sprintStart.clone().add('days', sprint.length - 1)
+    current = new moment()
+    start = new moment sprintStart
+    inclusiveEnd = start.clone().add('days', sprintLength - 1)
     dateIndex = 
 
-      if currentDate < sprintStart then sprintStart
-      else if currentDate > sprintInclusiveEnd then sprintInclusiveEnd 
-      else currentDate
+      if current < start then start
+      else if current > inclusiveEnd then inclusiveEnd 
+      else current
     dateIndex.format(common.DATE_DB_FORMAT)
+  getClosestValueByDateIndex: (object, index, startIndex) ->
+
+    if object[index]?
+
+      object[index]
+    else
+
+      sortedKeys = Object.keys(object).sort()
+      filteredKeys = sortedKeys.filter (key) -> 
+
+        index > key >= startIndex
+      if filteredKeys.length > 0 
+
+        object[filteredKeys.pop()]
+      else
+
+        object.initial
   set: (key, value, index) =>
 
     if index? then @[@type][key][index] = value
@@ -153,15 +170,17 @@ class TaskViewModel extends ViewModel
     # sprint specific observables
 
     @sprint = ko.observable @model.sprint
-    @sprintUrl = ko.computed =>
+    @sprintStart = ko.computed =>
 
-      '/sprint/' + @sprint()._id
-    @startIndex = ko.computed =>
+      @sprint().start
+    @sprintLength = ko.computed =>
 
-      moment(@sprint().start).format(common.DATE_DB_FORMAT)
-    @endIndex = ko.computed =>
+      @sprint().length
+    @sprintRange = ko.computed =>
 
-      moment(@sprint().start).add('days', @sprint().length - 1).format(common.DATE_DB_FORMAT)
+      @model.buildSprintRange @sprintStart(), @sprintLength()
+
+    initialDateIndex = @model.getDateIndex @sprintStart(), @sprintLength()
 
     # story specific observables (note: this is for breadcrumbs, so it should not change with story rassignments)
 
@@ -199,7 +218,7 @@ class TaskViewModel extends ViewModel
 
       @modal 'remaining_time-index'
 
-    @remainingTimeIndex = ko.observable @model.getDateIndex(@model.sprint)
+    @remainingTimeIndex = ko.observable initialDateIndex
     @remainingTimeIndexFormatted = ko.computed =>
 
       formatDateIndex @remainingTimeIndex()
@@ -208,12 +227,12 @@ class TaskViewModel extends ViewModel
 
     readRemainingTime = =>
 
-      @model._getClosestValueByDateIndex @remainingTime(), @remainingTimeIndex(), @startIndex()
+      @model.getClosestValueByDateIndex @remainingTime(), @remainingTimeIndex(), @sprintRange().start
     @indexedRemainingTime = @_createIndexedComputed readRemainingTime, writeIndexed('remaining_time', @remainingTime, @remainingTimeIndex), @
 
     # time_spent
 
-    @timeSpentIndex = ko.observable @model.getDateIndex(@model.sprint)
+    @timeSpentIndex = ko.observable initialDateIndex
     @timeSpentIndexFormatted = ko.computed =>    
 
       formatDateIndex @timeSpentIndex()

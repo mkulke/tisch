@@ -314,7 +314,7 @@ class Model
 
         # TODO: i18n
         errorCb? (if errorThrown == "" then 'Error: Unknown communications problem with server.' else errorThrown)
-  _getClosestValueByDateIndex: (object, index, startIndex) ->
+  getClosestValueByDateIndex: (object, index, startIndex) ->
 
     if object[index]?
 
@@ -333,6 +333,11 @@ class Model
         object.initial
   get: (key) => @[@type]?[key]
   set: (key, value) => @[@type]?[value]
+  buildSprintRange: (sprintStart, sprintLength) ->
+
+    start = moment sprintStart
+    end = moment(start).add 'days', sprintLength - 1
+    start: start.format(common.DATE_DB_FORMAT), end: end.format(common.DATE_DB_FORMAT)
 
 class ParentModel extends Model
 

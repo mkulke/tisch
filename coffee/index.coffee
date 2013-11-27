@@ -6,7 +6,7 @@ class IndexModel extends Model
 
   	@children = {type: 'sprint', objects: sprints}
 
-class IndexViewModel extends ChildViewModel
+class IndexViewModel extends ParentViewModel
 
   constructor: (@model) ->
 

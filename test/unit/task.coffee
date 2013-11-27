@@ -10,15 +10,15 @@ describe 'TaskModel.getDateIndex', ->
     @clock.restore()
   it 'should return the last date index of the sprint, if the current date is after the sprint', ->
 
-    indexDate = @taskModel.getDateIndex(@sprint)
+    indexDate = @taskModel.getDateIndex @sprint.start, @sprint.length
     assert.equal indexDate, '2013-01-07'
   it 'should return the first date index of the sprint, if the current date is before the sprint', ->
 
     @clock = sinon.useFakeTimers(new Date('2012-12-31').getTime())
-    indexDate = @taskModel.getDateIndex(@sprint)
+    indexDate = @taskModel.getDateIndex @sprint.start, @sprint.length
     assert.equal indexDate, '2013-01-01'
   it 'should return the current date, if it is within the sprint range', ->
 
     @clock = sinon.useFakeTimers(new Date('2013-01-03').getTime())
-    indexDate = @taskModel.getDateIndex(@sprint)
+    indexDate = @taskModel.getDateIndex @sprint.start, @sprint.length
     assert.equal indexDate, '2013-01-03'

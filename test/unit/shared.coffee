@@ -106,7 +106,7 @@ describe 'Model.getStories', ->
     assert ractive.set.calledWith('stories', [{_id: 'a'}, {_id: 'b'}, {_id: 'c'}]), 'stories not set (correctly)'
   ###
 
-describe 'Model._getClosestValueByDateIndex', ->
+describe 'Model.getClosestValueByDateIndex', ->
 
   before ->
 
@@ -120,25 +120,35 @@ describe 'Model._getClosestValueByDateIndex', ->
       '2013-01-07': 0
   it 'should return the value for an existing date entry', ->
 
-    value = @model._getClosestValueByDateIndex(@remainingTime, '2013-01-03', @startIndex)
+    value = @model.getClosestValueByDateIndex(@remainingTime, '2013-01-03', @startIndex)
     assert.equal value, 7.5
   it 'should return the value of a date entry before it for a non-existing date', ->
 
-    value = @model._getClosestValueByDateIndex(@remainingTime, '2013-01-06', @startIndex)
+    value = @model.getClosestValueByDateIndex(@remainingTime, '2013-01-06', @startIndex)
     assert.equal value, 3
   it 'should return the initial value for a non-existing date with no entry before it', ->
 
-    value = @model._getClosestValueByDateIndex(@remainingTime, '2013-01-02', @startIndex)
+    value = @model.getClosestValueByDateIndex(@remainingTime, '2013-01-02', @startIndex)
     assert.equal value, 10
   it 'should return the last date entry for a date after the sprint', ->
 
-    value = @model._getClosestValueByDateIndex(@remainingTime, '2013-01-08', @startIndex)
+    value = @model.getClosestValueByDateIndex(@remainingTime, '2013-01-08', @startIndex)
     assert.equal value, 0
   it 'should return the initial entry for a date before the sprint', ->
 
-    value = @model._getClosestValueByDateIndex(@remainingTime, '2012-12-01', @startIndex)
+    value = @model.getClosestValueByDateIndex(@remainingTime, '2012-12-01', @startIndex)
     assert.equal value, 10
 
+describe 'Model.buildSprintRange', ->
+
+  before ->
+
+    @model = new Model
+  it 'should return a calculated sprint range object', ->
+
+    range = @model.buildSprintRange '2010-01-01T00:00:00.000Z', 7
+    assert.equal range.start, '2010-01-01'
+    assert.equal range.end, '2010-01-07'
 
 ###describe 'ViewModel.triggerUpdate', ->
 

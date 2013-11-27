@@ -72,7 +72,7 @@ class StoryModel extends ParentModel
 
   buildTimeSpent: (timeSpent, range) ->
 
-    spentTimes = (value for key, value of timeSpent when range.start <= key < range.end)
+    spentTimes = (value for key, value of timeSpent when range.start <= key <= range.end)
     spentTimes.reduce (count, spentTime) ->
 
       count + spentTime
@@ -80,7 +80,7 @@ class StoryModel extends ParentModel
 
   buildRemainingTime: (remainingTime, range) ->
 
-    dates = (key for key of remainingTime when range.start <= key < range.end).sort()
+    dates = (key for key of remainingTime when range.start <= key <= range.end).sort()
 
     if dates.length == 0
 
@@ -89,17 +89,12 @@ class StoryModel extends ParentModel
 
       latest = dates[dates.length - 1]
       remainingTime[latest]
-  buildSprintRange: (sprintStart, sprintLength) ->
-
-    start = moment sprintStart
-    end = moment(start).add 'days', sprintLength
-    start: start.format(common.DATE_DB_FORMAT), end: end.format(common.DATE_DB_FORMAT)
   buildTimeSpentChartData: (timesSpent, range) ->
 
     initial = {}
     filteredTimesSpent = _.reduce timesSpent, (object, timeSpent) ->
 
-      for key, value of timeSpent when range.start <= key < range.end
+      for key, value of timeSpent when range.start <= key <= range.end
 
         if object[key]? then object[key] += value
         else if value > 0 then object[key] = value
@@ -121,7 +116,7 @@ class StoryModel extends ParentModel
 
     indices = _.map remainingTimes, (remainingTime) ->
 
-      (index for index of remainingTime when range.start <= index < range.end)
+      (index for index of remainingTime when range.start <= index <= range.end)
     indices = _.flatten indices
     indices = _.uniq indices
 
@@ -129,7 +124,7 @@ class StoryModel extends ParentModel
 
       object[index] = _.reduce remainingTimes, (count, remainingTime) =>
 
-        count += @_getClosestValueByDateIndex remainingTime, index, range.start
+        count += @getClosestValueByDateIndex remainingTime, index, range.start
       , 0
       object
     , {}        
@@ -342,7 +337,7 @@ class StoryViewModel extends ParentViewModel
         reference: [
 
           {date: @sprintRange().start, value: @estimation()}
-          {date: moment(@sprintRange().end).subtract('days', 1).format(common.DATE_DB_FORMAT), value: 0}
+          {date: moment(@sprintRange().end).format(common.DATE_DB_FORMAT), value: 0}
         ]
     refreshChart()
     @remainingTimeChartData.subscribe (value) =>

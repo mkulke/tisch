@@ -45,7 +45,7 @@ html
 						span#remaining_time-index.popup-selector.date-selector
 							|(
 							button(data-bind="click: showRemainingTimeDatePicker, text: remainingTimeIndexFormatted()", name="remaining_time-index").selected
-							div(data-bind="datepicker: remainingTimeIndex, datepickerMin: startIndex(), datepickerMax: endIndex(), visible: modal() == 'remaining_time-index'").content
+							div(data-bind="datepicker: remainingTimeIndex, datepickerMin: sprintRange().start, datepickerMax: sprintRange().end, visible: modal() == 'remaining_time-index'").content
 							|):&nbsp;
 						input(data-bind="value: indexedRemainingTime, valueUpdate: ['afterkeydown','propertychange','input']", name="remaining_time")
 						span(data-bind="visible: indexedRemainingTime.hasError").error-popup
@@ -57,7 +57,7 @@ html
 						span#time_spent-index.popup-selector.date-selector
 							|(
 							button(data-bind="click: showTimeSpentDatePicker, text: timeSpentIndexFormatted()", name="time_spent-index").selected
-							div(data-bind="datepicker: timeSpentIndex, datepickerMin: startIndex(), datepickerMax: endIndex(), visible: modal() == 'time_spent-index'").content
+							div(data-bind="datepicker: timeSpentIndex, datepickerMin: sprintRange().start, datepickerMax: sprintRange().end, visible: modal() == 'time_spent-index'").content
 							|):&nbsp;
 						input(data-bind="value: indexedTimeSpent, valueUpdate: ['afterkeydown','propertychange','input']", name="time_spent")
 						span(data-bind="visible: indexedTimeSpent.hasError").error-popup
