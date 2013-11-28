@@ -7,8 +7,8 @@ html
 		#container
 			#breadcrumb-bar
 				a(href="/").breadcrumb.index Index
-				a(data-bind="attr: {href: breadcrumbs.sprint.url}, text: breadcrumbs.sprint.label").breadcrumb.sprint
-				a(data-bind="attr: {href: breadcrumbs.story.url}, text: breadcrumbs.story.label").breadcrumb.story
+				a(data-bind="attr: {href: breadcrumbs.sprint().url}, text: breadcrumbs.sprint().label").breadcrumb.sprint
+				a(data-bind="attr: {href: breadcrumbs.story().url}, text: breadcrumbs.story().label").breadcrumb.story
 				span(data-bind="text: summary").breadcrumb.task.selected
 				img(src="/logo_30.png").logo
 			#content
@@ -29,14 +29,14 @@ html
 						span.label
 							=messages.en.STORY+':'
 						span#story-selector.popup-selector.line-selector
-							button(data-bind="click: showStorySelector, text: storyIdFormatted()", name="story_id").selected
+							button(data-bind="click: showStorySelector, text: storyTitle", name="story_id").selected
 							div(data-bind="foreach: stories, visible: modal() == 'story-selector'").content
 								div(data-bind="click: $parent.selectStory, text: title").line
 					.attribute
 						span.label
 							=messages.en.INITIAL_ESTIMATION+':'
-						input(data-bind="value: initialEstimation, valueUpdate: ['afterkeydown','propertychange','input']", name="initial_estimation")
-						span(data-bind="visible: initialEstimation.hasError").error-popup
+						input(data-bind="value: initial_estimation, valueUpdate: ['afterkeydown','propertychange','input']", name="initial_estimation")
+						span(data-bind="visible: initial_estimation.hasError").error-popup
 							.content.error
 								=messages.en.VALID_TIME_MESSAGE
 					.attribute

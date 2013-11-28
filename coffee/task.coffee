@@ -1,40 +1,42 @@
 class TaskSocketIO extends SocketIO
   
-  _onupdate: (data) =>
+  _onUpdate: (data) =>
 
     if data.id == @model.task._id
 
       @model.task._rev = data.rev
       @model.task[data.key] = data.value
-      switch data.key
+      @viewModel[data.key]?(data.value)
+      if data.key == 'story_id'
 
-        when 'story_id'
+        @model.getStory data.value, (story) =>
 
-          # if story is not there fetch new story
-          story = _.find @viewModel.stories(), (story) ->
+          @viewModel.story story
+    else if data.id == @model.story._id
 
-            story._id == data.value
-          if !story?
+      if data.key == 'title'
 
-            @model.getStory data.value, (data) =>
+        @_updateObservableProperty @viewModel.story, 'title', data.value
+      else if data.key == 'sprint_id'
 
-              @viewModel.stories([data])
-              @viewModel.storyId(data.value)
-          else 
+        @model.getSprint data.value, (sprint) =>
 
-            @viewModel.storyId(data.value)
+          @viewModel.sprint sprint
+    else if data.id == @model.sprint._id
 
-        when 'remaining_time'
+      if data.key.match /^length|start$/
 
-          @viewModel.remainingTime(data.value)
-        when 'time_spent'
+        @_updateObservableProperty @viewModel.sprint, data.key, data.value
 
-          @viewModel.timeSpent(data.value)
-        else
+    # seperate if clause b/c it could be both story and breadcrumb
+    if data.id == @viewModel.breadcrumbs.story().id && data.key == 'title'
 
-          @viewModel[data.key]?(data.value)
-  # TODO: when sprint_id changes for story_id get new sprint!
-  # TODO: when title changes for story_id 
+      @_updateObservableProperty @viewModel.breadcrumbs.story, 'label', data.value
+    else if data.id == @viewModel.breadcrumbs.sprint().id && data.key == 'title'
+
+      @_updateObservableProperty @viewModel.breadcrumbs.sprint, 'label', data.value
+    # TODO: test all that w/ functional tests
+
 class TaskModel extends Model
 
   type: 'task'
@@ -108,12 +110,12 @@ class TaskViewModel extends ViewModel
 
     @breadcrumbs =
 
-      story:
+      story: ko.observable
 
         id: @model.story._id
         label: @model.story.title
         url: '/story/' + @model.story._id
-      sprint:
+      sprint: ko.observable
 
         id: @model.sprint._id
         label: @model.sprint.title
@@ -138,33 +140,36 @@ class TaskViewModel extends ViewModel
       @modal null
       @color color
 
+    # story specific stuff
+
+    @story = ko.observable @model.story
+
+    @storyTitle = ko.computed =>
+
+      @story().title
+
     # story_id
 
-    @stories = ko.observable [@model.story]
+    @stories = ko.observable()
 
-    @storyId = @_createObservable @model.task, 'story_id', @_updateTaskModel
-    @storyIdFormatted = ko.computed =>
-
-      story = _.find @stories(), (story) =>
-
-        story._id == @storyId()
-      story?.title
+    @story_id = @_createObservable @model.task, 'story_id', @_updateTaskModel
 
     @showStorySelector = => 
 
-      @model.getStories @model.story.sprint_id, (data) =>
+      @model.getStories @model.story.sprint_id, (stories) =>
 
-        @stories data
+        @stories stories
         @modal 'story-selector'
     
     @selectStory = (story) =>
 
       @modal null
-      @storyId story._id
+      @story_id story._id
+      @story story
 
     # initial_estimation
 
-    @initialEstimation = @_createThrottledObservable(@model.task, 'initial_estimation', @_updateTaskModel, true)
+    @initial_estimation = @_createThrottledObservable(@model.task, 'initial_estimation', @_updateTaskModel, true)
       .extend({matches: common.TIME_REGEX})
 
     # sprint specific observables
@@ -182,12 +187,16 @@ class TaskViewModel extends ViewModel
 
     initialDateIndex = @model.getDateIndex @sprintStart(), @sprintLength()
 
-    # story specific observables (note: this is for breadcrumbs, so it should not change with story rassignments)
+    # In case the sprint changes we might have to reset indexes, so they do not point at out-of-sprint dates.
+    @sprintRange.subscribe (range) =>
 
-    @story = ko.observable @model.story
-    @storyUrl = ko.computed =>
+      _.each [@timeSpentIndex, @remainingTimeIndex], (indexObservable) =>
 
-      '/story/' + @story()._id
+        index = indexObservable()
+        if index < range.start || index > range.end
+
+          newIndex = @model.getDateIndex @sprintStart(), @sprintLength()
+          indexObservable newIndex
 
     # shared write curry for indexed properties (remaining_time & time_spent)
 
@@ -223,12 +232,12 @@ class TaskViewModel extends ViewModel
 
       formatDateIndex @remainingTimeIndex()
 
-    @remainingTime = ko.observable @model.task.remaining_time
+    @remaining_time = ko.observable @model.task.remaining_time
 
     readRemainingTime = =>
 
-      @model.getClosestValueByDateIndex @remainingTime(), @remainingTimeIndex(), @sprintRange().start
-    @indexedRemainingTime = @_createIndexedComputed readRemainingTime, writeIndexed('remaining_time', @remainingTime, @remainingTimeIndex), @
+      @model.getClosestValueByDateIndex @remaining_time(), @remainingTimeIndex(), @sprintRange().start
+    @indexedRemainingTime = @_createIndexedComputed readRemainingTime, writeIndexed('remaining_time', @remaining_time, @remainingTimeIndex), @
 
     # time_spent
 
@@ -239,13 +248,10 @@ class TaskViewModel extends ViewModel
 
     @showTimeSpentDatePicker = => @modal 'time_spent-index'
 
-    @timeSpent = ko.observable @model.task.time_spent
-    @timeSpent.subscribe (value) ->
-
-      console.log "time_spent: #{JSON.stringify(value)}"
+    @time_spent = ko.observable @model.task.time_spent
 
     readTimeSpent = =>
 
-      value = @timeSpent()[@timeSpentIndex()]
+      value = @time_spent()[@timeSpentIndex()]
       if value? then value else 0
-    @indexedTimeSpent = @_createIndexedComputed readTimeSpent, writeIndexed('time_spent', @timeSpent, @timeSpentIndex), @
+    @indexedTimeSpent = @_createIndexedComputed readTimeSpent, writeIndexed('time_spent', @time_spent, @timeSpentIndex), @

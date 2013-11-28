@@ -56,6 +56,18 @@ common = (->
 
 class SocketIO
 
+  _sortByPriority: (a, b) =>
+
+    a.priority() - b.priority()
+
+  # TODO: unit test
+  # this is done to ensure that observable subscribers are notified
+  _updateObservableProperty: (observable, property, value) =>
+
+    clone = observable()
+    clone[property] = value
+    observable(clone)
+
   constructor: (@model, @viewModel) ->
 
     @server = io.connect "http://#{window.location.hostname}"   

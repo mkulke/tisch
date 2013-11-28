@@ -74,4 +74,5 @@ html
 			var model, viewModel;
 			model = new SprintModel(!{JSON.stringify(stories)}, !{JSON.stringify(sprint)}, !{JSON.stringify(calculations)});
 			viewModel = new SprintViewModel(model);
+			socketIO = new SprintSocketIO(model, viewModel);
 			ko.applyBindings(viewModel);

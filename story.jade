@@ -10,7 +10,7 @@ html
 		#container
 			#breadcrumb-bar
 				a(href="/").breadcrumb.index Index
-				a(data-bind="attr: {href: breadcrumbs.sprint.url}, text: breadcrumbs.sprint.label").breadcrumb.sprint
+				a(data-bind="attr: {href: breadcrumbs.sprint().url}, text: breadcrumbs.sprint().label").breadcrumb.sprint
 				span(data-bind="text: title").breadcrumb.story.selected
 				img(src="/logo_30.png").logo
 			#content
@@ -100,5 +100,6 @@ html
 			
 			var model, viewModel;
 			model = new StoryModel(!{JSON.stringify(tasks)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
-			viewModel = new StoryViewModel(model);	
+			viewModel = new StoryViewModel(model);
+			socketIO = new StorySocketIO(model, viewModel);
 			ko.applyBindings(viewModel);

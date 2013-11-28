@@ -1,67 +1,38 @@
 class StorySocketIO extends SocketIO
 
-  ###_sort: (a, b) -> 
-
-    a.priority > b.priority ? -1 : 1
-  _onAdd: (data) =>
-
-    if data.story_id == @view.get 'story._id'
-
-      @model.children.objects.push(data)
-  _onRemove: (data) =>
-
-    if data.story_id == @view.get 'story._id'
-
-      children = @model.children.objects
-      child = _.findWhere children, {_id: data.id}
-      if child? 
-
-        index = _.indexOf children, child
-        children.splice index, 1
-      @view.set 'children', children
   _onUpdate: (data) =>
 
-    update = (path) =>
+    if data.id == @model.story._id
 
-      @view.set "#{path}._rev", data.rev
-      @view.set "#{path}.#{data.key}", data.value
+      @model.story._rev = data.rev
+      @model.story[data.key] = data.value
+      @viewModel[data.key]?(data.value)
+      if data.key == 'sprint_id'
 
-    if data.id == @view.get 'story._id' 
+        @model.getSprint data.value, (sprint) =>
 
-      update 'story'
-      if data.key == 'sprint_id' 
+          @viewModel.sprint sprint
+    else if data.id == @model.sprint._id
 
-        @model.getSprint data.value, (data) => 
+      if data.key.match /^title|length|start$/
 
-          @view.set 'sprint', data
-    else if data.id == @view.get 'sprint._id' then update 'sprint'
-    
-    # sprints from the selector
-    sprintIndex = index for sprint, index in @view.get 'sprints' when sprint._id == data.id
-    if sprintIndex? then update "sprints[#{sprintIndex}]"
+        @_updateObservableProperty @viewModel.sprint, data.key, data.value
 
-    # tasks
-    taskIndex = index for task, index in @view.get 'children' when task._id == data.id
-    if taskIndex? 
+    # seperate if clause b/c it could be both sprint and breadcrumb
+    if data.id == @viewModel.breadcrumbs.sprint().id && data.key == 'title'
 
-      before = (child.priority for child in @view.get('children'))
-      console.log "before: #{before}"
+      @_updateObservableProperty @viewModel.breadcrumbs.sprint, 'label', data.value
 
-      update "children[#{taskIndex}]"
-      if data.key == 'priority'
+    # object of task observables
+    object = _.find @viewModel.tasks(), (task) => 
 
-        children = @model.children.objects.slice()
-        children.sort(@_sort)
-        @model.children.objects = children
-        @view.set 'children', children
-
-      after = (child.priority for child in @view.get('children'))
-      console.log "after: #{after}"
-
-    # breadcrumbs
-    if (@view.get 'breadcrumbs.sprint.id') == data.id && data.key == 'title' 
-
-      @view.set 'breadcrumbs.sprint.title', data.value###
+      task._id == data.id
+    if object?
+  
+      task = object._js 
+      task._rev = data.rev
+      task[data.key] = data.value
+      object[data.key]?(data.value)
 
 class StoryModel extends ParentModel
 
@@ -149,7 +120,7 @@ class StoryViewModel extends ParentViewModel
 
     @breadcrumbs =
 
-      sprint:
+      sprint: ko.observable
 
         id: @model.sprint._id
         label: @model.sprint.title
@@ -194,7 +165,7 @@ class StoryViewModel extends ParentViewModel
 
     @sprints = ko.observable()
 
-    @sprintId = @_createObservable @model.story, 'sprint_id', @_updateStoryModel
+    @sprint_id = @_createObservable @model.story, 'sprint_id', @_updateStoryModel
 
     @showSprintSelector = => 
 
@@ -206,7 +177,7 @@ class StoryViewModel extends ParentViewModel
     @selectSprint = (sprint) =>
 
       @modal null
-      @sprintId sprint._id
+      @sprint_id sprint._id
       @sprint sprint
 
     # initial_estimation
@@ -219,8 +190,8 @@ class StoryViewModel extends ParentViewModel
     createObservablesObject = (task) =>
 
       _id: task._id
-      summary: @_createObservable task, 'summary', @_updateTaskModel
-      description: @_createObservable task, 'description', @_updateTaskModel
+      summary: @_createThrottledObservable task, 'summary', @_updateTaskModel
+      description: @_createThrottledObservable task, 'description', @_updateTaskModel
       color: @_createObservable task, 'color', @_updateTaskModel
       priority: @_createObservable task, 'priority', @_updateTaskModel
       remaining_time: @_createObservable task, 'remaining_time', @_updateTaskModel
@@ -233,6 +204,13 @@ class StoryViewModel extends ParentViewModel
         @model.buildRemainingTime task.remaining_time, @sprintRange()
 
     tasks = _.map @model.children.objects, createObservablesObject
+    _.each tasks, (task) =>
+
+      task.priority.subscribe =>
+
+        @tasks.sort (a, b) =>
+
+          a.priority() - b.priority()
 
     @tasks = ko.observableArray tasks
     @tasks.subscribe (changes) =>

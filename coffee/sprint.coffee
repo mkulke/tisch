@@ -1,23 +1,23 @@
 class SprintSocketIO extends SocketIO
 
-###class SprintView extends View
+  _onUpdate: (data) =>
 
-  _buildRactiveData: =>
+    if data.id == @model.sprint._id
 
-    children: @model.children.objects
-    sprint: @model.sprint
-    COLORS: common.COLORS
-    constants: common.constants
-    error_message: "Dummy message"
-    confirm_message: "Dummy message"
-    remaining_time: @model.calculations.remaining_time
-    format_date: (displayDate) -> 
+      @model.sprint._rev = data.rev
+      @model.sprint[data.key] = data.value
+      @viewModel[data.key]?(data.value)
 
-      moment(displayDate).format(common.DATE_DISPLAY_FORMAT)
-    calculate_end_date: (start, length) ->
+    # object of task observables
+    object = _.find @viewModel.stories(), (story) => 
 
-      startDate = new Date(start)
-      new Date(startDate.getTime() + (length * common.MS_TO_DAYS_FACTOR))###
+      story._id == data.id
+    if object?
+  
+      story = object._js 
+      story._rev = data.rev
+      story[data.key] = data.value
+      object[data.key]?(data.value)
 
 class SprintModel extends ParentModel
 
@@ -111,6 +111,7 @@ class SprintViewModel extends ParentViewModel
 
     # calculations
 
+    # TODO: the calculations seem to be incorrect, verify!
     remainingTimeCalculations = ko.observable @model.calculations.remaining_time
 
     # stories
@@ -118,8 +119,8 @@ class SprintViewModel extends ParentViewModel
     createObservablesObject = (story) =>
 
       _id: story._id
-      title: @_createObservable story, 'title', @_updateStoryModel
-      description: @_createObservable story, 'description', @_updateStoryModel
+      title: @_createThrottledObservable story, 'title', @_updateStoryModel
+      description: @_createThrottledObservable story, 'description', @_updateStoryModel
       color: @_createObservable story, 'color', @_updateStoryModel
       priority: @_createObservable story, 'priority', @_updateStoryModel
       _remaining_time: ko.computed =>
@@ -134,6 +135,13 @@ class SprintViewModel extends ParentViewModel
       _js: story
 
     stories = _.map @model.children.objects, createObservablesObject
+    _.each stories, (story) =>
+
+      story.priority.subscribe =>
+
+        @stories.sort (a, b) =>
+
+          a.priority() - b.priority()
 
     @stories = ko.observableArray stories
     @stories.subscribe (changes) =>
@@ -189,104 +197,3 @@ class SprintViewModel extends ParentViewModel
 
               item._id == story._id
           , showErrorDialog
-
-  ###constructor: (@model, ractiveTemplate) ->
-
-    @view = new SprintView ractiveTemplate, @model
-    super(@view, @model)
-    @socketio = new SprintSocketIO @view, @model
-
-    $('#title, #description, [id^="title-"], [id^="description-"]').each (index, element) => @_setConfirmedValue element
-
-    @_initPopupSelectors()
-    @_initDatePickers()
-    $('#length .content').datepicker 'option', 'minDate', new Date(@model.sprint.start)
-  _selectDate: (dateText, inst) =>
-
-    # TODO: unit test
-
-    super(dateText, inst)
-
-    dateSelector = $(inst.input).parents('.date-selector')
-    newDate = new Date(dateText)
-    id = dateSelector.attr('id')
-
-    switch id
-
-      when 'start_date'
-
-        undoValue = @view.get 'sprint.start'
-        @view.set 'sprint.start', newDate.toString()
-        @model.update 'start'
-
-          ,(data) => 
-
-            @view.set 'sprint._rev', data.rev
-            $('#length .content').datepicker 'option', 'minDate', new Date(data.value)
-          ,(message) =>
-
-            @view.set 'sprint.start', undoValue
-            #TODO show error
-      when 'length'
-        undoValue = @view.get 'sprint.length'
-        newLength = (newDate - new Date(@view.get 'sprint.start')) / common.MS_TO_DAYS_FACTOR
-        @view.set 'sprint.length', newLength
-        @model.update 'length'
-
-          ,(data) =>
-
-            @view.set 'sprint._rev', data.rev
-          ,(message) =>
-
-            @view.set 'sprint.length', undoValue
-            #TODO: show error
-  selectPopupItem: (ractiveEvent, args) =>
-
-    super ractiveEvent, args
-
-    switch args.selector_id
-
-      when 'color-selector' 
-
-        undoValue = @view.get 'sprint.color'
-        @view.set 'sprint.color', args.value
-        @model.update 'color'
-
-          ,(data) => @view.set 'sprint._rev', data.rev
-          ,(message) => 
-          
-            @view.set 'sprint.color', undoValue
-            #TODO: error output
-  handleButton: (ractiveEvent, action) => 
-
-    super ractiveEvent, action
-
-    switch action
-
-      when 'sprint_remove'
-
-        @model.removeSprint @model._id, (=>), (message) => @showError message
-      when 'story_add' 
-
-        @model.createStory @model.get('_id')
-          ,(data) => 
-
-            @model.children.objects.push data
-            $("#title-#{data._id}, #description-#{data._id}").each (index, element) => @_setConfirmedValue element
-          ,(message) => 
-
-            @showError message
-      when 'story_open' then window.location.href = "/story/#{ractiveEvent.context._id}"
-      when 'story_remove' 
-
-        @onConfirm = => 
-
-          @model.removeStory ractiveEvent.context
-            , (id) => 
-
-              @model.children.objects.splice ractiveEvent.index.i, 1
-            ,(message) => 
-
-              @showError message
-        @showConfirm common.constants.en_US.CONFIRM_STORY_REMOVAL ractiveEvent.context.title
-      when 'confirm_confirm' then @onConfirm()###
