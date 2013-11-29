@@ -111,7 +111,6 @@ class SprintViewModel extends ParentViewModel
 
     # calculations
 
-    # TODO: the calculations seem to be incorrect, verify!
     remainingTimeCalculations = ko.observable @model.calculations.remaining_time
 
     # stories

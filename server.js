@@ -83,31 +83,31 @@ function respondOk(response) {
   response.end();
 }
 
-function getRemainingTime(db, type, parentType, parentIds, dateRange) {
+function getRemainingTime(db, type, parentType, parentIds, range) {
 
   var deferred = Q.defer();
-
-  start = moment(dateRange.start).format('YYYY-MM-DD');
-  end = moment(dateRange.start).add('days', dateRange.length).format('YYYY-MM-DD');
 
   objectIds = parentIds.map(ObjectID);
 
   var map = function() {  
 
-    var date;
-    keys = Object.keys(this.remaining_time).filter(function(key) {
+    var remaining_time;
+    var keys = Object.keys(this.remaining_time).filter(function(key) {
 
-      return ((key >= start) && (key < end)); // filters out 'initial' as well
+      return ((key >= start) && (key <= end)); // filters out 'initial' as well
     }).sort();
+
     if (keys.length > 0) {
 
-      date = keys[keys.length - 1];
+      var key = keys[keys.length - 1];
+      remaining_time = this.remaining_time[key];
     }
     else {
 
-      date = 'initial';
+      remaining_time = this.remaining_time.initial;
     }
-    emit(this.story_id, this.remaining_time[date]);
+
+    emit(this.story_id, remaining_time);
   };
 
   var reduce = function(key, values) {
@@ -117,7 +117,7 @@ function getRemainingTime(db, type, parentType, parentIds, dateRange) {
 
   query = {};
   query[parentType + '_id'] = {$in: objectIds};
-  db.collection(type).mapReduce(map, reduce, {query: query, out: {inline: 1}, scope: {start: start, end: end}}, function (err, result) {
+  db.collection(type).mapReduce(map, reduce, {query: query, out: {inline: 1}, scope: {start: range.start, end: range.end}}, function (err, result) {
 
     if (err) {
 
@@ -790,7 +790,11 @@ function processRequest(request, response) {
 
               return story._id.toString();
             });
-            return getRemainingTime(db, 'task', 'story', storyIds, {start: result.start, length: result.length});
+
+            // TODO: remove literals
+            startIndex = moment(sprint.start).format('YYYY-MM-DD');
+            endIndex = moment(sprint.start).add('days', sprint.length - 1).format('YYYY-MM-DD')
+            return getRemainingTime(db, 'task', 'story', storyIds, {start: startIndex, end: endIndex});
           })
           .then(function (result) {
 
@@ -973,7 +977,9 @@ function processRequest(request, response) {
       })
       .then(function (result) {
 
-        return getRemainingTime(db, 'task', 'story', [id], {start: result.start, length: result.length});
+        startIndex = moment(result.start).format('YYYY-MM-DD');
+        endIndex = moment(result.start).add('days', result.length - 1).format('YYYY-MM-DD')
+        return getRemainingTime(db, 'task', 'story', [id], {start: startIndex, end: endIndex});
       });
     }
     answer = function(result) {
