@@ -966,6 +966,7 @@ function processRequest(request, response) {
   }
   else if ((type == 'remaining_time_calculation') && (request.method == 'GET')) {
 
+    // TODO: implement a per-sprint method (otherwise we have have to use 1 ajax call & db per story).
     query = function() {
 
       assert.ok(id, 'Story id is missing in the request\'s url');

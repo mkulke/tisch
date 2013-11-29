@@ -1,5 +1,16 @@
 class SprintSocketIO extends SocketIO
 
+  _verifyCalculations: (storyId) =>
+
+    object = _.find @viewModel.stories(), (story) =>
+
+      story._id == storyId
+    if object?
+
+      @model.getRemainingTime object._id, (data) =>
+
+        @_updateObservableProperty @viewModel.remainingTimeCalculations, object._id, data
+
   _onUpdate: (data) =>
 
     if data.id == @model.sprint._id
@@ -8,7 +19,7 @@ class SprintSocketIO extends SocketIO
       @model.sprint[data.key] = data.value
       @viewModel[data.key]?(data.value)
 
-    # object of task observables
+    # object of story observables
     object = _.find @viewModel.stories(), (story) => 
 
       story._id == data.id
@@ -19,8 +30,32 @@ class SprintSocketIO extends SocketIO
       story[data.key] = data.value
       object[data.key]?(data.value)
 
+    # object of task observables
+    object = _.find @viewModel.stories(), (story) => 
+
+      story._id == data.parent_id
+    if object?
+
+      @_verifyCalculations object._id
+
+  _onAdd: (data) =>
+
+    data.story_id && @_verifyCalculations data.story_id
+  _onRemove: (data) =>
+
+    data.story_id && @_verifyCalculations data.story_id
 class SprintModel extends ParentModel
 
+  getRemainingTime: (storyId, successCb) =>
+
+    $.ajaxq 'client',
+
+      url: "/remaining_time_calculation/#{storyId}"
+      type: 'GET'
+      dataType: 'json'
+      success: (data, textStatus, jqXHR) ->
+
+        successCb? data
   getRemainingTimes: (successCb) =>
 
     storyIds = _.pluck @children.objects, '_id'
@@ -39,7 +74,7 @@ class SprintModel extends ParentModel
           remainingTimes[storyId] = data
     $.when.apply($, gets).then ->
 
-      successCb remainingTimes
+      successCb? remainingTimes
 
   type: 'sprint'
   constructor: (stories, @sprint, @calculations) ->
@@ -131,16 +166,16 @@ class SprintViewModel extends ParentViewModel
 
     # calculations
 
-    remainingTimeCalculations = ko.observable @model.calculations.remaining_time
-        
-    updateRemainingTime = =>
+    @remainingTimeCalculations = ko.observable @model.calculations.remaining_time
+
+    updateStats = =>
 
       @model.getRemainingTimes (calculations) =>
 
-        remainingTimeCalculations calculations
+        @remainingTimeCalculations calculations
 
-    @start.subscribe updateRemainingTime
-    @length.subscribe updateRemainingTime
+    @start.subscribe updateStats
+    @length.subscribe updateStats
 
     # TODO: if sprint range changes, update calculations
 
@@ -155,9 +190,9 @@ class SprintViewModel extends ParentViewModel
       priority: @_createObservable story, 'priority', @_updateStoryModel
       _remaining_time: ko.computed =>
 
-        if remainingTimeCalculations()[story._id]? 
+        if @remainingTimeCalculations()[story._id]? 
 
-          remainingTimeCalculations()[story._id]
+          @remainingTimeCalculations()[story._id]
         else
 
           null
