@@ -21,6 +21,26 @@ class SprintSocketIO extends SocketIO
 
 class SprintModel extends ParentModel
 
+  getRemainingTimes: (successCb) =>
+
+    storyIds = _.pluck @children.objects, '_id'
+
+    gets = []
+    remainingTimes = {}
+    _.each storyIds, (storyId) =>
+
+      gets.push $.ajaxq 'client',
+
+        url: "/remaining_time_calculation/#{storyId}"
+        type: 'GET'
+        dataType: 'json'
+        success: (data, textStatus, jqXHR) ->
+
+          remainingTimes[storyId] = data
+    $.when.apply($, gets).then ->
+
+      successCb remainingTimes
+
   type: 'sprint'
   constructor: (stories, @sprint, @calculations) ->
 
@@ -112,6 +132,17 @@ class SprintViewModel extends ParentViewModel
     # calculations
 
     remainingTimeCalculations = ko.observable @model.calculations.remaining_time
+        
+    updateRemainingTime = =>
+
+      @model.getRemainingTimes (calculations) =>
+
+        remainingTimeCalculations calculations
+
+    @start.subscribe updateRemainingTime
+    @length.subscribe updateRemainingTime
+
+    # TODO: if sprint range changes, update calculations
 
     # stories
 

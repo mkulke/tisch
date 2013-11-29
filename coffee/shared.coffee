@@ -81,7 +81,7 @@ class SocketIO
   _onAdd: (data) ->
   _onRemove: (data) ->
 
-class View
+###class View
 
   constructor: (ractiveTemplate, @model) ->
 
@@ -101,6 +101,7 @@ class View
   get: (keypath) => 
 
     @ractive.get keypath
+###
 
 class Chart 
 
@@ -257,10 +258,10 @@ class Model
       success: (data, textStatus, jqXHR) -> 
 
         successCb? data
-      error: (data, textStatus, jqXHR) -> 
+      error: (jqXHR, textStatus, errorThrown) -> 
 
         #TODO: proper errmsg
-        console.log 'error: #{data}'
+        console.log 'error: #{errorThrown}'
   getMultiple = curry (type, parentId, successCb) ->
 
     if parentId?

@@ -980,6 +980,18 @@ function processRequest(request, response) {
         startIndex = moment(result.start).format('YYYY-MM-DD');
         endIndex = moment(result.start).add('days', result.length - 1).format('YYYY-MM-DD')
         return getRemainingTime(db, 'task', 'story', [id], {start: startIndex, end: endIndex});
+      })
+      .then(function (result) {
+
+        if (result.length == 1) {
+
+          return result[0].value;    
+        }
+        else {
+
+          // TODO: i18n
+          throw "Error calculating remaining time for the resource.";
+        }
       });
     }
     answer = function(result) {
