@@ -2,8 +2,8 @@ casper = require('casper').create()
 
 sprintId = '528c95f4eab8b32b76efac0b'
 sprintUrl = "http://localhost:8000/sprint/#{sprintId}"
-throttle = 500
-dragDelay = 150
+throttle = 500 + 10
+dragDelay = 150 + 10
 
 casper.start sprintUrl 
 
