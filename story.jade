@@ -16,7 +16,7 @@ html
 			#content
 				form
 					p
-						input(data-bind="value: title, valueUpdate: ['afterkeydown','propertychange','input']", name="title")#title.identifier
+						input(data-bind="value: title, valueUpdate: ['afterkeydown','propertychange','input']", name="title", autocomplete="off")#title.identifier
 					p
 						textarea(data-bind="value: description, valueUpdate: ['afterkeydown','propertychange','input']", name="description")#description
 					.attribute
@@ -37,14 +37,14 @@ html
 					.attribute
 						span.label
 							=messages.en.ESTIMATION+':'
-						input(data-bind="value: estimation, valueUpdate: ['afterkeydown','propertychange','input']", name="estimation")
+						input(data-bind="value: estimation, valueUpdate: ['afterkeydown','propertychange','input']", name="estimation", autocomplete="off")
 						span(data-bind="visible: estimation.hasError").error-popup
 							.content.error
 								=messages.en.VALID_TIME_MESSAGE
 					ul(data-bind="sortable: tasks")#well
 						li.panel
 							div(data-bind="css: $data.color() + ' header hoverable'")
-								input(data-bind="value: $data.summary, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'summary-' + $index()}")
+								input(data-bind="value: $data.summary, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'summary-' + $index()}", autocomplete="off")
 								.stats
 									div(data-bind="if: $data._remaining_time() === 0")
 										img(src="/done_white_30.png")
@@ -101,5 +101,5 @@ html
 			var model, viewModel;
 			model = new StoryModel(!{JSON.stringify(tasks)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
 			viewModel = new StoryViewModel(model);
-			socketIO = new StorySocketIO(model, viewModel);
+			socketIO = new SocketIO();
 			ko.applyBindings(viewModel);

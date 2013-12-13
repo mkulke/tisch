@@ -1,42 +1,3 @@
-class TaskSocketIO extends SocketIO
-  
-  _onUpdate: (data) =>
-
-    if data.id == @model.task._id
-
-      @model.task._rev = data.rev
-      @model.task[data.key] = data.value
-      @viewModel[data.key]?(data.value)
-      if data.key == 'story_id'
-
-        @model.getStory data.value, (story) =>
-
-          @viewModel.story story
-    else if data.id == @model.story._id
-
-      if data.key == 'title'
-
-        @_updateObservableProperty @viewModel.story, 'title', data.value
-      else if data.key == 'sprint_id'
-
-        @model.getSprint data.value, (sprint) =>
-
-          @viewModel.sprint sprint
-    else if data.id == @model.sprint._id
-
-      if data.key.match /^length|start$/
-
-        @_updateObservableProperty @viewModel.sprint, data.key, data.value
-
-    # seperate if clause b/c it could be both story and breadcrumb
-    if data.id == @viewModel.breadcrumbs.story().id && data.key == 'title'
-
-      @_updateObservableProperty @viewModel.breadcrumbs.story, 'label', data.value
-    else if data.id == @viewModel.breadcrumbs.sprint().id && data.key == 'title'
-
-      @_updateObservableProperty @viewModel.breadcrumbs.sprint, 'label', data.value
-    # TODO: test all that w/ functional tests
-
 class TaskModel extends Model
 
   type: 'task'
@@ -76,6 +37,65 @@ class TaskModel extends Model
 
 class TaskViewModel extends ViewModel
 
+  _reloadStory: ->
+
+    @model.getStory @story_id(), (story) =>
+
+      _.chain(story).pick('title', 'sprint_id').each (value, key) =>
+
+        @story[key] value
+
+  _reloadSprint: ->
+
+    @model.getSprint @story.sprint_id(), (sprint) ->
+
+      _.chain(sprint).pick('title').each (value, key) =>
+  
+        @sprint[key] value
+
+  _createTaskNotification: ->
+
+    properties: _.chain(@model.task).keys().reject((a) -> a[0] == '_').value()
+    handler: (data) =>
+
+      @model.task._rev = data.rev
+      @model.task[data.key] = data.value
+      @[data.key]?(data.value)
+      if data.key == 'story_id'
+
+        @_reloadStory()
+
+  _createStoryNotification: ->
+
+    object_id: @story_id()
+    properties: ['title', 'sprint_id']
+    handler: (data) =>
+
+      @story[data.key] data.value
+      if data.key == 'sprint_id'
+
+        @_reloadSprint()
+
+  _createSprintNotification: ->
+
+    object_id: @story.sprint_id()
+    properties: ['start', 'length']
+    handler: (data) =>
+
+      @sprint[data.key] data.value
+
+  _createBreadcrumbNotifications: ->
+    
+    buildNotification = (breadcrumb) ->
+
+      object_id: breadcrumb.id
+      properties: ['title']
+      handler: (data) ->
+
+        breadcrumb.label data.value
+
+    [buildNotification(@breadcrumbs.story), buildNotification(@breadcrumbs.sprint)]
+
   _createIndexedComputed: (read, write, owner) ->
 
     # Create a throttled observable and a writable computed. In the write fn there is a immediate
@@ -83,7 +103,7 @@ class TaskViewModel extends ViewModel
     # observable is updated, which triggers a subscribe fn to be called. In that fn the actual
     # write fn is called when the hasError observable property is false. 
 
-    throttled = ko.observable().extend({throttle: common.KEYuP_uPDATE_DELAY})   
+    throttled = ko.observable().extend({throttle: common.KEYUP_UPDATE_DELAY})   
     indexed = ko.computed
 
       read: read
@@ -110,15 +130,15 @@ class TaskViewModel extends ViewModel
 
     @breadcrumbs =
 
-      story: ko.observable
+      story: 
 
         id: @model.story._id
-        label: @model.story.title
+        label: ko.observable @model.story.title
         url: '/story/' + @model.story._id
-      sprint: ko.observable
+      sprint:
 
         id: @model.sprint._id
-        label: @model.sprint.title
+        label: ko.observable @model.sprint.title
         url: '/sprint/' + @model.sprint._id
 
     #summary
@@ -140,14 +160,6 @@ class TaskViewModel extends ViewModel
       @modal null
       @color color
 
-    # story specific stuff
-
-    @story = ko.observable @model.story
-
-    @storyTitle = ko.computed =>
-
-      @story().title
-
     # story_id
 
     @stories = ko.observable()
@@ -165,7 +177,17 @@ class TaskViewModel extends ViewModel
 
       @modal null
       @story_id story._id
-      @story story
+      @_reloadStory()
+
+    # story specific stuff
+
+    @story = 
+
+      _id: ko.computed => 
+
+        @story_id()
+      title: ko.observable @model.story.title
+      sprint_id: ko.observable @model.story.sprint_id
 
     # initial_estimation
 
@@ -174,18 +196,20 @@ class TaskViewModel extends ViewModel
 
     # sprint specific observables
 
-    @sprint = ko.observable @model.sprint
-    @sprintStart = ko.computed =>
+    @sprint = 
 
-      @sprint().start
-    @sprintLength = ko.computed =>
+      _id: ko.computed =>
 
-      @sprint().length
+        @story.sprint_id()
+      title: ko.observable @model.sprint.title
+      start: ko.observable @model.sprint.start
+      length: ko.observable @model.sprint.length
+
     @sprintRange = ko.computed =>
 
-      @model.buildSprintRange @sprintStart(), @sprintLength()
+      @model.buildSprintRange @sprint.start(), @sprint.length()
 
-    initialDateIndex = @model.getDateIndex @sprintStart(), @sprintLength()
+    initialDateIndex = @model.getDateIndex @sprint.start(), @sprint.length()
 
     # In case the sprint changes we might have to reset indexes, so they do not point at out-of-sprint dates.
     @sprintRange.subscribe (range) =>
@@ -255,3 +279,38 @@ class TaskViewModel extends ViewModel
       value = @time_spent()[@timeSpentIndex()]
       if value? then value else 0
     @indexedTimeSpent = @_createIndexedComputed readTimeSpent, writeIndexed('time_spent', @time_spent, @timeSpentIndex), @
+
+    # realtime specific initializations
+
+    notifications = []
+    defaults = 
+
+      method: 'POST'
+      object_id: @model.task._id
+
+    notifications.push @_createTaskNotification()
+
+    notifications.push storyNotification = @_createStoryNotification()
+
+    notifications.push sprintNotification = @_createSprintNotification()
+
+    recreateNotification = (notification, createFn, value) =>
+
+       if value != notification.object_id
+
+        socket.unregisterNotifications notification
+        notification.object_id = value
+        socket.registerNotifications notification
+    @story._id.subscribe partial recreateNotification, storyNotification, @_createStoryNotification
+    @sprint._id.subscribe partial recreateNotification, sprintNotification, @_createSprintNotification
+
+    #notifications = notifications.concat @_createBreadcrumbNotifications()
+    Array.prototype.push.apply notifications, @_createBreadcrumbNotifications()
+    _.each notifications, curry2(_.defaults)(defaults)
+
+    socket = new SocketIO()
+    socket.connect (sessionid) =>
+
+      @model.sessionid = sessionid
+      socket.registerNotifications notifications    
+

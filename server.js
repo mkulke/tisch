@@ -23,11 +23,11 @@ var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), opti
 options.filename = 'index.jade';
 var index_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 
-var clients = {};
+var clients = [];
 
 var broadcastToOtherClients = curry(function(type, sourceUUID, data) {
 
-  for (var key in clients) {
+/*  for (var key in clients) {
 
     if (key != sourceUUID) {
 
@@ -35,8 +35,19 @@ var broadcastToOtherClients = curry(function(type, sourceUUID, data) {
       console.log('emit ' + type + ' to ' + key);
       client.emit(type, data);
     }
-  }
+  }*/
 });
+
+function partial(fn) {
+
+  var aps = Array.prototype.slice;
+  var args = aps.call(arguments, 1);
+  
+  return function() {
+
+    return fn.apply(this, args.concat(aps.call(arguments)));
+  };
+}
 
 var broadcastUpdateToOtherClients = broadcastToOtherClients('update');
 var broadcastAddToOtherClients = broadcastToOtherClients('add');
@@ -419,7 +430,26 @@ var complainWithJson = function(err) {
   this.end();  
 };
 
+var jsonRespond = function(response, json) {
+
+  var headers;
+  headers = {'Content-Type': 'application/json'};
+  response.writeHead(200, headers);
+  response.write(JSON.stringify(json));            
+  response.end();
+};
+
+var postAnswer = function(key, respond, result) {
+
+  var changes, headers;
+  changes = {id: result._id, rev: result._rev, key: key, value: result[key]};
+  respond(changes);
+  return changes;
+};
+
 function processRequest(request, response) {
+
+  // TODO: db is open and closed on every request? oh my.
 
   var db = null;
   var connectToDb = function() {
@@ -512,7 +542,7 @@ function processRequest(request, response) {
 
     assert.ok(id, 'id url part missing.');
     assert.ok(request.headers.rev, 'rev missing in request headers.');
-    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
+    //assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
 
     var formerStoryId;
 
@@ -533,27 +563,7 @@ function processRequest(request, response) {
       }
     };
 
-    answer = function(result) {
-
-      var data = {rev: result._rev, id: id, parent_id: result.story_id, key: request.body.key, value: result[request.body.key]};
-      
-      respondWithJson(data, response);
-      broadcastUpdateToOtherClients(request.headers.client_uuid, data);
-      //broadcastToClients(request.headers.client_uuid, {message: 'update', recipient: id, data: data});
-
-      /*if (request.body.key == 'story_id') {
-
-        // remove from old story view and add to new one, and trigger calculation updates.
-        broadcastToClients(request.headers.client_uuid, {message: 'deassign', recipient: id, data: id});
-        broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: formerStoryId, data: formerStoryId});
-        broadcastToClients(request.headers.client_uuid, {message: 'assign', recipient: result.story_id, data: result});
-        broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
-      }  
-      else if (request.body.key == 'remaining_time') {
-
-        broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
-      }*/
-    };
+    answer = partial(postAnswer, request.body.key, partial(jsonRespond, response));
   } 
   else if ((type == 'task') && (request.method == 'PUT')) {
 
@@ -579,9 +589,7 @@ function processRequest(request, response) {
     answer = function(result) {
 
       respondWithJson(result, response);
-      broadcastAddToOtherClients(request.headers.client_uuid, result);
-      //broadcastToClients(request.headers.client_uuid, {message: 'add', recipient: request.headers.parent_id, data: result});
-      //broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
+      broadcastAddToOtherClients(request.headers.client_uuid, {parent_id: result.story_id, object: result});
     };
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
@@ -599,10 +607,7 @@ function processRequest(request, response) {
     answer = function(result) {
 
       respondWithJson(id, response);
-      //broadcastToClients(request.headers.client_uuid, {message: 'remove', recipient: id, data: id});
-      var data = {id: id, story_id: result.story_id};
-      broadcastRemoveToOtherClients(request.headers.client_uuid, data);
-      //broadcastToClients(request.headers.client_uuid, {message: 'update_remaining_time', recipient: result.story_id, data: result.story_id});
+      broadcastRemoveToOtherClients(request.headers.client_uuid, {id: id, parent_id: result.story_id});
     };
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
@@ -690,21 +695,7 @@ function processRequest(request, response) {
       }
     };
 
-    answer = function(result) {
-
-      var data = {rev: result._rev, id: id, parent_id: result.sprint_id, key: request.body.key, value: result[request.body.key]};
-      
-      respondWithJson(data, response);
-      //broadcastToClients(request.headers.client_uuid, {message: 'update', recipient: id, data: data});
-      broadcastUpdateToOtherClients(request.headers.client_uuid, data);
-
-      /*if (request.body.key == 'sprint_id') {
-
-        // remove from old story view and add to new one.
-        broadcastToClients(request.headers.client_uuid, {message: 'deassign', recipient: id, data: id});
-        broadcastToClients(request.headers.client_uuid, {message: 'assign', recipient: result.sprint_id, data: result});
-      }*/
-    };
+    answer = partial(postAnswer, request.body.key, partial(jsonRespond, response));
   }
   else if ((type == 'story') && (request.method == 'PUT')) {
 
@@ -728,7 +719,7 @@ function processRequest(request, response) {
     answer = function(result) {
 
       respondWithJson(result, response);
-      broadcastToClients(request.headers.client_uuid, {message: 'add', recipient: request.headers.parent_id, data: result});
+      broadcastAddToOtherClients(request.headers.client_uuid, result);
     };
   } 
   else if ((type == 'story') && (request.method == 'DELETE')) {
@@ -759,10 +750,15 @@ function processRequest(request, response) {
 
       // ajax response is only the requested id.
       respondWithJson(id, response);
+
+      var data = {id: id, sprint_id: result.story_id};
       for (var i in result) {
 
-        var removedId = result[i];
-        broadcastToClients(request.headers.client_uuid, {message: 'remove', recipient: removedId, data: removedId});
+        var data = {id: id, story_id: result.story_id};
+        broadcastRemoveToOtherClients(request.headers.client_uuid, data);
+
+        //var removedId = result[i];
+        //broadcastToClients(request.headers.client_uuid, {message: 'remove', recipient: removedId, data: removedId});
       }
     };
   }   
@@ -860,14 +856,7 @@ function processRequest(request, response) {
       return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);
     };
 
-    answer = function(result) {
-
-      var data = {rev: result._rev, id: id, key: request.body.key, value: result[request.body.key]};
-      
-      respondWithJson(data, response);
-      broadcastUpdateToOtherClients(request.headers.client_uuid, data);
-      //broadcastToClients(request.headers.client_uuid, {message: 'update', recipient: id, data: data});  
-    };
+    answer = partial(postAnswer, request.body.key, partial(jsonRespond, response));
   }
   else if ((type == 'sprint') && (request.method == 'PUT')) {
 
@@ -1013,13 +1002,136 @@ function processRequest(request, response) {
     answer = function() {};
   }
 
+  var notify = function(result) {
+
+    var clientIds, clients, byGenerator, byRequest, byId, byProperties, originatingClient, toNotification;
+
+    // TODO: result is an array on cascaded deletion
+    if (!result) {
+
+      return;
+    }
+
+    var buildEqual = function(key, value) {
+
+      return function(object) {
+
+        return object[key] == value;
+      };
+    };
+
+    byRequest = buildEqual('method', request.method);
+
+    byId = buildEqual('object_id', result.id);
+
+    originatingClient = function(registration) {
+
+      return registration.client.id === request.headers.sessionid;
+    };
+
+    byProperties = partial(function(key, registration) {
+
+      return (!registration.properties) || _.contains(registration.properties, key);
+    }, result.key);
+
+    toNotification = partial(function(result, registration){
+
+      return {client: registration.client, index: registration.index, data: result};
+    }, result);
+
+    notifications = _.chain(socketIO.registrations())
+      .filter(byRequest)
+      .filter(byId)
+      .filter(byProperties)
+      .reject(originatingClient)
+      .map(toNotification)
+      .value();
+
+    socketIO.notify(notifications);
+  };
+
   connectToDb()
   .then(query)
   .then(answer)
+  .then(notify)
   .fail(html ? complainWithPlain.bind(response) : complainWithJson.bind(response))
   .fin(cleanup)
   .done();
 }
+
+var socketIO = function() {
+
+  //var clients = [];
+  var registrations = [];
+  var socket;
+
+  return {
+
+    listen: function(server) {
+
+      socket = io.listen(server);
+
+      socket.enable('browser client etag');
+      socket.enable('browser client gzip'); 
+      socket.enable('browser client minification');
+      socket.set('log level', 1);
+
+      socket.on('connection', function(client) {
+
+        console.log(["client connected, id:", client.id].join(" "));
+        //clients.push(client);
+        client.on('register', function(data) {
+
+          //console.log(["register: ", JSON.stringify(data)].join(" "));
+          _.each(data, function(registration) {
+
+            _.extend(registration, {client: client})
+          });
+          registrations = registrations.concat(data);
+          //console.log(["registrations content:", JSON.stringify(registrations)].join(" "));
+        });
+
+        client.on('unregister', function(indices) {
+
+          var unregistered;
+
+          unregistered = function(registration) {
+
+            return (registration.client === client) && (_.contains(indices, registration.index))
+          };
+          registrations = _.reject(registrations, unregistered);
+        });
+
+        client.on('disconnect', function() {
+        
+          var clientEntry;
+
+          console.log(["client disconnected, id:", client.id].join(" "));
+
+          //clients = _.without(clients, client); 
+          
+          clientEntry = function(registration) {
+
+            return (registration.client === client);
+          };
+          registrations = _.reject(registrations, clientEntry);
+          //console.log(["registrations content:", JSON.stringify(registrations)].join(" "));
+        });
+      });
+    },
+    notify: function(notifications) {
+
+      _.each(notifications, function (notification) {
+
+        notification.client.emit('notify', _.omit(notification, 'client'));
+      });
+    },
+    registrations: function() {
+
+      return registrations;
+    }
+  }
+}()
 
 var app = connect()
   .use(connect.logger('dev'))
@@ -1034,37 +1146,8 @@ app.start = function() {
 
   var server = http.createServer(app).listen(8000, function() {
   
-    console.log('Server listening on port 8000');  
-  });
-
-  // TODO: (IMPORTANT!) make the socket.io calls async!!
-
-  socket = io.listen(server);
-
-  socket.enable('browser client etag');
-  socket.enable('browser client gzip'); 
-  socket.enable('browser client minification');
-  socket.set('log level', 1);
-
-  socket.on('connection', function(client) {
-    
-    var clientUUID;
-
-    client.on('register', function(data) {
-
-      /*console.log("socket id: " + this.id + ", item ids: " + JSON.stringify(data));
-      clientUUID = data.clientUUID;
-      clients[clientUUID] = data.item_ids;*/
-      clientUUID = data;
-      clients[clientUUID] = client;
-      console.log(clientUUID + ' registered. ' + Object.keys(clients).length + ' clients connected now.');
-    });
-
-    client.on('disconnect', function() {
-    
-      delete clients[clientUUID];
-      console.log(clientUUID + ' disconnected. ' + Object.keys(clients).length + ' clients connected now.');
-    });
+    console.log('Server listening on port 8000');
+    socketIO.listen(server);
   });
 }
 

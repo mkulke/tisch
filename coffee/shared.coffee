@@ -1,3 +1,20 @@
+partial = (fn) ->
+
+  aps = Array.prototype.slice
+  args = aps.call arguments, 1
+  
+  -> 
+
+    fn.apply @, args.concat(aps.call(arguments))
+
+curry2 = (fn) ->
+
+  (arg2) ->
+
+      (arg1) ->
+
+        fn arg1, arg2
+
 common = (->
 
   uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace /[xy]/g, (c) ->
@@ -56,52 +73,64 @@ common = (->
 
 class SocketIO
 
+  ensureArray = (arg) ->
+
+    if _.isArray arg
+
+      arg
+    else
+
+      [arg]
+
+  arrayify = (fn) ->
+
+    return ->
+
+      argument = _.first(arguments)
+      array = if _.isArray argument then argument else [argument]
+      fn.call @, array
+
+  _registrations: []
+
   _sortByPriority: (a, b) =>
 
     a.priority() - b.priority()
 
-  # TODO: unit test
-  # this is done to ensure that observable subscribers are notified
-  _updateObservableProperty: (observable, property, value) =>
+  registerNotifications: arrayify (notifications) ->
 
-    clone = observable()
-    clone[property] = value
-    observable(clone)
+    registrations = _.map notifications, (notification) ->
 
-  constructor: (@model, @viewModel) ->
+      _.extend notification, {index: _.uniqueId()}
+      server: _.omit notification, 'handler'
+      client: {index: notification.index, handler: notification.handler} 
+    @server.emit 'register', _.pluck registrations, 'server'
+    @_registrations = @_registrations.concat _.pluck registrations, 'client'
 
-    @server = io.connect "http://#{window.location.hostname}"   
-    @server.on 'connect', ->
+  unregisterNotifications: arrayify (notifications) ->
 
-      @emit 'register', common.uuid
-    @server.on 'update', @_onUpdate
-    @server.on 'add', @_onAdd
-    @server.on 'remove', @_onRemove
-  _onUpdate: (data) ->
-  _onAdd: (data) ->
-  _onRemove: (data) ->
+    indices = _.pluck notifications, 'index'
+    unregistered = (notification) ->
 
-###class View
+      _.contains indices, notification.index
+    @_registrations = _.reject @_registrations, unregistered
+    @server.emit 'unregister', indices
 
-  constructor: (ractiveTemplate, @model) ->
+  connect: (connectedCb) ->
 
-    @ractive = new Ractive
+    @server = io.connect "http://#{window.location.hostname}"
+    onConnect = =>
 
-      el: 'output'
-      template: ractiveTemplate
-      modifyArrays: false
-      data: @_buildRactiveData(model)
-  _buildRactiveData: ->
-  setRactiveHandlers: (ractiveHandlers) =>
+      connectedCb @server.socket?.sessionid
+    @server.on 'connect', onConnect
+    onNotify = (data) =>
 
-    @ractive.on ractiveHandlers
-  set: (keypath, value) => 
+      registration = _.findWhere @_registrations, {index: data.index}
+      registration?.handler? data.data
+    @server.on 'notify', onNotify
+    onDisconnect = =>
 
-    @ractive.set keypath, value
-  get: (keypath) => 
-
-    @ractive.get keypath
-###
+      @_registrations = []
+    @server.on 'disconnect', onDisconnect
 
 class Chart 
 
@@ -313,7 +342,7 @@ class Model
 
       url: "/#{type}/#{object._id}"
       type: 'POST'
-      headers: {client_uuid: common.uuid}
+      headers: {client_uuid: common.uuid, sessionid: @sessionid}
       contentType: 'application/json'
       data: JSON.stringify {key: key, value: object[key]}
       beforeSend: (jqXHR, settings) ->

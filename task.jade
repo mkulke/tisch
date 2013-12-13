@@ -7,14 +7,14 @@ html
 		#container
 			#breadcrumb-bar
 				a(href="/").breadcrumb.index Index
-				a(data-bind="attr: {href: breadcrumbs.sprint().url}, text: breadcrumbs.sprint().label").breadcrumb.sprint
-				a(data-bind="attr: {href: breadcrumbs.story().url}, text: breadcrumbs.story().label").breadcrumb.story
+				a(data-bind="attr: {href: breadcrumbs.sprint.url}, text: breadcrumbs.sprint.label()").breadcrumb.sprint
+				a(data-bind="attr: {href: breadcrumbs.story.url}, text: breadcrumbs.story.label()").breadcrumb.story
 				span(data-bind="text: summary").breadcrumb.task.selected
 				img(src="/logo_30.png").logo
 			#content
 				form
 					p
-						input(data-bind="value: summary, valueUpdate: ['afterkeydown','propertychange','input']", name="summary")#summary.identifier
+						input(data-bind="value: summary, valueUpdate: ['afterkeydown','propertychange','input']", name="summary", autocomplete="off")#summary.identifier
 					p
 						textarea(data-bind="value: description, valueUpdate: ['afterkeydown','propertychange','input']", name="description")#description
 					.attribute
@@ -29,13 +29,13 @@ html
 						span.label
 							=messages.en.STORY+':'
 						span#story-selector.popup-selector.line-selector
-							button(data-bind="click: showStorySelector, text: storyTitle", name="story_id").selected
+							button(data-bind="click: showStorySelector, text: story.title()", name="story_id").selected
 							div(data-bind="foreach: stories, visible: modal() == 'story-selector'").content
 								div(data-bind="click: $parent.selectStory, text: title").line
 					.attribute
 						span.label
 							=messages.en.INITIAL_ESTIMATION+':'
-						input(data-bind="value: initial_estimation, valueUpdate: ['afterkeydown','propertychange','input']", name="initial_estimation")
+						input(data-bind="value: initial_estimation, valueUpdate: ['afterkeydown','propertychange','input']", name="initial_estimation", autocomplete="off")
 						span(data-bind="visible: initial_estimation.hasError").error-popup
 							.content.error
 								=messages.en.VALID_TIME_MESSAGE
@@ -47,7 +47,7 @@ html
 							button(data-bind="click: showRemainingTimeDatePicker, text: remainingTimeIndexFormatted()", name="remaining_time-index").selected
 							div(data-bind="datepicker: remainingTimeIndex, datepickerMin: sprintRange().start, datepickerMax: sprintRange().end, visible: modal() == 'remaining_time-index'").content
 							|):&nbsp;
-						input(data-bind="value: indexedRemainingTime, valueUpdate: ['afterkeydown','propertychange','input']", name="remaining_time")
+						input(data-bind="value: indexedRemainingTime, valueUpdate: ['afterkeydown','propertychange','input']", name="remaining_time", autocomplete="off")
 						span(data-bind="visible: indexedRemainingTime.hasError").error-popup
 							.content.error
 								=messages.en.VALID_TIME_MESSAGE
@@ -59,7 +59,7 @@ html
 							button(data-bind="click: showTimeSpentDatePicker, text: timeSpentIndexFormatted()", name="time_spent-index").selected
 							div(data-bind="datepicker: timeSpentIndex, datepickerMin: sprintRange().start, datepickerMax: sprintRange().end, visible: modal() == 'time_spent-index'").content
 							|):&nbsp;
-						input(data-bind="value: indexedTimeSpent, valueUpdate: ['afterkeydown','propertychange','input']", name="time_spent")
+						input(data-bind="value: indexedTimeSpent, valueUpdate: ['afterkeydown','propertychange','input']", name="time_spent", autocomplete="off")
 						span(data-bind="visible: indexedTimeSpent.hasError").error-popup
 							.content.error
 								=messages.en.VALID_TIME_MESSAGE
@@ -77,5 +77,4 @@ html
 			var model, viewModel, socketIO;
 			model = new TaskModel(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
 			viewModel = new TaskViewModel(model);
-			socketIO = new TaskSocketIO(model, viewModel);
 			ko.applyBindings(viewModel);

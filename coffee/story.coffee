@@ -1,5 +1,69 @@
-class StorySocketIO extends SocketIO
+###class StorySocketIO extends SocketIO
 
+  # TODO: test that w/ functional tests
+
+  _addStoryNotification: ->    
+
+    handler = (story, data) =>
+
+      if data.key == 'sprint_id'
+
+        @model.getSprint data.value, (sprint) =>
+        
+          @viewModel.sprint sprint
+      story._rev = story.rev
+      story[data.key] = data.value
+      @viewModel[data.key]?(data.value)
+    @_addNotification
+
+      properties: _.chain(@model.story).keys().reject((a) -> a[0] == '_').value()
+      handler: partial(handler, @model.story)
+
+  _addSprintNotification: ->
+
+    handler = (data) =>
+
+      @_updateObservableProperty @viewModel.sprint, data.key, data.value
+    @_addNotification
+
+      object_id: @model.sprint._id
+      properties: ['title', 'start', 'length']
+      handler: handler
+
+  _addBreadcrumbNotification: ->
+
+    # seperate clause b/c it could be both story and breadcrumb
+    handler = (data) =>
+
+      @_updateObservableProperty @viewModel.breadcrumbs.sprint, 'label', data.value
+    @_addNotification
+
+      object_id: @viewModel.breadcrumbs.sprint().id
+      properties: ['title']
+      handler: handler
+
+  constructor: (@model, @viewModel) ->
+
+    super @model, @viewModel
+
+    @_notificationDefaults = 
+
+      method: 'POST'
+      object_id: @model.story._id
+
+    @_addStoryNotification()
+
+    sprintNotification = @_addSprintNotification()
+
+    @viewModel.sprint.subscribe (value) =>
+
+      if value._id != sprintNotification.object_id
+
+        @_unregisterNotifications sprintNotification
+        sprintNotification = @_addSprintNotification()
+        @_registerNotifications sprintNotification
+
+    @_addBreadcrumbNotification()
   _onUpdate: (data) =>
 
     if data.id == @model.story._id
@@ -32,7 +96,7 @@ class StorySocketIO extends SocketIO
       task = object._js 
       task._rev = data.rev
       task[data.key] = data.value
-      object[data.key]?(data.value)
+      object[data.key]?(data.value)###
 
 class StoryModel extends ParentModel
 

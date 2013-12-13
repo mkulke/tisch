@@ -40,10 +40,20 @@ class SprintSocketIO extends SocketIO
 
   _onAdd: (data) =>
 
-    data.story_id && @_verifyCalculations data.story_id
+    @_verifyCalculations data.parent_id
+    if data.parent_id == @model.sprint._id 
+
+      object = @viewModel.createObservablesObject data
+      @viewModel.stories.push object
   _onRemove: (data) =>
 
-    data.story_id && @_verifyCalculations data.story_id
+    debugger
+    verifyCalculations data.parent_id
+    if data.parent_id == @model.sprint._id
+
+      @viewModel.stories.remove (story) =>
+
+        data.id == story._id
 class SprintModel extends ParentModel
 
   getRemainingTime: (storyId, successCb) =>
@@ -89,6 +99,24 @@ class SprintViewModel extends ParentViewModel
   _updateStoryModel: (observable, object, property, value) =>
 
     @_updateModel observable, object, 'story', property, value
+
+  createObservablesObject: (story) =>
+
+    _id: story._id
+    title: @_createThrottledObservable story, 'title', @_updateStoryModel
+    description: @_createThrottledObservable story, 'description', @_updateStoryModel
+    color: @_createObservable story, 'color', @_updateStoryModel
+    priority: @_createObservable story, 'priority', @_updateStoryModel
+    _remaining_time: ko.computed =>
+
+      if @remainingTimeCalculations()[story._id]? 
+
+        @remainingTimeCalculations()[story._id]
+      else
+
+        null
+    _url: '/story/' + story._id
+    _js: story
 
   constructor: (@model) ->
 
@@ -181,25 +209,7 @@ class SprintViewModel extends ParentViewModel
 
     # stories
 
-    createObservablesObject = (story) =>
-
-      _id: story._id
-      title: @_createThrottledObservable story, 'title', @_updateStoryModel
-      description: @_createThrottledObservable story, 'description', @_updateStoryModel
-      color: @_createObservable story, 'color', @_updateStoryModel
-      priority: @_createObservable story, 'priority', @_updateStoryModel
-      _remaining_time: ko.computed =>
-
-        if @remainingTimeCalculations()[story._id]? 
-
-          @remainingTimeCalculations()[story._id]
-        else
-
-          null
-      _url: '/story/' + story._id
-      _js: story
-
-    stories = _.map @model.children.objects, createObservablesObject
+    stories = _.map @model.children.objects, @createObservablesObject
     _.each stories, (story) =>
 
       story.priority.subscribe =>
@@ -240,7 +250,7 @@ class SprintViewModel extends ParentViewModel
 
         , (story) => 
         
-          observableObject = createObservablesObject story
+          observableObject = @createObservablesObject story
           @stories.push observableObject
           # TODO: sort after push?
         , showErrorDialog
