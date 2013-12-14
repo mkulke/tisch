@@ -1,103 +1,3 @@
-###class StorySocketIO extends SocketIO
-
-  # TODO: test that w/ functional tests
-
-  _addStoryNotification: ->    
-
-    handler = (story, data) =>
-
-      if data.key == 'sprint_id'
-
-        @model.getSprint data.value, (sprint) =>
-        
-          @viewModel.sprint sprint
-      story._rev = story.rev
-      story[data.key] = data.value
-      @viewModel[data.key]?(data.value)
-    @_addNotification
-
-      properties: _.chain(@model.story).keys().reject((a) -> a[0] == '_').value()
-      handler: partial(handler, @model.story)
-
-  _addSprintNotification: ->
-
-    handler = (data) =>
-
-      @_updateObservableProperty @viewModel.sprint, data.key, data.value
-    @_addNotification
-
-      object_id: @model.sprint._id
-      properties: ['title', 'start', 'length']
-      handler: handler
-
-  _addBreadcrumbNotification: ->
-
-    # seperate clause b/c it could be both story and breadcrumb
-    handler = (data) =>
-
-      @_updateObservableProperty @viewModel.breadcrumbs.sprint, 'label', data.value
-    @_addNotification
-
-      object_id: @viewModel.breadcrumbs.sprint().id
-      properties: ['title']
-      handler: handler
-
-  constructor: (@model, @viewModel) ->
-
-    super @model, @viewModel
-
-    @_notificationDefaults = 
-
-      method: 'POST'
-      object_id: @model.story._id
-
-    @_addStoryNotification()
-
-    sprintNotification = @_addSprintNotification()
-
-    @viewModel.sprint.subscribe (value) =>
-
-      if value._id != sprintNotification.object_id
-
-        @_unregisterNotifications sprintNotification
-        sprintNotification = @_addSprintNotification()
-        @_registerNotifications sprintNotification
-
-    @_addBreadcrumbNotification()
-  _onUpdate: (data) =>
-
-    if data.id == @model.story._id
-
-      @model.story._rev = data.rev
-      @model.story[data.key] = data.value
-      @viewModel[data.key]?(data.value)
-      if data.key == 'sprint_id'
-
-        @model.getSprint data.value, (sprint) =>
-
-          @viewModel.sprint sprint
-    else if data.id == @model.sprint._id
-
-      if data.key.match /^title|length|start$/
-
-        @_updateObservableProperty @viewModel.sprint, data.key, data.value
-
-    # seperate if clause b/c it could be both sprint and breadcrumb
-    if data.id == @viewModel.breadcrumbs.sprint().id && data.key == 'title'
-
-      @_updateObservableProperty @viewModel.breadcrumbs.sprint, 'label', data.value
-
-    # object of task observables
-    object = _.find @viewModel.tasks(), (task) => 
-
-      task._id == data.id
-    if object?
-  
-      task = object._js 
-      task._rev = data.rev
-      task[data.key] = data.value
-      object[data.key]?(data.value)###
-
 class StoryModel extends ParentModel
 
   type: 'story'
@@ -169,6 +69,40 @@ class StoryModel extends ParentModel
 
 class StoryViewModel extends ParentViewModel
 
+  _createStoryNotification: ->
+
+    properties: _.chain(@model.story).keys().reject((a) -> a[0] == '_').value()
+    handler: (data) =>
+
+      @model.story._rev = data.rev
+      @model.story[data.key] = data.value
+      @[data.key]?(data.value)
+      if data.key == 'sprint_id'
+
+        @model.getSprint @sprint_id(), @_replaceSprint
+
+  _createSprintNotification: ->
+
+    object_id: @sprint_id()
+    properties: ['title', 'start', 'length']
+    handler: (data) =>
+
+      @sprint[data.key] data.value
+
+  _createBreadcrumbNotification: ->
+
+    object_id: @breadcrumbs.sprint.id
+    properties: ['title']
+    handler: (data) ->
+
+      @breadcrumbs.sprint.label data.value
+
+  _replaceSprint: (sprint) =>
+
+    for key, value of _.chain(sprint).pick('title', 'start', 'length').value()
+
+      @sprint[key] value
+
   _updateStoryModel: (observable, object, property, value) =>
 
     @_updateModel observable, object, 'story', property, value
@@ -184,10 +118,10 @@ class StoryViewModel extends ParentViewModel
 
     @breadcrumbs =
 
-      sprint: ko.observable
+      sprint: 
 
         id: @model.sprint._id
-        label: @model.sprint.title
+        label: ko.observable @model.sprint.title
         url: '/sprint/' + @model.sprint._id
 
     # title
@@ -209,22 +143,6 @@ class StoryViewModel extends ParentViewModel
       @modal null
       @color color
 
-    # sprint specific stuff
-
-    @sprint = ko.observable @model.sprint
-    @sprintTitle = ko.computed =>
-
-      @sprint().title
-    @sprintStart = ko.computed =>
-
-      @sprint().start
-    @sprintLength = ko.computed =>
-
-      @sprint().length
-    @sprintRange = ko.computed =>
-
-      @model.buildSprintRange @sprintStart(), @sprintLength()
-
     # sprint_id
 
     @sprints = ko.observable()
@@ -242,7 +160,21 @@ class StoryViewModel extends ParentViewModel
 
       @modal null
       @sprint_id sprint._id
-      @sprint sprint
+      @_replaceSprint sprint
+
+    # sprint specific stuff
+
+    @sprint = 
+
+      _id: ko.computed =>
+
+        @sprint_id()
+      title: ko.observable @model.sprint.title
+      start: ko.observable @model.sprint.start
+      length: ko.observable @model.sprint.length
+    @sprintRange = ko.computed =>
+
+      @model.buildSprintRange @sprint.start(), @sprint.length()
 
     # initial_estimation
 
@@ -396,3 +328,33 @@ class StoryViewModel extends ParentViewModel
     @closeStats = =>
 
       @modal null
+
+   # realtime specific initializations
+
+    notifications = []
+    defaults = 
+
+      method: 'POST'
+      object_id: @model.story._id
+
+    notifications.push @_createStoryNotification()
+
+    notifications.push sprintNotification = @_createSprintNotification()
+
+    @sprint_id.subscribe (value) ->
+
+      if value != sprintNotification
+
+        socket.unregisterNotifications sprintNotification
+        sprintNotification.object_id = value
+        socket.registerNotifications sprintNotification
+
+    notifications.push @_createBreadcrumbNotification()
+
+    _.each notifications, curry2(_.defaults)(defaults)
+
+    socket = new SocketIO()
+    socket.connect (sessionid) =>
+
+      @model.sessionid = sessionid
+      socket.registerNotifications notifications   

@@ -37,21 +37,17 @@ class TaskModel extends Model
 
 class TaskViewModel extends ViewModel
 
-  _reloadStory: ->
+  _replaceStory: (story) =>
 
-    @model.getStory @story_id(), (story) =>
+    for key, value of _.chain(story).pick('title', 'sprint_id').value()
 
-      _.chain(story).pick('title', 'sprint_id').each (value, key) =>
+      @story[key] value
 
-        @story[key] value
+  _replaceSprint: (sprint) =>
 
-  _reloadSprint: ->
+    for key, value of _.chain(sprint).pick('title', 'start', 'length').value()
 
-    @model.getSprint @story.sprint_id(), (sprint) ->
-
-      _.chain(sprint).pick('title').each (value, key) =>
-  
-        @sprint[key] value
+      @sprint[key] value
 
   _createTaskNotification: ->
 
@@ -63,7 +59,7 @@ class TaskViewModel extends ViewModel
       @[data.key]?(data.value)
       if data.key == 'story_id'
 
-        @_reloadStory()
+        @model.getStory @story_id(), @_replaceStory
 
   _createStoryNotification: ->
 
@@ -74,7 +70,7 @@ class TaskViewModel extends ViewModel
       @story[data.key] data.value
       if data.key == 'sprint_id'
 
-        @_reloadSprint()
+        @model.getSprint @story.sprint_id(), @_replaceSprint
 
   _createSprintNotification: ->
 
@@ -177,7 +173,7 @@ class TaskViewModel extends ViewModel
 
       @modal null
       @story_id story._id
-      @_reloadStory()
+      @_replaceStory story
 
     # story specific stuff
 

@@ -10,7 +10,7 @@ html
 		#container
 			#breadcrumb-bar
 				a(href="/").breadcrumb.index Index
-				a(data-bind="attr: {href: breadcrumbs.sprint().url}, text: breadcrumbs.sprint().label").breadcrumb.sprint
+				a(data-bind="attr: {href: breadcrumbs.sprint.url}, text: breadcrumbs.sprint.label").breadcrumb.sprint
 				span(data-bind="text: title").breadcrumb.story.selected
 				img(src="/logo_30.png").logo
 			#content
@@ -31,7 +31,7 @@ html
 						span.label
 							=messages.en.SPRINT+':'
 						span#sprint-selector.popup-selector.line-selector
-							button(data-bind="click: showSprintSelector, text: sprintTitle", name="sprint_id").selected
+							button(data-bind="click: showSprintSelector, text: sprint.title", name="sprint_id").selected
 							div(data-bind="foreach: sprints, visible: modal() == 'sprint-selector'").content
 								div(data-bind="click: $parent.selectSprint, text: title").line
 					.attribute
