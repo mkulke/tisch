@@ -2,8 +2,8 @@ casper = require('casper').create()
 
 storyId = '528c961beab8b32b76efac0c'
 storyUrl = "http://localhost:8000/story/#{storyId}"
-throttle = 500
-dragDelay = 150
+throttle = 500 + 10
+dragDelay = 150 + 10
 
 casper.start storyUrl 
 
@@ -19,7 +19,7 @@ casper.then ->
 	#@test.assertEquals @getElementInfo("button[name='start']").text, '01/01/13', 'Date button correct.'
 	@test.assertEval ->
 
-			document.querySelectorAll('ul#well li.panel').length == 2;
+		document.querySelectorAll('ul#well li.panel').length == 2;
 	, '1 Task panel visible.'
 	@test.assertField 'summary-0', 'Test Task A', 'Task 1 summary field correct.'
 	@test.assertField 'description-0', 'Task A description', 'Task 1 description field correct.'
