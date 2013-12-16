@@ -31,7 +31,7 @@ html
 						span#story-selector.popup-selector.line-selector
 							button(data-bind="click: showStorySelector, text: story.title()", name="story_id").selected
 							div(data-bind="foreach: stories, visible: modal() == 'story-selector'").content
-								div(data-bind="click: $parent.selectStory, text: title").line
+								div(data-bind="click: $parent.selectStory, text: label").line
 					.attribute
 						span.label
 							=messages.en.INITIAL_ESTIMATION+':'

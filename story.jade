@@ -33,7 +33,7 @@ html
 						span#sprint-selector.popup-selector.line-selector
 							button(data-bind="click: showSprintSelector, text: sprint.title", name="sprint_id").selected
 							div(data-bind="foreach: sprints, visible: modal() == 'sprint-selector'").content
-								div(data-bind="click: $parent.selectSprint, text: title").line
+								div(data-bind="click: $parent.selectSprint, text: label").line
 					.attribute
 						span.label
 							=messages.en.ESTIMATION+':'

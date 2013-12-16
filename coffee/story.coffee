@@ -23,49 +23,83 @@ class StoryModel extends ParentModel
     else
 
       latest = dates[dates.length - 1]
-      remainingTime[latest]
+      remainingTime[latest] 
+
+  _collectIndices: (range, indices, property) =>
+
+    inRange = (value) ->
+
+      range.start <= value <= range.end
+
+    _.chain(property).keys().filter(inRange).union(indices).sort().value()    
+
   buildTimeSpentChartData: (timesSpent, range) ->
 
-    initial = {}
-    filteredTimesSpent = _.reduce timesSpent, (object, timeSpent) ->
+    # This functions collect the dates from all time_spent objects while discarding 
+    # the out-of-sprint values. Then for every found date all task values for that
+    # date are accumulated. Finally, if no 1st sprint day value was found and it is
+    # not empty, it is prepended with a zero value.
 
-      for key, value of timeSpent when range.start <= key <= range.end
+    add = (index, memo, timeSpent) ->
 
-        if object[key]? then object[key] += value
-        else if value > 0 then object[key] = value
-      object
-    , initial
+      time = timeSpent[index]
+      if time? 
 
-    if !_.isEmpty(filteredTimesSpent) && !filteredTimesSpent[range.start] then filteredTimesSpent[range.start] = 0
+        memo + time
+      else
 
-    data = ({date: key, value: value} for key, value of filteredTimesSpent).sort (a, b) -> 
+        memo
 
-      moment(a.date).unix() - moment(b.date).unix()
+    toD3 = (index) ->
 
-    # make it cumulative
-    counter = 0
-    _.map data, (object) ->
+      {date: index, value: _.reduce timesSpent, partial(add, index), 0}
 
-      {date: object.date, value: counter += object.value}
+    nullValue = (object) ->
+
+      object.value == 0
+
+    cumulate = (data, datum) ->
+
+      if data.length > 0
+
+        clone = _.clone(datum)
+        clone.value += _.last(data).value
+        data.push clone
+      else
+
+        data.push datum
+      data
+
+    prepend = (data) ->
+
+      if !_.isEmpty(data) && _.first(data).date != range.start
+
+        data.unshift {date: range.start, value: 0}
+
+    _.chain(timesSpent).reduce(partial(@_collectIndices, range), []).map(toD3).reject(nullValue).reduce(cumulate, []).tap(prepend).value()
+
   buildRemainingTimeChartData: (estimation, remainingTimes, range) ->
 
-    indices = _.map remainingTimes, (remainingTime) ->
+    # This functions collect the dates from all remaining_time objects while discarding 
+    # the out-of-sprint values. Then for every found date a value is fetched/calculated
+    # for each task, the results are accumulated. Finally, if no 1st sprint day value was 
+    # found, it is prepended with the stories estimation. 
 
-      (index for index of remainingTime when range.start <= index <= range.end)
-    indices = _.flatten indices
-    indices = _.uniq indices
+    getAndAdd = (index, count, remainingTime) =>
 
-    data = _.reduce indices, (object, index) =>
+      count += @getClosestValueByDateIndex remainingTime, index, range.start
 
-      object[index] = _.reduce remainingTimes, (count, remainingTime) =>
+    toD3 = (index) ->
 
-        count += @getClosestValueByDateIndex remainingTime, index, range.start
-      , 0
-      object
-    , {}        
-    if !data[range.start] then data[range.start] = estimation
+      {date: index, value: _.reduce remainingTimes, partial(getAndAdd, index), 0}
 
-    ({date: key, value} for key, value of data).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
+    prepend = (data) ->
+
+      if _.first(data)?.date != range.start
+
+        data.unshift {date: range.start, value: estimation}
+
+    _.chain(remainingTimes).reduce(partial(@_collectIndices, range), []).map(toD3).tap(prepend).value()
 
 class StoryViewModel extends ParentViewModel
 
@@ -80,6 +114,17 @@ class StoryViewModel extends ParentViewModel
       if data.key == 'sprint_id'
 
         @model.getSprint @sprint_id(), @_replaceSprint
+
+  _createTaskNotification: (observablesObject, index) ->
+
+    object_id: observablesObject._id
+    properties: ['summary', 'description', 'color', 'priority']
+    handler: (data) =>
+
+      task = @model.children.objects[index]
+      task._rev = data.rev
+      task[data.key] = data.value
+      observablesObject[data.key] data.value
 
   _createSprintNotification: ->
 
@@ -153,14 +198,21 @@ class StoryViewModel extends ParentViewModel
 
       @model.getSprints (sprints) =>
 
-        @sprints sprints
+        @sprints _.map sprints, (sprint) ->
+
+          {id: sprint._id, label: sprint.title}
         @modal 'sprint-selector'
     
-    @selectSprint = (sprint) =>
+    @selectSprint = (selected) =>
 
       @modal null
-      @sprint_id sprint._id
-      @_replaceSprint sprint
+      @model.getSprint selected.id
+
+        , (sprint) =>
+
+          @sprint_id sprint._id
+          @_replaceSprint sprint
+        , @_showError
 
     # sprint specific stuff
 
@@ -350,6 +402,8 @@ class StoryViewModel extends ParentViewModel
         socket.registerNotifications sprintNotification
 
     notifications.push @_createBreadcrumbNotification()
+
+    Array.prototype.push.apply notifications, _.map @tasks(), @_createTaskNotification
 
     _.each notifications, curry2(_.defaults)(defaults)
 

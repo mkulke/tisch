@@ -162,19 +162,25 @@ class TaskViewModel extends ViewModel
 
     @story_id = @_createObservable @model.task, 'story_id', @_updateTaskModel
 
-    @showStorySelector = => 
+    @showStorySelector = -> 
 
       @model.getStories @model.story.sprint_id, (stories) =>
 
-        @stories stories
+        @stories _.map stories, (story) ->
+
+          {id: story._id, label: story.title}
         @modal 'story-selector'
     
-    @selectStory = (story) =>
+    @selectStory = (selected) =>
 
       @modal null
-      @story_id story._id
-      @_replaceStory story
+      @model.getStory selected.id
 
+        , (story) =>
+
+          @story_id story._id
+          @_replaceStory story
+        , @_showError
     # story specific stuff
 
     @story = 

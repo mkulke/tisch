@@ -273,11 +273,12 @@ class Model
       success: (data, textStatus, jqXHR) -> 
 
         successCb? data
-      error: (data, textStatus, jqXHR) -> 
+      error: (jqXHR, textStatus, errorThrown) -> 
 
-        msgFunction = common.constants.en_US["ERROR_CREATE_#{type}"]
-        errorCb? msgFunction #{jqXHR}
-  get = curry (type, id, successCb) ->
+        # TODO: proper err msg
+        #msgFunction = common.constants.en_US["ERROR_CREATE_#{type}"]
+        errorCb? #{errorThrown}
+  get = (type, id, successCb, errorCb) ->
 
     $.ajaxq 'client',
 
@@ -290,7 +291,7 @@ class Model
       error: (jqXHR, textStatus, errorThrown) -> 
 
         #TODO: proper errmsg
-        console.log 'error: #{errorThrown}'
+        errorCb? errorThrown
   getMultiple = curry (type, parentId, successCb) ->
 
     if parentId?
@@ -320,9 +321,9 @@ class Model
   removeTask: remove 'task'
   removeStory: remove 'story'  
   removeSprint: remove 'sprint'
-  getTask: get 'task'
-  getStory: get 'story'
-  getSprint: get 'sprint'
+  getTask: partial get, 'task'
+  getStory: partial get, 'story'
+  getSprint: partial get, 'sprint'
   getTasks: getMultiple 'task'
   getStories: getMultiple 'story'
   getSprints: getMultiple 'sprint', null
@@ -435,6 +436,11 @@ class ViewModel
         @modal 'error-dialog'
         @errorMessage message
 
+  _showError: (message) =>
+
+    @errorMessage message
+    @modal 'error-dialog'
+
   cancelPopup: (data, event) =>
 
     if event.keyCode == 27 && @modal != null
@@ -538,314 +544,3 @@ class ParentViewModel extends ViewModel
       cursor: 'move'
       containment: 'ul#well'
       handle: '.header'
-
-  # old ractive stuff
-
-  ###constructor: (@view, @model) ->
-
-    ractiveHandlers =
-
-      execute_pending_update: @executePendingUpdate
-      set_before_value: @setBeforeValue
-      trigger_update: @triggerUpdate
-      tapped_selector: @openSelectorPopup
-      tapped_selector_item: @selectPopupItem
-      tapped_button: @handleButton
-    @view.setRactiveHandlers ractiveHandlers
-  setBeforeValue: (ractiveEvent) ->
-
-    node = ractiveEvent.node
-    $(node).data 'before_value', #{$(node).val()
-  _initDatePickers: (options) =>
-
-    $('.date-selector .content').datepicker
-
-      inline: true
-      showOtherMonths: true
-      dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-      nextText: '<div class="arrow right"></div>'
-      prevText: '<div class="arrow left"></div>'
-      dateFormat: $.datepicker.ISO_8601
-      gotoCurrent: true
-      onSelect: @_selectDate
-
-    for key, value of options
-
-      $('.date-selector .content').datepicker 'option', key, value
-  _selectDate: (dateText, inst) =>
-
-    dateSelector = $(inst.input).parents('.date-selector')
-    @_hidePopup dateSelector.attr('id')
-    # rather put that in as a ractive variable? TODO: FIX THAT FOR SPRINTS, TOO!
-    $('.selected', dateSelector).data 'date', dateText
-    $('.selected', dateSelector).text moment(dateText).format(common.DATE_DISPLAY_FORMAT)
-  _initPopupSelectors: =>
-
-    $('.popup-selector a.open').click (event) -> event.preventDefault()
-    $('.popup-selector').each (index, element) =>
-
-      $('.selected', $(element)).click => $(document).one 'keyup', (event) =>
-
-        if event.keyCode == 27 then @_hidePopup(element.id)
-  _setConfirmedValue: (node) ->
-
-    key = node.id 
-    value = @model.get key
-    $(node).data 'confirmed_value', value
-  _resetToConfirmedValue: (node) -> 
-
-    key = node.id 
-    @model.set key, $(node).data('confirmed_value')
-  _isConfirmedValue: (node) ->
-
-    key = node.id 
-    value = @model.get key
-    value == $(node).data('confirmed_value')
-  _showPopup: (id) -> 
-
-    contentHeight = $('#content').height()
-    popupHeight = $("##{id} .content").height()
-    footerHeight = $("#button-bar").height()
-    $("##{id} .content").show()
-    popupTop = $("##{id}").position()?.top
-
-    $('#overlay').css({height: $(window).height() + 'px'}).show()
-    if (popupTop + popupHeight) > (contentHeight + footerHeight)
-
-      $('#content').css 'height', popupTop + popupHeight - footerHeight
-  _hidePopup: (id) -> 
-
-    $("##{id} .content").hide()
-    $('#overlay').hide()
-    $('#content').css('height', 'auto')
-  _showModal: (type, message) =>
-
-    if message? then @view.set("#{type}_message", message)
-    $('#overlay').css({height: $(window).height() + 'px'}).show()
-    #$("##{type}-dialog").show()
-    $("##{type}-dialog").css('visibility','visible')
-  showConfirm: (message) => @_showModal 'confirm', message
-  showError: (message) => @_showModal 'error', message
-  _hideModal: (type) -> 
-
-    $("##{type}-dialog").css('visibility','hidden')
-    $("#overlay").hide()
-    #$("##{type}-dialog, #overlay").hide()
-  hideConfirm: -> @_hideModal 'confirm'
-  hideError: -> @_hideModal 'error'
-  openSelectorPopup: (ractiveEvent, id) =>
-
-    @_showPopup(id)
-  selectPopupItem: (ractiveEvent, args) =>
-
-    id = args.selector_id
-    @_hidePopup id
-  handleButton: (ractiveEvent, action) => 
-
-    switch action
-
-      when 'error_ok' then @hideError()
-      when 'confirm_cancel' then @hideConfirm()
-      when 'confirm_confirm' then @hideConfirm()
-
-  _buildUpdateCall: (node) =>
-
-    key = node.id;
-    value = @model.get key
-
-    return =>
-
-      undoValue = @view.get "#{@model.type}.#{key}"
-      successCb = (data) => 
-
-        @view.set "#{@model.type}._rev", data.rev
-        if $(node).data('confirmed_value')? then @_setConfirmedValue node
-      errorCb = => 
-
-        @view.set "#{@model.type}.#{key}", undoValue
-      if !@_isConfirmedValue(node) 
-
-        @view.set "#{@model.type}.#{key}", value
-        @model.update key, successCb, errorCb
-  _abortCall: (timer) ->
-
-    clearTimeout timer?.id
-    call = timer?.call
-    timer = null
-    call
-  _delayCall: (call) ->
-
-    id = setTimeout call, common.KEYUP_UPDATE_DELAY
-    {id, call}
-
-  executePendingUpdate: (ractiveEvent) =>
-
-    call = @_abortCall @keyboardTimer
-    if call? then do call
-
-  triggerUpdate: (ractiveEvent) =>
-
-    event = ractiveEvent.original
-    node = ractiveEvent.node
-    value = $(node).val()
-
-    if $(node).data('before_value') != value
-
-      $(node).removeData('before_value')
-
-      @_abortCall @keyboardTimer
-
-      if (node.localName == 'input') && (event.which == 13) then event.preventDefault()
-
-      updateCall = @_buildUpdateCall node
-
-      if (node.localName.match /^input$|^textarea$/)? && $(node).data('validation')?
-
-        if !$(node).data('validation') value 
-
-          @_resetToConfirmedValue(node)
-          updateCall = -> $(node).next().show()  
-        else $(node).next().hide()
-
-      @keyboardTimer = @_delayCall updateCall
-
-class ChildViewModel extends ViewModel
-
-  constructor: (@view, @model) ->
-
-    super(@view, @model)
-
-    $('ul#well').sortable
-
-      tolerance: 'pointer'
-      delay: 150
-      cursor: 'move'
-      containment: 'ul#well'
-      handle: '.header'
-    $('ul#well').on 'sortstart', (event, ui) => 
-
-      originalIndex = ui.item.index()
-      $('ul#well').one 'sortstop', (event, ui) =>
-
-        index = ui.item.index()
-        if index != originalIndex then @_handleSortstop originalIndex, index
-  _calculatePriority: (originalIndex, index) =>
-
-    objects = @model.children.objects.slice()
-    object = objects[originalIndex]
-    objects.splice(originalIndex, 1)
-    objects.splice(index, 0, object)
-
-    if index == 0 then prevPrio = 0
-    else prevPrio = objects[index - 1].priority
-
-    last = objects.length - 1
-    if index == last 
-
-      Math.ceil objects[index - 1].priority + 1
-    else
-
-      nextPrio = objects[index + 1].priority
-      (nextPrio - prevPrio) / 2 + prevPrio
-  _setConfirmedValue: (node) ->
-
-    [key, childIndex] = @_buildKey node
-    if childIndex? then value = @model.children.objects[childIndex]?[key]
-    else value = @model.get key
-    $(node).data 'confirmed_value', value
-  _resetToConfirmedValue: (node) -> 
-
-    [key, childIndex] = @_buildKey node
-    if childIndex? then @model.children.objects[childIndex]?[key] = $(node).data('confirmed_value')
-    else value = @model.set key, $(node).data('confirmed_value')
-  _isConfirmedValue: (node) ->
-
-    [key, childIndex] = @_buildKey node
-    if childIndex? then value = @model.children.objects[childIndex]?[key]
-    else value = @model.get key
-    value == $(node).data('confirmed_value')
-  _handleSortstop: (originalIndex, index) => 
-
-    priority = @_calculatePriority originalIndex, index
-    undoValue = @model.children.objects[originalIndex].priority
-    @model.children.objects[originalIndex].priority = priority
-    @model.updateChild originalIndex, 'priority'
-
-      ,(data) =>
-
-        @model.children.objects[originalIndex]._rev = data.rev
-        children = @model.children.objects.slice()
-        children.sort (a, b) -> 
-
-          a.priority > b.priority ? -1 : 1
-        @model.children.objects = children
-      ,(message) =>
-
-        @model.children.objects[originalIndex].priority = undoValue
-        li = $("ul#well li:nth-child(#{index + 1})")
-        li.detach()
-        $("ul#well li:nth-child(#{originalIndex})").after(li)
-        @showError message
-   _buildKey: (node) ->
-
-    idParts = node.id.split('-')
-    if idParts.length > 1 then [idParts[0], idParts[1]]
-    else [idParts[0], undefined]
-  _buildUpdateCall: (node) =>
-
-    [key, childIndex] = @_buildKey node
-    if childIndex? 
-
-      value = @model.children.objects[childIndex]?[key]
-      type = @model.children.type
-    else 
-
-      type = @model.type
-      value = @model[type][key]
-
-    return =>
-
-      successCb = (data) => 
-
-        if childIndex? then keypathPrefix = "children[#{childIndex}]"
-        else keypathPrefix = "#{type}"
-        @view.set "#{keypathPrefix}._rev", data.rev
-        @view.set "#{keypathPrefix}.#{key}", data.value
-        if $(node).data('confirmed_value')? then @_setConfirmedValue node
-      errorCb = => 
-
-        if childIndex? then keypath = "children[#{childIndex}].#{key}"
-        else keypath = "#{type}.#{key}"       
-        @view.set keypath, $(node).data('confirmed_value')
-
-      if !@_isConfirmedValue(node) 
-
-        if childIndex? then @model.updateChild childIndex, key, successCb, errorCb
-        else @model.update key, successCb, errorCb###
-  ###_debug_printPrio: (objects = @model.children.objects) =>
-
-    for task in objects
-
-      console.log "#{task.summary}: #{task.priority}"
-  _debug_setPrio: (x = 1) =>
-    
-    i = 0
-    objects = @model.children.objects #.slice()
-    objects.sort (a, b) -> a.summary > b.summary ? -1 : 1
-    for task in objects
-
-      task.priority = i + x
-      @model.updateChild i++, 'priority'
-    @_debug_printPrio objects
-  _setChildPriority: (index, priority) =>
-    
-    @view.set "children.#{index}.priority", priority
-    @view.get('children').sort @_sortByPriority
-  _sortChildren: =>
-
-    objects = @model.children.objects.slice()
-    objects.sort @_sortByPriority
-
-  _sortByPriority: (a, b) ->
-
-      a.priority > b.priority ? -1 : 1###
