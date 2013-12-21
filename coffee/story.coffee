@@ -268,6 +268,7 @@ class StoryViewModel extends ParentViewModel
         if change.status == 'added'
 
           taskObservable = @tasks()[change.index]
+          # Add to model
           @model.children.objects.splice change.index, 0, taskObservable._js
         else if change.status == 'deleted'
 
@@ -407,8 +408,26 @@ class StoryViewModel extends ParentViewModel
 
     _.each notifications, curry2(_.defaults)(defaults)
 
+    # the order of this subscribe statement is crucial, since it should be called
+    # *after* the task observable has been created in the first subscription
+    @tasks.subscribe (changes) =>
+
+      for change in changes
+
+        if change.status == 'added'
+
+          taskObservable = @tasks()[change.index]
+          notification = @_createTaskNotification taskObservable
+          socket.registerNotifications notification
+          notifications.push notification
+        if change.status == 'deleted'
+
+          notification = _.findWhere(notifications, {object_id: change.value._id})
+          socket.unregisterNotifications notification
+    , null, 'arrayChange'
+
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
       @model.sessionid = sessionid
-      socket.registerNotifications notifications   
+      socket.registerNotifications notifications 
