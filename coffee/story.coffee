@@ -103,28 +103,69 @@ class StoryModel extends ParentModel
 
 class StoryViewModel extends ParentViewModel
 
-  _createStoryNotification: ->
+  _createObservablesObject: (task) =>
 
-    properties: _.chain(@model.story).keys().reject((a) -> a[0] == '_').value()
-    handler: (data) =>
+    _id: task._id
+    summary: @_createThrottledObservable task, 'summary', @_updateTaskModel
+    description: @_createThrottledObservable task, 'description', @_updateTaskModel
+    color: @_createObservable task, 'color', @_updateTaskModel
+    priority: @_createObservable task, 'priority', @_updateTaskModel
+    remaining_time: @_createObservable task, 'remaining_time', @_updateTaskModel
+    time_spent: @_createObservable task, 'time_spent', @_updateTaskModel
+    _url: '/task/' + task._id
+    _js: task
+    _remaining_time: ko.computed =>
 
-      @model.story._rev = data.rev
-      @model.story[data.key] = data.value
-      @[data.key]?(data.value)
-      if data.key == 'sprint_id'
+      # TODO: verify the correct remaining_time object is used! (it should, tho)
+      @model.buildRemainingTime task.remaining_time, @sprintRange()
 
-        @model.getSprint @sprint_id(), @_replaceSprint
+  _createStoryNotifications: ->
 
-  _createTaskNotification: (observablesObject, index) ->
+    update =
 
-    object_id: observablesObject._id
-    properties: ['summary', 'description', 'color', 'priority']
-    handler: (data) =>
+      properties: _.chain(@model.story).keys().reject((a) -> a[0] == '_').value()
+      handler: (data) =>
 
-      task = @model.children.objects[index]
-      task._rev = data.rev
-      task[data.key] = data.value
-      observablesObject[data.key] data.value
+        @model.story._rev = data.rev
+        @model.story[data.key] = data.value
+        @[data.key]?(data.value)
+        if data.key == 'sprint_id'
+
+          @model.getSprint @sprint_id(), @_replaceSprint
+    add = 
+
+      method: 'PUT'
+      handler: (data) =>
+
+        observableObject = @_createObservablesObject data.new
+        @tasks.push observableObject
+        # TODO: sort after push?
+    [update, add]
+
+  _createTaskNotifications: (observablesObject, index) =>
+
+    update = 
+
+      object_id: observablesObject._id
+      properties: ['summary', 'description', 'color', 'priority']
+      handler: (data) =>
+
+        task = @model.children.objects[index]
+        task._rev = data.rev
+        task[data.key] = data.value
+        observablesObject[data.key] data.value
+
+    remove = 
+
+      method: 'DELETE'
+      object_id: observablesObject._id
+      handler: =>
+
+        @tasks.remove (item) ->
+
+          item._id == observablesObject._id
+
+    [update, remove]
 
   _createSprintNotification: ->
 
@@ -235,23 +276,7 @@ class StoryViewModel extends ParentViewModel
 
     # tasks
 
-    createObservablesObject = (task) =>
-
-      _id: task._id
-      summary: @_createThrottledObservable task, 'summary', @_updateTaskModel
-      description: @_createThrottledObservable task, 'description', @_updateTaskModel
-      color: @_createObservable task, 'color', @_updateTaskModel
-      priority: @_createObservable task, 'priority', @_updateTaskModel
-      remaining_time: @_createObservable task, 'remaining_time', @_updateTaskModel
-      time_spent: @_createObservable task, 'time_spent', @_updateTaskModel
-      _url: '/task/' + task._id
-      _js: task
-      _remaining_time: ko.computed =>
-
-        # TODO: verify the correct remaining_time object is used! (it should, tho)
-        @model.buildRemainingTime task.remaining_time, @sprintRange()
-
-    tasks = _.map @model.children.objects, createObservablesObject
+    tasks = _.map @model.children.objects, @_createObservablesObject
     _.each tasks, (task) =>
 
       task.priority.subscribe =>
@@ -298,9 +323,9 @@ class StoryViewModel extends ParentViewModel
 
       @model.createTask @model.story._id
 
-        , (task) => 
+        , (data) => 
         
-          observableObject = createObservablesObject task
+          observableObject = @_createObservablesObject data.new
           @tasks.push observableObject
           # TODO: sort after push?
         , showErrorDialog
@@ -390,7 +415,7 @@ class StoryViewModel extends ParentViewModel
       method: 'POST'
       object_id: @model.story._id
 
-    notifications.push @_createStoryNotification()
+    Array.prototype.push.apply notifications, @_createStoryNotifications()
 
     notifications.push sprintNotification = @_createSprintNotification()
 
@@ -404,7 +429,7 @@ class StoryViewModel extends ParentViewModel
 
     notifications.push @_createBreadcrumbNotification()
 
-    Array.prototype.push.apply notifications, _.map @tasks(), @_createTaskNotification
+    Array.prototype.push.apply notifications, _.chain(@tasks()).map(@_createTaskNotifications).flatten().value()
 
     _.each notifications, curry2(_.defaults)(defaults)
 
@@ -417,13 +442,12 @@ class StoryViewModel extends ParentViewModel
         if change.status == 'added'
 
           taskObservable = @tasks()[change.index]
-          notification = @_createTaskNotification taskObservable
-          socket.registerNotifications notification
-          notifications.push notification
+          notifications = _.defaults(@_createTaskNotifications(taskObservable), defaults)
+          socket.registerNotifications notifications
+          Array.prototype.push.apply notifications 
         if change.status == 'deleted'
 
-          notification = _.findWhere(notifications, {object_id: change.value._id})
-          socket.unregisterNotifications notification
+          socket.unregisterNotifications _.where(notifications, {object_id: change.value._id})
     , null, 'arrayChange'
 
     socket = new SocketIO()

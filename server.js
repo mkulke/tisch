@@ -49,7 +49,18 @@ function partial(fn) {
   };
 }
 
-var broadcastUpdateToOtherClients = broadcastToOtherClients('update');
+function curry2(fn) {
+
+  return function(arg2) {
+
+    return function(arg1) {
+
+      fn(arg1, arg2);
+    };
+  };
+}
+
+/*var broadcastUpdateToOtherClients = broadcastToOtherClients('update');
 var broadcastAddToOtherClients = broadcastToOtherClients('add');
 var broadcastRemoveToOtherClients = broadcastToOtherClients('remove');
 
@@ -64,7 +75,7 @@ function broadcastToClients(sourceUUID, data) {
       client.emit('message', data);
     }
   }
-}
+}*/
 
 function respondWithHtml(html, response) {
 
@@ -262,7 +273,7 @@ function findAndRemove(db, type, filter) {
 
   var deferred = Q.defer();  
 
-  var removedIds = [];
+  var removed = [];
 
   function loop() {
 
@@ -274,12 +285,12 @@ function findAndRemove(db, type, filter) {
       } 
       else if (result !== null) {
 
-        removedIds.push(result._id.toString());
+        removed.push(result);
         loop();
       }
       else {
 
-        deferred.resolve(removedIds);
+        deferred.resolve(removed);
       }
     });
   }
@@ -441,10 +452,42 @@ var jsonRespond = function(response, json) {
 
 var postAnswer = function(key, respond, result) {
 
-  var changes, headers;
-  changes = {id: result._id, rev: result._rev, key: key, value: result[key]};
+  // TODO: rubustness
+  var changes = {id: result._id.toString(), rev: result._rev, key: key, value: result[key]};
   respond(changes);
   return changes;
+};
+
+var deleteAnswer = function(respond, result) {
+
+  var removed;
+
+  if (!_.isArray(result)) {
+
+    removed = [{id: result._id.toString()}];
+  } else {
+
+    removed = _.map(result, function(object) {
+
+      return {id: object._id.toString()};
+    });
+  }
+
+  respond(removed);
+  return removed;
+};
+
+var putAnswer = function(parentKey, respond, result) {
+
+  var parentId, added;
+  if (!(parentId = result[parentKey]) instanceof ObjectID) {
+
+    // TODO i18n
+    throw "The " + parentKey + " property is not an Object ID";
+  }
+  added = {id: parentId.toString(), new: result};
+  respond(added);
+  return added;
 };
 
 function processRequest(request, response) {
@@ -585,12 +628,8 @@ function processRequest(request, response) {
 
       return insert(db, 'task', 'story', data);
     };
-      
-    answer = function(result) {
-
-      respondWithJson(result, response);
-      broadcastAddToOtherClients(request.headers.client_uuid, {parent_id: result.story_id, object: result});
-    };
+    
+    answer = partial(putAnswer, 'story_id', partial(jsonRespond, response));
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
   
@@ -604,11 +643,7 @@ function processRequest(request, response) {
       return remove(db, 'task', filter, true);
     };
       
-    answer = function(result) {
-
-      respondWithJson(id, response);
-      broadcastRemoveToOtherClients(request.headers.client_uuid, {id: id, parent_id: result.story_id});
-    };
+    answer = partial(deleteAnswer, partial(jsonRespond, response));
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
 
@@ -729,24 +764,28 @@ function processRequest(request, response) {
 
     query = function() {
 
+      var story;
       var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
 
       return remove(db, type, filter, true)
-      .then(function() {
+      .then(function(result) {
 
+        story = result;
         filter = {story_id: ObjectID(id)};
 
         return findAndRemove(db, 'task', filter);
       })
       .then(function(result) {
 
-        var removedIds = result;
-        removedIds.push(id);
-        return removedIds;
+        var removed = result;
+        removed.push(story);
+        return removed;
       });
     };  
 
-    answer = function(result) {
+    answer = partial(deleteAnswer, partial(jsonRespond, response));
+
+    /*answer = function(result) {
 
       // ajax response is only the requested id.
       respondWithJson(id, response);
@@ -760,7 +799,7 @@ function processRequest(request, response) {
         //var removedId = result[i];
         //broadcastToClients(request.headers.client_uuid, {message: 'remove', recipient: removedId, data: removedId});
       }
-    };
+    };*/
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
 
@@ -1006,9 +1045,13 @@ function processRequest(request, response) {
 
     var clientIds, clients, byGenerator, byRequest, byId, byProperties, originatingClient, toNotification;
 
-    // TODO: result is an array on cascaded deletion
     if (!result) {
 
+      return;
+    }
+    else if (_.isArray(result)) {
+
+      _.each(result, notify);
       return;
     }
 

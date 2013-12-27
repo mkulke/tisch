@@ -248,7 +248,7 @@ class Model
 
       url: "/#{type}/#{item._id}"
       type: 'DELETE'
-      headers: {client_uuid: common.uuid}
+      headers: {client_uuid: common.uuid, sessionid: @sessionid}
       beforeSend: (jqXHR, settings) =>
 
         jqXHR.setRequestHeader 'rev', getRev()
@@ -258,9 +258,9 @@ class Model
       error: (jqXHR, textStatus, errorThrown) -> 
 
         errorCb? (if errorThrown == "" then 'Error: Unknown communications problem with server.' else errorThrown)
-  create = curry (type, parentId, successCb, errorCb) ->
+  create = (type, parentId, successCb, errorCb) ->
 
-    headers = {client_uuid: common.uuid}
+    headers = {client_uuid: common.uuid, sessionid: @sessionid}
     if parentId?
 
       headers.parent_id = parentId
@@ -315,9 +315,9 @@ class Model
         #TODO: proper errmsg
         console.log 'error: #{data}'    
 
-  createTask: create 'task'
-  createStory: create 'story'
-  createSprint: create 'sprint', null
+  createTask: partial create, 'task'
+  createStory: partial create, 'story'
+  createSprint: partial create, 'sprint'
   removeTask: remove 'task'
   removeStory: remove 'story'  
   removeSprint: remove 'sprint'
@@ -343,7 +343,7 @@ class Model
 
       url: "/#{type}/#{object._id}"
       type: 'POST'
-      headers: {client_uuid: common.uuid, sessionid: @sessionid}
+      headers: {client_uuid: common.uuid, sessionid: @sessionid} # TODO get rid of common.uuid
       contentType: 'application/json'
       data: JSON.stringify {key: key, value: object[key]}
       beforeSend: (jqXHR, settings) ->
