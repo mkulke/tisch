@@ -442,7 +442,8 @@ class StoryViewModel extends ParentViewModel
         if change.status == 'added'
 
           taskObservable = @tasks()[change.index]
-          notifications = _.defaults(@_createTaskNotifications(taskObservable), defaults)
+          notifications = @_createTaskNotifications taskObservable, change.index
+          _.each notifications, curry2(_.defaults)(defaults)
           socket.registerNotifications notifications
           Array.prototype.push.apply notifications 
         if change.status == 'deleted'
