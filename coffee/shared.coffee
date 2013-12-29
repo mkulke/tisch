@@ -345,6 +345,7 @@ class Model
       type: 'POST'
       headers: {client_uuid: common.uuid, sessionid: @sessionid} # TODO get rid of common.uuid
       contentType: 'application/json'
+      dataType: 'json'
       data: JSON.stringify {key: key, value: object[key]}
       beforeSend: (jqXHR, settings) ->
 

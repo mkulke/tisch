@@ -23,6 +23,12 @@ var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), opti
 options.filename = 'index.jade';
 var index_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 
+var task_template_2 = function(response) {
+
+  return task_template({task: response.task, story: response.story, sprint: response.sprint, messages: messages});
+}
+var htmlTemplates = {index: index_template, sprint: sprint_template, story: story_template, task: task_template_2};
+
 var clients = [];
 
 var broadcastToOtherClients = curry(function(type, sourceUUID, data) {
@@ -76,6 +82,82 @@ function broadcastToClients(sourceUUID, data) {
     }
   }
 }*/
+
+var complainWithPlain = function(err) {
+
+  this.writeHead(500, err.toString(), {"Content-Type": "text/plain"});
+  this.write(err.toString());
+  this.end();  
+};
+
+var complainWithJson = function(err) {
+
+  this.writeHead(500, err.toString());
+  this.end();  
+};
+
+var postAnswer = function(key, respond, result) {
+
+  // TODO: rubustness
+  var changes = {id: result._id.toString(), rev: result._rev, key: key, value: result[key]};
+  respond(changes);
+  return changes;
+};
+
+var deleteAnswer = function(respond, result) {
+
+  var removed;
+
+  if (!_.isArray(result)) {
+
+    removed = [{id: result._id.toString()}];
+  } else {
+
+    removed = _.map(result, function(object) {
+
+      return {id: object._id.toString()};
+    });
+  }
+
+  respond(removed);
+  return removed;
+};
+
+var putAnswer = function(parentKey, respond, result) {
+
+  var parentId, added;
+  if (!(parentId = result[parentKey]) instanceof ObjectID) {
+
+    // TODO i18n
+    throw "The " + parentKey + " property is not an Object ID";
+  }
+  added = {id: parentId.toString(), new: result};
+  respond(added);
+  return added;
+};
+
+function respondWithHtml_2(response, type, result) {
+
+  var template, html, headers;
+  // TODO: robustness
+  template = htmlTemplates[type]
+  html = template(result);
+  headers = {'Content-Type': 'text/html', 'Cache-control': 'no-store'};
+
+  response.writeHead(200, headers);
+  response.write(html);
+  response.end();
+}
+
+function respondWithJson_2(response, result) {
+
+  // TODO: robustness      
+  var headers = {'Content-Type': 'application/json'};
+
+  response.writeHead(200, headers);
+  response.write(JSON.stringify(result));            
+  response.end();
+}
 
 function respondWithHtml(html, response) {
 
@@ -428,68 +510,6 @@ var updateAssignment = function(db, type, id, rev, parentType, parentId) {
   } 
 }
 
-var complainWithPlain = function(err) {
-
-  this.writeHead(500, err.toString(), {"Content-Type": "text/plain"});
-  this.write(err.toString());
-  this.end();  
-};
-
-var complainWithJson = function(err) {
-
-  this.writeHead(500, err.toString());
-  this.end();  
-};
-
-var jsonRespond = function(response, json) {
-
-  var headers;
-  headers = {'Content-Type': 'application/json'};
-  response.writeHead(200, headers);
-  response.write(JSON.stringify(json));            
-  response.end();
-};
-
-var postAnswer = function(key, respond, result) {
-
-  // TODO: rubustness
-  var changes = {id: result._id.toString(), rev: result._rev, key: key, value: result[key]};
-  respond(changes);
-  return changes;
-};
-
-var deleteAnswer = function(respond, result) {
-
-  var removed;
-
-  if (!_.isArray(result)) {
-
-    removed = [{id: result._id.toString()}];
-  } else {
-
-    removed = _.map(result, function(object) {
-
-      return {id: object._id.toString()};
-    });
-  }
-
-  respond(removed);
-  return removed;
-};
-
-var putAnswer = function(parentKey, respond, result) {
-
-  var parentId, added;
-  if (!(parentId = result[parentKey]) instanceof ObjectID) {
-
-    // TODO i18n
-    throw "The " + parentKey + " property is not an Object ID";
-  }
-  added = {id: parentId.toString(), new: result};
-  respond(added);
-  return added;
-};
-
 function processRequest(request, response) {
 
   // TODO: db is open and closed on every request? oh my.
@@ -507,6 +527,8 @@ function processRequest(request, response) {
   };
 
   var query = function() {
+
+    return null;
   };
 
   var answer = function() {
@@ -520,6 +542,8 @@ function processRequest(request, response) {
     }
   }; 
 
+  var htmlAnswer; 
+
   var url_parts = url.parse(request.url, true);
   //var query = url_parts.query;
   var pathname = url_parts.pathname;
@@ -527,18 +551,19 @@ function processRequest(request, response) {
   var type = pathParts.length > 1 ? unescape(pathParts[1]) : null;
   var id = pathParts.length > 2 ? unescape(pathParts[2]) : null;
   var html = true;
-  var accept = (typeof request.headers.accept != 'undefined') ? request.headers.accept : null;
 
-  if (accept && (accept.indexOf("application/json") != -1)) {
+  if ((request.headers.accept !== undefined) && (request.headers.accept.match(/application\/json/) !== null)) {
   
     html = false;
   }
-    
+  var respond = html ? partial(respondWithHtml_2, response, type) : partial(respondWithJson_2, response);
+
   if ((type == 'task') && (request.method == 'GET')) {
 
     query = function() {
 
       if (html) {
+
         var task;
         var story;
 
@@ -564,22 +589,7 @@ function processRequest(request, response) {
       }
     };
 
-    // TODO: merge code w/ story part.
-    if (html) {
-
-      answer = function(result) {
-      
-        var html = task_template({task: result.task, story: result.story, sprint: result.sprint, messages: messages});
-        respondWithHtml(html, response);
-      };  
-    }
-    else {
-
-      answer = function(result) {
-
-        respondWithJson(result, response);
-      };        
-    }
+    answer = respond;
   } 
   else if ((type == 'task') && (request.method == 'POST')) {
 
@@ -606,7 +616,7 @@ function processRequest(request, response) {
       }
     };
 
-    answer = partial(postAnswer, request.body.key, partial(jsonRespond, response));
+    answer = partial(postAnswer, request.body.key, partial(respondWithJson_2, response));
   } 
   else if ((type == 'task') && (request.method == 'PUT')) {
 
@@ -629,7 +639,7 @@ function processRequest(request, response) {
       return insert(db, 'task', 'story', data);
     };
     
-    answer = partial(putAnswer, 'story_id', partial(jsonRespond, response));
+    answer = partial(putAnswer, 'story_id', partial(respondWithJson_2, response));
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
   
@@ -643,7 +653,7 @@ function processRequest(request, response) {
       return remove(db, 'task', filter, true);
     };
       
-    answer = partial(deleteAnswer, partial(jsonRespond, response));
+    answer = partial(deleteAnswer, partial(respondWithJson_2, response));
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
 
@@ -652,50 +662,32 @@ function processRequest(request, response) {
       query = function() {
 
         var story;
-        var tasks;
+        
+        if (html) {
 
-        return findOne(db, 'story', id)
-        .then(function (result) {
+          var tasks;
 
-          story = result;
-          return find(db, 'task', {story_id: story._id}, {priority: 1});
-        })
-        .then(function (result) {
+          return findOne(db, 'story', id)
+          .then(function (result) {
 
-          tasks = result;
-          return findOne(db, 'sprint', story.sprint_id.toString());  
-        })
-        .then(function (result) {
+            story = result;
+            return find(db, 'task', {story_id: story._id}, {priority: 1});
+          })
+          .then(function (result) {
 
-          var sprint = result;
-          return {story: story, tasks: tasks, sprint: sprint}; 
-        });
+            tasks = result;
+            return findOne(db, 'sprint', story.sprint_id.toString());  
+          })
+          .then(function (result) {
+
+            return {story: story, tasks: tasks, sprint: result, messages: messages}; 
+          });
+        } else {
+
+          return findOne(db, 'story', id);
+        }
       };
-
-      if (html) {
-
-        answer = function(result) {
-        
-          return Q.fcall(function() {
- 
-            var html = story_template({story: result.story, tasks: result.tasks, sprint: result.sprint, messages: messages});
-            respondWithHtml(html, response);
-          });
-        };  
-      }
-      else {
-
-        answer = function(result) {
-        
-          return Q.fcall(function() {
- 
-            // TODO: find tasks uncecessary in this case
-            respondWithJson(result.story, response);
-          });
-        };        
-      }
-    }
-    else {
+    } else {
 
       assert.notEqual(true, html, 'Generic story GET available only as json.');
 
@@ -703,16 +695,10 @@ function processRequest(request, response) {
 
         return find(db, 'story', request.headers.parent_id ? {sprint_id: ObjectID(request.headers.parent_id)} : {}, {title: 1});
       };
-
-      answer = function(result) {
-
-        return Q.fcall(function() {
-
-          respondWithJson(result, response);
-        });  
-      };
     }
-   } else if ((type == 'story') && (request.method == 'POST')) {
+
+    answer = respond;
+  } else if ((type == 'story') && (request.method == 'POST')) {
 
     assert.ok(id, 'id url part missing.');
     assert.ok(request.headers.rev, 'rev missing in request headers.');
@@ -730,7 +716,7 @@ function processRequest(request, response) {
       }
     };
 
-    answer = partial(postAnswer, request.body.key, partial(jsonRespond, response));
+    answer = partial(postAnswer, request.body.key, partial(respondWithJson_2, response));
   }
   else if ((type == 'story') && (request.method == 'PUT')) {
 
@@ -783,23 +769,7 @@ function processRequest(request, response) {
       });
     };  
 
-    answer = partial(deleteAnswer, partial(jsonRespond, response));
-
-    /*answer = function(result) {
-
-      // ajax response is only the requested id.
-      respondWithJson(id, response);
-
-      var data = {id: id, sprint_id: result.story_id};
-      for (var i in result) {
-
-        var data = {id: id, story_id: result.story_id};
-        broadcastRemoveToOtherClients(request.headers.client_uuid, data);
-
-        //var removedId = result[i];
-        //broadcastToClients(request.headers.client_uuid, {message: 'remove', recipient: removedId, data: removedId});
-      }
-    };*/
+    answer = partial(deleteAnswer, partial(respondWithJson_2, response));
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
 
@@ -895,7 +865,7 @@ function processRequest(request, response) {
       return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);
     };
 
-    answer = partial(postAnswer, request.body.key, partial(jsonRespond, response));
+    answer = partial(postAnswer, request.body.key, partial(respondWithJson_2, response));
   }
   else if ((type == 'sprint') && (request.method == 'PUT')) {
 
