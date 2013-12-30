@@ -4,14 +4,13 @@ var connect = require('connect');
 var fs = require('fs');
 var assert = require('assert');
 var url = require('url');
-var MongoClient = require('mongodb').MongoClient;
 var ObjectID = require('mongodb').ObjectID;
 var messages = require('./messages.json');
 var Q = require('q');
 var io = require('socket.io');
 var moment = require('moment');
-var curry = require('curry');
 var _ = require('underscore')._;
+var tischDB = require('./tischdb.js');
 
 var cwd = process.cwd();
 var options = { pretty: false, filename: 'sprint.jade' };
@@ -31,7 +30,7 @@ var htmlTemplates = {index: index_template, sprint: sprint_template, story: stor
 
 var clients = [];
 
-var broadcastToOtherClients = curry(function(type, sourceUUID, data) {
+var broadcastToOtherClients = function(type, sourceUUID, data) {
 
 /*  for (var key in clients) {
 
@@ -42,7 +41,7 @@ var broadcastToOtherClients = curry(function(type, sourceUUID, data) {
       client.emit(type, data);
     }
   }*/
-});
+};
 
 function partial(fn) {
 
@@ -65,23 +64,6 @@ function curry2(fn) {
     };
   };
 }
-
-/*var broadcastUpdateToOtherClients = broadcastToOtherClients('update');
-var broadcastAddToOtherClients = broadcastToOtherClients('add');
-var broadcastRemoveToOtherClients = broadcastToOtherClients('remove');
-
-function broadcastToClients(sourceUUID, data) {
-
-  for (var key in clients) {
-
-    if (key != sourceUUID) {
-
-      var client = clients[key];
-      console.log('emit ' + data.message + ' to ' + key);
-      client.emit('message', data);
-    }
-  }
-}*/
 
 var complainWithPlain = function(err) {
 
@@ -187,344 +169,7 @@ function respondOk(response) {
   response.end();
 }
 
-function getRemainingTime(db, type, parentType, parentIds, range) {
-
-  var deferred = Q.defer();
-
-  objectIds = parentIds.map(ObjectID);
-
-  var map = function() {  
-
-    var remaining_time;
-    var keys = Object.keys(this.remaining_time).filter(function(key) {
-
-      return ((key >= start) && (key <= end)); // filters out 'initial' as well
-    }).sort();
-
-    if (keys.length > 0) {
-
-      var key = keys[keys.length - 1];
-      remaining_time = this.remaining_time[key];
-    }
-    else {
-
-      remaining_time = this.remaining_time.initial;
-    }
-
-    emit(this.story_id, remaining_time);
-  };
-
-  var reduce = function(key, values) {
-
-    return Array.sum(values);
-  };
-
-  query = {};
-  query[parentType + '_id'] = {$in: objectIds};
-  db.collection(type).mapReduce(map, reduce, {query: query, out: {inline: 1}, scope: {start: range.start, end: range.end}}, function (err, result) {
-
-    if (err) {
-
-      deferred.reject(new Error(err));
-    }
-    else {
-
-      deferred.resolve(result);
-    }
-  });
-
-  return deferred.promise;
-}
-
-function getMaxPriority(db, type, parentType, parentId) {
-
-  var deferred = Q.defer();
-
-  var aggregation = [
-    {$match: {}},
-    {$group: {_id: null, max_priority: {$max: '$priority'}}}
-  ];
-  aggregation[0].$match[parentType + '_id'] = parentId;
-
-  db.collection(type).aggregate(aggregation, function(err, result) {
-
-    if (err) {
-
-      deferred.reject(new Error(err));
-    }
-    else {
-
-      var priority = 1;
-      if (result.length == 1) {
-      
-        priority = Math.ceil(result[0].max_priority + 1);
-      }
-
-      deferred.resolve(priority);
-    }
-  });
-
-  return deferred.promise;
-}
-
-var insert = function(db, type, parentType, data) {
-
-  var itemId = new ObjectID();
-  data._id = itemId;
-  data._rev = 0;
-
-  if (!parentType) {
-
-    var deferred = Q.defer();
-
-    db.collection(type).insert(data, function(err, result) {
-
-      if (err || (result.length != 1)) {
-
-        deferred.reject(new Error(err ? err : 'Inserting object failed.'));
-      }
-      else {
-
-        deferred.resolve(result[0]);
-      }
-    });
-
-    return deferred.promise;
-  }
-
-  // TODO: not exactly atomic, do we need to clean up
-  // orphaned items maybe?
-
-  var optimisticLoop = function () {
-
-    return getMaxPriority(db, type, parentType, data[parentType + '_id'])
-    .then(function(result) {
-
-      var priority = result;
-      data.priority = priority;
-    })
-    .then(function() {
-
-      var deferred = Q.defer();
-      db.collection(type).insert(data, function(err, result) {
-
-        // Run again if the story is a duplicate.
-
-        if (err && err.code == 11000) {
-
-          return optimisticLoop();
-        }
-        else if (err || (result.length != 1)) {
-
-          deferred.reject(new Error(err ? err : 'Inserting object failed.'));
-        }
-        else {
-
-          deferred.resolve(result[0]);
-        }
-      });
-      return deferred.promise;
-    });
-  };
-
-  return optimisticLoop(type, parentType, data);
-};
-
-function remove(db, type, filter, failOnNoDeletion) {
-
-  var deferred = Q.defer();  
-  db.collection(type).findAndRemove(filter, function(err, result) {
-
-    if (err) {
-
-      deferred.reject(new Error(err));
-    } 
-    else if (failOnNoDeletion && (result <= 0)) {
-
-      deferred.reject(new Error(messages.en.ERROR_REMOVE));
-    } 
-    else {
-    
-      deferred.resolve(result);
-    }
-  });
-  return deferred.promise;  
-}
-
-function findAndRemove(db, type, filter) {
-
-  var deferred = Q.defer();  
-
-  var removed = [];
-
-  function loop() {
-
-    db.collection(type).findAndRemove(filter, function(err, result) {
-
-      if (err) {
-
-        deferred.reject(new Error(err));
-      } 
-      else if (result !== null) {
-
-        removed.push(result);
-        loop();
-      }
-      else {
-
-        deferred.resolve(removed);
-      }
-    });
-  }
-
-  loop();
-  return deferred.promise;
-}
-
-var find = function(db, type, filter, sort) {
-
-  var deferred = Q.defer();
-
-  if (!filter) {
-
-    filter = {};
-  }
-  if (!sort) {
-
-    sort = {};
-  }
-
-  db.collection(type).find(filter).sort(sort).toArray(function(err, result) {
-
-    if (err) {
-
-      deferred.reject(new Error(err));
-    } else {
-    
-      deferred.resolve(result);
-    }
-  });
-  return deferred.promise;
-};
-
-var findOne = function(db, type, id) {
-
-  var deferred = Q.defer();
-  db.collection(type).findOne({_id: ObjectID(id)}, function(err, result) {
-  
-    if (err) {
-    
-      deferred.reject(new Error(err));
-    }
-    else if (!result) {
-
-      deferred.reject(new Error("Query returned no result."));
-    } else {
-    
-      deferred.resolve(result);
-    }
-  });
-  return deferred.promise; 
-};
-
-var findAndModify = function(db, type, id, rev, key, value) {
-
-  var deferred = Q.defer();
-
-  var data = {
-  
-    $set: {}, 
-    $inc: {_rev: 1}
-  };
-  data.$set[key] = value;
-
-  db.collection(type).findAndModify({_id: ObjectID(id), _rev: rev}, [], data, {new: true}, function(err, result) {
-
-    if (err) {
-      
-      deferred.reject(new Error(err));
-    }
-    else if (!result) {
-
-      deferred.reject(new Error(messages.en.ERROR_UPDATE_NOT_FOUND));
-    }
-    else {
-
-      deferred.resolve(result);
-    }
-  });
-  return deferred.promise;
-};
-
-var updateAssignment = function(db, type, id, rev, parentType, parentId) {
-
-  var optimisticLoop = function () {
-
-    return getMaxPriority(db, type, parentType, ObjectID(parentId))
-    .then(function (result) {
-
-      var deferred = Q.defer();
-
-      var data = {
-
-        $set: {priority: result}
-      };
-      data.$set[parentType + '_id'] = ObjectID(parentId);
-
-      db.collection(type).findAndModify({_id: ObjectID(id), _rev: rev}, [], data, {new: true}, function(err, result) {
-
-        // Run again if the story is a duplicate.
-
-        if (err && err.code == 11000) {
-
-          return optimisticLoop();
-        }
-        else if (err) {
-
-          deferred.reject(new Error(err));
-        }
-        else {
-
-          deferred.resolve(result);
-        }
-      });
-      return deferred.promise;
-    });
-  };
-
-  var deferred = Q.defer();
-
-  if (parentId) {
-
-    return findOne(db, parentType, parentId)
-    .fail(function() {
-
-        throw "The story to which the task was assigned to does not exist.";
-    })
-    .then(optimisticLoop);
-  }
-  else {
-
-    deferred.resolve();
-    return deferred.promise;
-  } 
-}
-
 function processRequest(request, response) {
-
-  // TODO: db is open and closed on every request? oh my.
-
-  var db = null;
-  var connectToDb = function() {
-
-    var connect = Q.nfbind(MongoClient.connect);
-    return connect('mongodb://localhost:27017/test')
-    .then(function(result) {
-
-      db = result;
-      return db;
-    });
-  };
 
   var query = function() {
 
@@ -533,14 +178,6 @@ function processRequest(request, response) {
 
   var answer = function() {
   };
-
-  var cleanup = function() {
-
-    if (db) {
-
-      db.close(); 
-    }
-  }; 
 
   var htmlAnswer; 
 
@@ -567,16 +204,16 @@ function processRequest(request, response) {
         var task;
         var story;
 
-        return findOne(db, 'task', id)
+        return tischDB.findSingleTask(id)
         .then(function (result) {
 
           task = result;
-          return findOne(db, 'story', task.story_id.toString());
+          return tischDB.findSingleStory(task.story_id.toString());
         })
         .then(function (result) {
 
           story = result;
-          return findOne(db, 'sprint', story.sprint_id.toString());
+          return tischDB.findSingleSprint(story.sprint_id.toString());
         })
         .then(function (result) {
 
@@ -585,7 +222,7 @@ function processRequest(request, response) {
       }
       else {
 
-        return findOne(db, 'task', id);
+        return tischDB.findSingleTask(id);
       }
     };
 
@@ -603,16 +240,17 @@ function processRequest(request, response) {
 
       if (request.body.key == 'story_id') {
 
-        return findOne(db, type, id)
+        return tischDB.findSingleTask(id)
         .then(function (result) {
 
           formerStoryId = result.story_id.toString();
-          return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'story', request.body.value);
+          debugger;
+          return tischDB.updateTaskAssignment(id, request.body.value, parseInt(request.headers.rev, 10));
         });
       }
       else {
 
-        return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);
+        return tischDB.updateTask(id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);
       }
     };
 
@@ -636,7 +274,7 @@ function processRequest(request, response) {
         story_id: ObjectID(request.headers.parent_id)
       };
 
-      return insert(db, 'task', 'story', data);
+      return tischDB.insertTask(data);
     };
     
     answer = partial(putAnswer, 'story_id', partial(respondWithJson_2, response));
@@ -650,7 +288,7 @@ function processRequest(request, response) {
 
       var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
 
-      return remove(db, 'task', filter, true);
+      return tischDB.removeTask(filter, true);
     };
       
     answer = partial(deleteAnswer, partial(respondWithJson_2, response));
@@ -667,16 +305,16 @@ function processRequest(request, response) {
 
           var tasks;
 
-          return findOne(db, 'story', id)
+          return tischDB.findSingleStory(id)
           .then(function (result) {
 
             story = result;
-            return find(db, 'task', {story_id: story._id}, {priority: 1});
+            return tischDB.findTasks({story_id: story._id}, {priority: 1});
           })
           .then(function (result) {
 
             tasks = result;
-            return findOne(db, 'sprint', story.sprint_id.toString());  
+            return tischDB.findSingleSprint(story.sprint_id.toString());  
           })
           .then(function (result) {
 
@@ -684,7 +322,7 @@ function processRequest(request, response) {
           });
         } else {
 
-          return findOne(db, 'story', id);
+          return tischDB.findSingleStory(id);
         }
       };
     } else {
@@ -693,7 +331,7 @@ function processRequest(request, response) {
 
       query = function(result) {
 
-        return find(db, 'story', request.headers.parent_id ? {sprint_id: ObjectID(request.headers.parent_id)} : {}, {title: 1});
+        return tischDB.findStories(request.headers.parent_id ? {sprint_id: ObjectID(request.headers.parent_id)} : {}, {title: 1});
       };
     }
 
@@ -708,11 +346,11 @@ function processRequest(request, response) {
 
       if (request.body.key == 'sprint_id') {
 
-        return updateAssignment(db, type, id, parseInt(request.headers.rev, 10), 'sprint', request.body.value)
+        return tischDB.updateStoryAssignment(id, request.body.value, parseInt(request.headers.rev, 10));
       }
       else {
 
-        return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);  
+        return tischDB.updateStory(id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);  
       }
     };
 
@@ -734,7 +372,7 @@ function processRequest(request, response) {
         sprint_id: ObjectID(request.headers.parent_id)
       };
 
-      return insert(db, type, 'sprint', data);
+      return tischDB.insertStory(data);
     };
       
     answer = function(result) {
@@ -753,13 +391,13 @@ function processRequest(request, response) {
       var story;
       var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
 
-      return remove(db, type, filter, true)
+      return tischDB.removeStory(filter, true)
       .then(function(result) {
 
         story = result;
         filter = {story_id: ObjectID(id)};
 
-        return findAndRemove(db, 'task', filter);
+        return tischDB.findAndRemoveTasks(filter);
       })
       .then(function(result) {
 
@@ -782,72 +420,43 @@ function processRequest(request, response) {
           var sprint;
           var stories;
 
-          return findOne(db, 'sprint', id)
+          return tischDB.findSingleSprint(id)
           .then(function (result) {
 
             sprint = result;
-            return find(db, 'story', {sprint_id: sprint._id}, {priority: 1});
+            return tischDB.findStories({sprint_id: sprint._id}, {priority: 1});
           })
           .then(function (result) {
 
             stories = result;
-            storyIds = stories.map(function(story) {
-
-              return story._id.toString();
-            });
+            storyIds = _.chain(stories).pluck('_id').invoke('toString').value();
 
             // TODO: remove literals
             startIndex = moment(sprint.start).format('YYYY-MM-DD');
             endIndex = moment(sprint.start).add('days', sprint.length - 1).format('YYYY-MM-DD')
-            return getRemainingTime(db, 'task', 'story', storyIds, {start: startIndex, end: endIndex});
+            return tischDB.getStoriesRemainingTime(storyIds, {start: startIndex, end: endIndex});
           })
           .then(function (result) {
 
-            var remainingTime = result.reduce(function(object, element) {
-
-              object[element._id] = element.value;
-              return object;
-            }, {});
-
-            return {sprint: sprint, stories: stories, calculations: {remaining_time: remainingTime}}; 
+            return {sprint: sprint, stories: stories, calculations: {remaining_time: result}, messages: messages}; 
           });
         }
         else {
 
-          return findOne(db, 'sprint', id); 
+          return tischDB.findSingleSprint(id); 
         }
       };
-
-      if (html) {
-
-        answer = function(result) {
-
-          var html = sprint_template({sprint: result.sprint, stories: result.stories, calculations: result.calculations, messages: messages});
-          respondWithHtml(html, response);
-        };
-      }
-      else {
-
-        answer = function(result) {
-         
-          respondWithJson(result, response);
-        };        
-      }
-    }
-    else {
+    } else {
 
       assert.notEqual(true, html, 'Generic sprint GET available only as json.');
 
       query = function(result) {
 
-        return find(db, 'sprint', {}, {title: 1});
-      };
-
-      answer = function(result) {
-
-        respondWithJson(result, response);
+        return tischDB.findSprints({}, {title: 1});
       };
     }
+
+    answer = respond;
   } 
   else if ((type == 'sprint') && (request.method == 'POST')) {
 
@@ -862,7 +471,7 @@ function processRequest(request, response) {
         request.body.value = new Date(request.body.value);
       } 
 
-      return findAndModify(db, type, id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);
+      return tischDB.updateSprint(id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);
     };
 
     answer = partial(postAnswer, request.body.key, partial(respondWithJson_2, response));
@@ -882,7 +491,7 @@ function processRequest(request, response) {
         title: 'New Sprint'
       };
 
-      return insert(db, type, null, data);
+      return tischDB.insertSprint(data);
     };
       
     answer = function(result) {
@@ -901,12 +510,12 @@ function processRequest(request, response) {
       var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
       var removedIds = [];
 
-      return remove(db, type, filter, true)
+      return tischDB.removeSprint(filter, true)
       .then(function() {
 
         filter = {sprint_id: ObjectID(id)};
 
-        return findAndRemove(db, 'story', filter);
+        return tischDB.findAndRemoveStories(filter);
       })
       .then(function (result) {
 
@@ -920,7 +529,7 @@ function processRequest(request, response) {
             var storyId = ObjectID(removedIds[i]);
             filter = {story_id: storyId};
 
-            calls.push(findAndRemove(db, 'task', filter));
+            calls.push(tischDB.findAndRemoveTasks(filter));
           }
           return calls;
         }
@@ -954,7 +563,7 @@ function processRequest(request, response) {
 
     query = function() {
 
-      return find(db, 'sprint', null, {start: 1});
+      return tischDB.findSprints({}, {start: 1});
     }
     answer = function(result) {
 
@@ -969,28 +578,20 @@ function processRequest(request, response) {
 
       assert.ok(id, 'Story id is missing in the request\'s url');
 
-      return findOne(db, 'story', id)
+      return tischDB.findSingleStory(id)
       .then(function (result) {
 
-        return findOne(db, 'sprint', result.sprint_id.toString());
+        return tischDB.findSingleSprint(result.sprint_id.toString());
       })
       .then(function (result) {
 
         startIndex = moment(result.start).format('YYYY-MM-DD');
         endIndex = moment(result.start).add('days', result.length - 1).format('YYYY-MM-DD')
-        return getRemainingTime(db, 'task', 'story', [id], {start: startIndex, end: endIndex});
+        return tischDB.getStoriesRemainingTime([id], {start: startIndex, end: endIndex});
       })
       .then(function (result) {
 
-        if (result.length == 1) {
-
-          return result[0].value;    
-        }
-        else {
-
-          // TODO: i18n
-          throw "Error calculating remaining time for the resource.";
-        }
+        return (result[id] || null);
       });
     }
     answer = function(result) {
@@ -1063,12 +664,12 @@ function processRequest(request, response) {
     socketIO.notify(notifications);
   };
 
-  connectToDb()
+  tischDB.connect()
   .then(query)
   .then(answer)
   .then(notify)
   .fail(html ? complainWithPlain.bind(response) : complainWithJson.bind(response))
-  .fin(cleanup)
+  .fin(tischDB.close)
   .done();
 }
 
