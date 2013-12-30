@@ -39,13 +39,13 @@ class TaskViewModel extends ViewModel
 
   _replaceStory: (story) =>
 
-    for key, value of _.chain(story).pick('title', 'sprint_id').value()
+    _.chain(story).pick('title', 'sprint_id').each (value, key) =>
 
       @story[key] value
 
   _replaceSprint: (sprint) =>
 
-    for key, value of _.chain(sprint).pick('title', 'start', 'length').value()
+    _.chain(sprint).pick('title', 'start', 'length').each (value, key) =>
 
       @sprint[key] value
 
@@ -161,6 +161,9 @@ class TaskViewModel extends ViewModel
     @stories = ko.observable()
 
     @story_id = @_createObservable @model.task, 'story_id', @_updateTaskModel
+    @story_id.subscribe (value) =>
+
+      @model.getStory value, @_replaceStory, @_showError
 
     @showStorySelector = -> 
 
@@ -174,13 +177,7 @@ class TaskViewModel extends ViewModel
     @selectStory = (selected) =>
 
       @modal null
-      @model.getStory selected.id
-
-        , (story) =>
-
-          @story_id story._id
-          @_replaceStory story
-        , @_showError
+      @story_id selected.id
     # story specific stuff
 
     @story = 
@@ -221,7 +218,7 @@ class TaskViewModel extends ViewModel
         index = indexObservable()
         if index < range.start || index > range.end
 
-          newIndex = @model.getDateIndex @sprintStart(), @sprintLength()
+          newIndex = @model.getDateIndex @sprint.start(), @sprint.length()
           indexObservable newIndex
 
     # shared write curry for indexed properties (remaining_time & time_spent)

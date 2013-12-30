@@ -65,7 +65,9 @@ class SprintModel extends ParentModel
       dataType: 'json'
       success: (data, textStatus, jqXHR) ->
 
-        successCb? data
+        if data != null
+        
+          successCb? data
   getRemainingTimes: (successCb) =>
 
     storyIds = _.pluck @children.objects, '_id'
