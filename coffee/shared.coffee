@@ -73,15 +73,6 @@ common = (->
 
 class SocketIO
 
-  ensureArray = (arg) ->
-
-    if _.isArray arg
-
-      arg
-    else
-
-      [arg]
-
   arrayify = (fn) ->
 
     return ->
