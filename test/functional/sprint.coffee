@@ -2,8 +2,8 @@ casper = require('casper').create()
 
 sprintId = '528c95f4eab8b32b76efac0b'
 sprintUrl = "http://localhost:8000/sprint/#{sprintId}"
-throttle = 500 + 10
-dragDelay = 150 + 10
+throttle = 500
+dragDelay = 150
 
 casper.start sprintUrl 
 
@@ -93,10 +93,11 @@ casper.then ->
 	@mouse.down(info2.x + info2.width / 2, info2.y + info2.height / 2)
 	@wait dragDelay, ->
 
+		@mouse.move(info1.x + info1.width / 2, info1.y + info1.height / 2)
+		@mouse.up(info1.x + info1.width / 2, info1.y + info1.height / 2)
+
 		@waitForResource sprintUrl, ->
 
-			@mouse.move(info1.x + info1.width / 2, info1.y + info1.height / 2)
-			@mouse.up(info1.x + info1.width / 2, info1.y + info1.height / 2)
 			@test.assertField 'title-0', 'Test Story B', 'Title field correct.'
 
 casper.then ->

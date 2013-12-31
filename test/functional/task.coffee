@@ -2,7 +2,7 @@ casper = require('casper').create()
 
 taskId = '528c9639eab8b32b76efac0d'
 taskUrl = "http://localhost:8000/task/#{taskId}"
-throttle = 500 + 10
+throttle = 500
 
 casper.start taskUrl 
 
@@ -27,7 +27,9 @@ casper.then ->
 	@test.assertVisible '#color-selector .content', 'Color popup appeared.'
 	@click "#color-selector .green"
 	@test.assertNotVisible '#color-selector .content', 'Color popup disappeared.'
-	@test.assertEquals @getElementInfo("button[name='color']").attributes.class, 'green', 'Color button correct.'
+	@waitForResource taskUrl, ->
+		
+		@test.assertEquals @getElementInfo("button[name='color']").attributes.class, 'green', 'Color button correct.'
 
 casper.then ->
 
@@ -36,10 +38,10 @@ casper.then ->
 	@waitForResource taskUrl, ->
 		
 		@test.assertVisible '#story-selector .content', 'Story popup appeared.'
-		nLines = this.evaluate ->
+		@test.assertEval ->
 
-			$('#story-selector .content .line').length
-		@test.assertEquals nLines, 2, '2 lines visible.'
+			document.querySelectorAll('#story-selector .content .line').length == 2
+		, '2 lines visible.'
 		@click '#story-selector .content .line:nth-child(2)'
 		@test.assertNotVisible '#story-selector .content', 'Story popup disappeared.'
 		@waitForResource taskUrl, ->

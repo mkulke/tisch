@@ -2,8 +2,8 @@ casper = require('casper').create()
 
 storyId = '528c961beab8b32b76efac0c'
 storyUrl = "http://localhost:8000/story/#{storyId}"
-throttle = 500 + 10
-dragDelay = 150 + 10
+throttle = 500
+dragDelay = 150
 
 casper.start storyUrl 
 
@@ -16,15 +16,12 @@ casper.then ->
 	@test.assertEquals values.title, 'Test Story A', 'Title field correct.'
 	@test.assertEquals values.description, 'Story A description', 'Description field correct.'
 	@test.assertEquals @getElementInfo("button[name='color']").attributes.class, 'yellow', 'Color button correct.'
-	#@test.assertEquals @getElementInfo("button[name='start']").text, '01/01/13', 'Date button correct.'
 	@test.assertEval ->
 
 		document.querySelectorAll('ul#well li.panel').length == 2;
 	, '1 Task panel visible.'
 	@test.assertField 'summary-0', 'Test Task A', 'Task 1 summary field correct.'
 	@test.assertField 'description-0', 'Task A description', 'Task 1 description field correct.'
-	#@test.assertDoesntExist 'ul#well li.panel:nth-of-type(1) .header .stats img', 'Story 1 stats picture does not exist.'
-	#@test.assertExist "ul#well li.panel:nth-of-type(2) .header .stats img[src='/clock_white_30.png']", 'Story 2 stats picture is a clock.'###
 
 casper.then ->
 
@@ -33,25 +30,9 @@ casper.then ->
 	@test.assertVisible '#color-selector .content', 'Color popup appeared.'
 	@click "#color-selector .green"
 	@test.assertNotVisible '#color-selector .content', 'Color popup disappeared.'
-	@test.assertEquals @getElementInfo("button[name='color']").attributes.class, 'green', 'Color button correct.'
+	@waitForResource storyUrl, ->
 
-###casper.then ->
-
-	@test.info 'Change end date:'
-	@click "button[name='length']"
-	@test.assertVisible '#length .content', 'Datepicker appeared.'	
-	@click "#length .content tr:nth-of-type(2) td:nth-of-type(5) a"
-	@test.assertNotVisible '#length .content', 'Datepicker disappeared.'
-	@test.assertEquals @getElementInfo("button[name='length']").text, '01/10/13', 'Date button correct.'
-
-casper.then ->
-
-	@test.info 'Change start date:'
-	@click "button[name='start']"
-	@test.assertVisible '#start .content', 'Datepicker appeared.'	
-	@click "#start .content tr:nth-of-type(1) td:nth-of-type(4) a"
-	@test.assertNotVisible '#start .content', 'Datepicker disappeared.'
-	@test.assertEquals @getElementInfo("button[name='start']").text, '01/02/13', 'Date button correct.'###
+		@test.assertEquals @getElementInfo("button[name='color']").attributes.class, 'green', 'Color button correct.'
 
 casper.then ->
 
@@ -86,7 +67,9 @@ casper.then ->
 
 		@mouse.move(info1.x + info1.width / 2, info1.y + info1.height / 2)
 		@mouse.up(info1.x + info1.width / 2, info1.y + info1.height / 2)
-		@test.assertField 'summary-0', 'Test Task B', 'Summary field correct.'
+		@waitForResource storyUrl, ->
+
+			@test.assertField 'summary-0', 'Test Task B', 'Summary field correct.'
 
 casper.then ->
 
@@ -119,8 +102,6 @@ casper.then ->
 				@test.assertEquals @getHTML('#breadcrumb-bar span.breadcrumb.story.selected'), 'Edited title', 'Breadcrumb text correct.'
 				@test.assertField 'description', 'Edited description', 'Description field correct.'
 				@test.assertField 'estimation', '8.99', 'Initial estimation field correct.'
-				#@test.assertEquals @getElementInfo("button[name='start']").text, '01/02/13', 'Date button correct.'
-				#@test.assertEquals @getElementInfo("button[name='length']").text, '01/11/13', 'Date button correct.'
 				@test.assertEquals @getElementInfo("button[name='color']").attributes.class, 'green', 'Color button correct.'
 				@test.assertField 'summary-1', 'Test Task A', 'Task summary field correct.'
 				@test.assertField 'summary-0', 'Edited task summary', 'Task summary field correct.'
