@@ -36,7 +36,9 @@ casper.then ->
 	@test.assertVisible '#color-selector .content', 'Color popup appeared.'
 	@click "#color-selector .green"
 	@test.assertNotVisible '#color-selector .content', 'Color popup disappeared.'
-	@test.assertEquals @getElementInfo("button[name='color']").attributes.class, 'green', 'Color button correct.'
+	@waitForResource sprintUrl, ->
+
+		@test.assertEquals @getElementInfo("button[name='color']").attributes.class, 'green', 'Color button correct.'
 
 casper.then ->
 
@@ -45,7 +47,9 @@ casper.then ->
 	@test.assertVisible '#length .content', 'Datepicker appeared.'	
 	@click "#length .content tr:nth-of-type(2) td:nth-of-type(5) a"
 	@test.assertNotVisible '#length .content', 'Datepicker disappeared.'
-	@test.assertEquals @getElementInfo("button[name='length']").text, '01/10/13', 'Date button correct.'
+	@waitForResource sprintUrl, ->
+
+		@test.assertEquals @getElementInfo("button[name='length']").text, '01/10/13', 'Date button correct.'
 
 casper.then ->
 
@@ -54,7 +58,9 @@ casper.then ->
 	@test.assertVisible '#start .content', 'Datepicker appeared.'	
 	@click "#start .content tr:nth-of-type(1) td:nth-of-type(4) a"
 	@test.assertNotVisible '#start .content', 'Datepicker disappeared.'
-	@test.assertEquals @getElementInfo("button[name='start']").text, '01/02/13', 'Date button correct.'
+	@waitForResource sprintUrl, ->
+
+		@test.assertEquals @getElementInfo("button[name='start']").text, '01/02/13', 'Date button correct.'
 
 casper.then ->
 
@@ -87,9 +93,11 @@ casper.then ->
 	@mouse.down(info2.x + info2.width / 2, info2.y + info2.height / 2)
 	@wait dragDelay, ->
 
-		@mouse.move(info1.x + info1.width / 2, info1.y + info1.height / 2)
-		@mouse.up(info1.x + info1.width / 2, info1.y + info1.height / 2)
-		@test.assertField 'title-0', 'Test Story B', 'Title field correct.'
+		@waitForResource sprintUrl, ->
+
+			@mouse.move(info1.x + info1.width / 2, info1.y + info1.height / 2)
+			@mouse.up(info1.x + info1.width / 2, info1.y + info1.height / 2)
+			@test.assertField 'title-0', 'Test Story B', 'Title field correct.'
 
 casper.then ->
 
