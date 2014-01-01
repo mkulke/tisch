@@ -10,7 +10,8 @@ var Q = require('q');
 var io = require('socket.io');
 var moment = require('moment');
 var _ = require('underscore')._;
-var tischDB = require('./tischdb.js');
+var tischDB = require('./db.js');
+var tischRT = require('./rt.js');
 
 var cwd = process.cwd();
 var options = { pretty: false, filename: 'sprint.jade' };
@@ -169,30 +170,68 @@ function respondOk(response) {
   response.end();
 }
 
+var notify = function(request, result) {
+
+  var clientIds, clients, byGenerator, byRequest, byId, byProperties, originatingClient, toNotification;
+
+  if (!result) {
+
+    return;
+  }
+  else if (_.isArray(result)) {
+
+    _.each(result, notify);
+    return;
+  }
+
+  var buildEqual = function(key, value) {
+
+    return function(object) {
+
+      return object[key] == value;
+    };
+  };
+
+  byRequest = buildEqual('method', request.method);
+
+  byId = buildEqual('object_id', result.id);
+
+  originatingClient = function(registration) {
+
+    return registration.client.id === request.headers.sessionid;
+  };
+
+  byProperties = partial(function(key, registration) {
+
+    return (!registration.properties) || _.contains(registration.properties, key);
+  }, result.key);
+
+  toNotification = partial(function(result, registration){
+
+    return {client: registration.client, index: registration.index, data: result};
+  }, result);
+
+  notifications = _.chain(tischRT.registrations())
+    .filter(byRequest)
+    .filter(byId)
+    .filter(byProperties)
+    .reject(originatingClient)
+    .map(toNotification)
+    .value();
+
+  tischRT.notify(notifications);
+};
+
 function processRequest(request, response) {
 
-  var query = function() {
-
-    return null;
-  };
-
-  var answer = function() {
-  };
-
-  var htmlAnswer; 
-
+  var query, answer;
   var url_parts = url.parse(request.url, true);
   //var query = url_parts.query;
   var pathname = url_parts.pathname;
   var pathParts = pathname.split("/");
   var type = pathParts.length > 1 ? unescape(pathParts[1]) : null;
   var id = pathParts.length > 2 ? unescape(pathParts[2]) : null;
-  var html = true;
-
-  if ((request.headers.accept !== undefined) && (request.headers.accept.match(/application\/json/) !== null)) {
-  
-    html = false;
-  }
+  var html = ((request.headers.accept !== undefined) && (request.headers.accept.match(/application\/json/) !== null)) ? false : true;
   var respond = html ? partial(respondWithHtml_2, response, type) : partial(respondWithJson_2, response);
 
   if ((type == 'task') && (request.method == 'GET')) {
@@ -612,140 +651,12 @@ function processRequest(request, response) {
     answer = function() {};
   }
 
-  var notify = function(result) {
-
-    var clientIds, clients, byGenerator, byRequest, byId, byProperties, originatingClient, toNotification;
-
-    if (!result) {
-
-      return;
-    }
-    else if (_.isArray(result)) {
-
-      _.each(result, notify);
-      return;
-    }
-
-    var buildEqual = function(key, value) {
-
-      return function(object) {
-
-        return object[key] == value;
-      };
-    };
-
-    byRequest = buildEqual('method', request.method);
-
-    byId = buildEqual('object_id', result.id);
-
-    originatingClient = function(registration) {
-
-      return registration.client.id === request.headers.sessionid;
-    };
-
-    byProperties = partial(function(key, registration) {
-
-      return (!registration.properties) || _.contains(registration.properties, key);
-    }, result.key);
-
-    toNotification = partial(function(result, registration){
-
-      return {client: registration.client, index: registration.index, data: result};
-    }, result);
-
-    notifications = _.chain(socketIO.registrations())
-      .filter(byRequest)
-      .filter(byId)
-      .filter(byProperties)
-      .reject(originatingClient)
-      .map(toNotification)
-      .value();
-
-    socketIO.notify(notifications);
-  };
-
-  tischDB.connect()
-  .then(query)
+  query()
   .then(answer)
-  .then(notify)
+  .then(partial(notify, request))
   .fail(html ? complainWithPlain.bind(response) : complainWithJson.bind(response))
-  .fin(tischDB.close)
   .done();
 }
-
-var socketIO = function() {
-
-  //var clients = [];
-  var registrations = [];
-  var socket;
-
-  return {
-
-    listen: function(server) {
-
-      socket = io.listen(server);
-
-      socket.enable('browser client etag');
-      socket.enable('browser client gzip'); 
-      socket.enable('browser client minification');
-      socket.set('log level', 1);
-
-      socket.on('connection', function(client) {
-
-        console.log(["client connected, id:", client.id].join(" "));
-        //clients.push(client);
-        client.on('register', function(data) {
-
-          //console.log(["register: ", JSON.stringify(data)].join(" "));
-          _.each(data, function(registration) {
-
-            _.extend(registration, {client: client})
-          });
-          registrations = registrations.concat(data);
-          //console.log(["registrations content:", JSON.stringify(registrations)].join(" "));
-        });
-
-        client.on('unregister', function(indices) {
-
-          var unregistered;
-
-          unregistered = function(registration) {
-
-            return (registration.client === client) && (_.contains(indices, registration.index))
-          };
-          registrations = _.reject(registrations, unregistered);
-        });
-
-        client.on('disconnect', function() {
-        
-          var clientEntry;
-
-          console.log(["client disconnected, id:", client.id].join(" "));
-
-          //clients = _.without(clients, client); 
-          
-          clientEntry = function(registration) {
-
-            return (registration.client === client);
-          };
-          registrations = _.reject(registrations, clientEntry);
-          //console.log(["registrations content:", JSON.stringify(registrations)].join(" "));
-        });
-      });
-    },
-    notify: function(notifications) {
-
-      _.each(notifications, function (notification) {
-
-        notification.client.emit('notify', _.omit(notification, 'client'));
-      });
-    },
-    registrations: function() {
-
-      return registrations;
-    }
-  }
-}()
 
 var app = connect()
   .use(connect.logger('dev'))
@@ -758,10 +669,14 @@ var app = connect()
 
 app.start = function() {
 
-  var server = http.createServer(app).listen(8000, function() {
-  
-    console.log('Server listening on port 8000');
-    socketIO.listen(server);
+  tischDB.connect()
+  .then(function() {
+
+    var server = http.createServer(app).listen(8000, function() {
+    
+      console.log('Server listening on port 8000');
+      tischRT.listen(server);
+    });
   });
 }
 

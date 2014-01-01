@@ -41,8 +41,8 @@ var db = function() {
 var connect = function() {
 
 	var connect = Q.nfbind(MongoClient.connect);
-	return connect('mongodb://localhost:27017/test').
-	then(function(result){
+	return connect('mongodb://localhost:27017/test')
+	.then(function(result) {
 
 		db(result);
 		return result;
