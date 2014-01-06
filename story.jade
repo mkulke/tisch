@@ -101,5 +101,4 @@ html
 			var model, viewModel;
 			model = new StoryModel(!{JSON.stringify(tasks)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
 			viewModel = new StoryViewModel(model);
-			socketIO = new SocketIO();
 			ko.applyBindings(viewModel);

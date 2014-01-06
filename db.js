@@ -1,6 +1,7 @@
 var MongoClient = require('mongodb').MongoClient;
 var ObjectID = require('mongodb').ObjectID;
 var Q = require('q');
+var messages = require('./messages.json');
 var _ = require('underscore')._;
 
 // TODO: put in tischutils.js

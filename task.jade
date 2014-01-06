@@ -74,7 +74,7 @@ html
 		div(data-bind="visible: modal() != null")#overlay
 		script(type='text/javascript')
 			
-			var model, viewModel, socketIO;
+			var model, viewModel;
 			model = new TaskModel(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
 			viewModel = new TaskViewModel(model);
 			ko.applyBindings(viewModel);

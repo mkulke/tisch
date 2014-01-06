@@ -63,7 +63,7 @@ class TaskViewModel extends ViewModel
 
   _createStoryNotification: ->
 
-    object_id: @story_id()
+    id: @story_id()
     properties: ['title', 'sprint_id']
     handler: (data) =>
 
@@ -74,7 +74,7 @@ class TaskViewModel extends ViewModel
 
   _createSprintNotification: ->
 
-    object_id: @story.sprint_id()
+    id: @story.sprint_id()
     properties: ['start', 'length']
     handler: (data) =>
 
@@ -84,7 +84,7 @@ class TaskViewModel extends ViewModel
     
     buildNotification = (breadcrumb) ->
 
-      object_id: breadcrumb.id
+      id: breadcrumb.id
       properties: ['title']
       handler: (data) ->
 
@@ -285,7 +285,7 @@ class TaskViewModel extends ViewModel
     defaults = 
 
       method: 'POST'
-      object_id: @model.task._id
+      id: @model.task._id
 
     notifications.push @_createTaskNotification()
 
@@ -295,16 +295,16 @@ class TaskViewModel extends ViewModel
 
     recreateNotification = (notification, createFn, value) =>
 
-       if value != notification.object_id
+       if value != notification.id
 
         socket.unregisterNotifications notification
-        notification.object_id = value
+        notification.id = value
         socket.registerNotifications notification
     @story._id.subscribe partial recreateNotification, storyNotification, @_createStoryNotification
     @sprint._id.subscribe partial recreateNotification, sprintNotification, @_createSprintNotification
 
     #notifications = notifications.concat @_createBreadcrumbNotifications()
-    Array.prototype.push.apply notifications, @_createBreadcrumbNotifications()
+    notifications = notifications.concat @_createBreadcrumbNotifications()
     _.each notifications, curry2(_.defaults)(defaults)
 
     socket = new SocketIO()

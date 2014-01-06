@@ -1,9 +1,7 @@
 class StoryModel extends ParentModel
 
   type: 'story'
-  constructor: (tasks, @story, @sprint) ->
-
-  	@children = {type: 'task', objects: tasks}
+  constructor: (@tasks, @story, @sprint) ->
 
   buildTimeSpent: (timeSpent, range) ->
 
@@ -135,22 +133,20 @@ class StoryViewModel extends ParentViewModel
     add = 
 
       method: 'PUT'
-      handler: (data) =>
+      handler: partial @_addChild, @tasks
 
-        observableObject = @_createObservablesObject data.new
-        @tasks.push observableObject
-        # TODO: sort after push?
     [update, add]
 
-  _createTaskNotifications: (observablesObject, index) =>
+  _createTaskNotifications: (observablesObject) =>
 
     update = 
 
-      object_id: observablesObject._id
+      id: observablesObject._id
       properties: ['summary', 'description', 'color', 'priority']
       handler: (data) =>
 
-        task = @model.children.objects[index]
+        debugger;
+        task = observablesObject._js
         task._rev = data.rev
         task[data.key] = data.value
         observablesObject[data.key] data.value
@@ -158,7 +154,7 @@ class StoryViewModel extends ParentViewModel
     remove = 
 
       method: 'DELETE'
-      object_id: observablesObject._id
+      id: observablesObject._id
       handler: =>
 
         @tasks.remove (item) ->
@@ -169,7 +165,7 @@ class StoryViewModel extends ParentViewModel
 
   _createSprintNotification: ->
 
-    object_id: @sprint_id()
+    id: @sprint_id()
     properties: ['title', 'start', 'length']
     handler: (data) =>
 
@@ -177,7 +173,7 @@ class StoryViewModel extends ParentViewModel
 
   _createBreadcrumbNotification: ->
 
-    object_id: @breadcrumbs.sprint.id
+    id: @breadcrumbs.sprint.id
     properties: ['title']
     handler: (data) ->
 
@@ -276,29 +272,8 @@ class StoryViewModel extends ParentViewModel
 
     # tasks
 
-    tasks = _.map @model.children.objects, @_createObservablesObject
-    _.each tasks, (task) =>
-
-      task.priority.subscribe =>
-
-        @tasks.sort (a, b) =>
-
-          a.priority() - b.priority()
-
-    @tasks = ko.observableArray tasks
-    @tasks.subscribe (changes) =>
-
-      for change in changes
-
-        if change.status == 'added'
-
-          taskObservable = @tasks()[change.index]
-          # Add to model
-          @model.children.objects.splice change.index, 0, taskObservable._js
-        else if change.status == 'deleted'
-
-          @model.children.objects.splice change.index, 1
-    , null, 'arrayChange'
+    @tasks = ko.observableArray _.map @model.tasks, @_createObservablesObject
+    _.chain(@tasks()).pluck('priority').invoke('subscribe', partial(@_sortByPriority, @tasks))
 
     ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
 
@@ -321,14 +296,7 @@ class StoryViewModel extends ParentViewModel
 
     @addTask = =>
 
-      @model.createTask @model.story._id
-
-        , (data) => 
-        
-          observableObject = @_createObservablesObject data.new
-          @tasks.push observableObject
-          # TODO: sort after push?
-        , showErrorDialog
+      @model.createTask @model.story._id, partial(@_addChild, @tasks), showErrorDialog
 
     @removeTask = (taskObservable) =>
 
@@ -413,9 +381,9 @@ class StoryViewModel extends ParentViewModel
     defaults = 
 
       method: 'POST'
-      object_id: @model.story._id
+      id: @model.story._id
 
-    Array.prototype.push.apply notifications, @_createStoryNotifications()
+    notifications = notifications.concat @_createStoryNotifications()
 
     notifications.push sprintNotification = @_createSprintNotification()
 
@@ -424,17 +392,15 @@ class StoryViewModel extends ParentViewModel
       if value != sprintNotification
 
         socket.unregisterNotifications sprintNotification
-        sprintNotification.object_id = value
+        sprintNotification.id = value
         socket.registerNotifications sprintNotification
 
     notifications.push @_createBreadcrumbNotification()
 
-    Array.prototype.push.apply notifications, _.chain(@tasks()).map(@_createTaskNotifications).flatten().value()
+    notifications = notifications.concat _.chain(@tasks()).map(@_createTaskNotifications).flatten().value()
 
     _.each notifications, curry2(_.defaults)(defaults)
 
-    # the order of this subscribe statement is crucial, since it should be called
-    # *after* the task observable has been created in the first subscription
     @tasks.subscribe (changes) =>
 
       for change in changes
@@ -442,13 +408,13 @@ class StoryViewModel extends ParentViewModel
         if change.status == 'added'
 
           taskObservable = @tasks()[change.index]
-          notifications = @_createTaskNotifications taskObservable, change.index
+          taskNotifications = @_createTaskNotifications taskObservable, change.index
           _.each notifications, curry2(_.defaults)(defaults)
-          socket.registerNotifications notifications
-          Array.prototype.push.apply notifications 
-        if change.status == 'deleted'
+          socket.registerNotifications taskNotifications
+          notifications = notifications.concat taskNotifications
+        else if change.status == 'deleted'
 
-          socket.unregisterNotifications _.where(notifications, {object_id: change.value._id})
+          socket.unregisterNotifications _.where(notifications, {id: change.value._id})
     , null, 'arrayChange'
 
     socket = new SocketIO()

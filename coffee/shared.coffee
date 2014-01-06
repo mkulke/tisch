@@ -83,10 +83,6 @@ class SocketIO
 
   _registrations: []
 
-  _sortByPriority: (a, b) =>
-
-    a.priority() - b.priority()
-
   registerNotifications: arrayify (notifications) ->
 
     registrations = _.map notifications, (notification) ->
@@ -377,6 +373,7 @@ class Model
 class ParentModel extends Model
 
   # TODO: unit-test
+
   calculatePriority: (objects, originalIndex, index) =>
 
     if index == 0 then prevPrio = 0
@@ -393,7 +390,7 @@ class ParentModel extends Model
 
 class ViewModel
 
-  # knockout specific methods
+  # knockout specific method
 
   _createObservable: (object, property, updateModel) ->
 
@@ -522,6 +519,19 @@ class ViewModel
     @errorMessage = ko.observable()
 
 class ParentViewModel extends ViewModel
+
+  _sortByPriority: (array) ->
+
+    array.sort (a, b) ->
+
+      a.priority() - b.priority()
+
+  # this is a template for rt/ajax callbacks
+  _addChild: (array, data) =>
+      
+    observableObject = @_createObservablesObject data.new
+    observableObject.priority.subscribe partial(@_sortByPriority, array)
+    array.push observableObject
 
   constructor: (@model) ->
 

@@ -1,3 +1,4 @@
+var messages = require('./messages.json');
 var _ = require('underscore')._;
 var io = require('socket.io');
 

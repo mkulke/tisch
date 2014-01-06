@@ -1,59 +1,3 @@
-class SprintSocketIO extends SocketIO
-
-  _verifyCalculations: (storyId) =>
-
-    object = _.find @viewModel.stories(), (story) =>
-
-      story._id == storyId
-    if object?
-
-      @model.getRemainingTime object._id, (data) =>
-
-        @_updateObservableProperty @viewModel.remainingTimeCalculations, object._id, data
-
-  _onUpdate: (data) =>
-
-    if data.id == @model.sprint._id
-
-      @model.sprint._rev = data.rev
-      @model.sprint[data.key] = data.value
-      @viewModel[data.key]?(data.value)
-
-    # object of story observables
-    object = _.find @viewModel.stories(), (story) => 
-
-      story._id == data.id
-    if object?
-  
-      story = object._js 
-      story._rev = data.rev
-      story[data.key] = data.value
-      object[data.key]?(data.value)
-
-    # object of task observables
-    object = _.find @viewModel.stories(), (story) => 
-
-      story._id == data.parent_id
-    if object?
-
-      @_verifyCalculations object._id
-
-  _onAdd: (data) =>
-
-    @_verifyCalculations data.parent_id
-    if data.parent_id == @model.sprint._id 
-
-      object = @viewModel.createObservablesObject data
-      @viewModel.stories.push object
-  _onRemove: (data) =>
-
-    debugger
-    verifyCalculations data.parent_id
-    if data.parent_id == @model.sprint._id
-
-      @viewModel.stories.remove (story) =>
-
-        data.id == story._id
 class SprintModel extends ParentModel
 
   getRemainingTime: (storyId, successCb) =>
@@ -68,9 +12,7 @@ class SprintModel extends ParentModel
         if data != null
         
           successCb? data
-  getRemainingTimes: (successCb) =>
-
-    storyIds = _.pluck @children.objects, '_id'
+  getRemainingTimes: (storyIds, successCb) =>
 
     gets = []
     remainingTimes = {}
@@ -89,9 +31,7 @@ class SprintModel extends ParentModel
       successCb? remainingTimes
 
   type: 'sprint'
-  constructor: (stories, @sprint, @calculations) ->
-
-  	@children = {type: 'story', objects: stories}
+  constructor: (@stories, @sprint, @calculations) ->
 
 class SprintViewModel extends ParentViewModel
 
@@ -102,7 +42,7 @@ class SprintViewModel extends ParentViewModel
 
     @_updateModel observable, object, 'story', property, value
 
-  createObservablesObject: (story) =>
+  _createObservablesObject: (story) =>
 
     _id: story._id
     title: @_createThrottledObservable story, 'title', @_updateStoryModel
@@ -119,6 +59,48 @@ class SprintViewModel extends ParentViewModel
         null
     _url: '/story/' + story._id
     _js: story
+
+  _createSprintNotifications: ->
+
+    update =
+
+      properties: _.chain(@model.sprint).keys().reject((a) -> a[0] == '_').value()
+      handler: (data) =>
+
+        @model.sprint._rev = data.rev
+        @model.sprint[data.key] = data.value
+        @[data.key]?(data.value)
+    add = 
+
+      method: 'PUT'
+      handler: partial @_addChild, @stories
+
+    [update, add]
+
+  _createStoryNotifications: (observablesObject) =>
+
+    update = 
+
+      id: observablesObject._id
+      properties: ['title', 'description', 'color', 'priority']
+      handler: (data) =>
+
+        story = observablesObject._js
+        story._rev = data.rev
+        story[data.key] = data.value
+        observablesObject[data.key] data.value
+
+    remove = 
+
+      method: 'DELETE'
+      id: observablesObject._id
+      handler: =>
+
+        @stories.remove (item) ->
+
+          item._id == observablesObject._id
+
+    [update, remove]
 
   constructor: (@model) ->
 
@@ -200,7 +182,8 @@ class SprintViewModel extends ParentViewModel
 
     updateStats = =>
 
-      @model.getRemainingTimes (calculations) =>
+      ids = _.pluck @stories(), '_id'
+      @model.getRemainingTimes ids, (calculations) =>
 
         @remainingTimeCalculations calculations
 
@@ -211,28 +194,8 @@ class SprintViewModel extends ParentViewModel
 
     # stories
 
-    stories = _.map @model.children.objects, @createObservablesObject
-    _.each stories, (story) =>
-
-      story.priority.subscribe =>
-
-        @stories.sort (a, b) =>
-
-          a.priority() - b.priority()
-
-    @stories = ko.observableArray stories
-    @stories.subscribe (changes) =>
-
-      for change in changes
-
-        if change.status == 'added'
-
-          storyObservable = @stories()[change.index]
-          @model.children.objects.splice change.index, 0, storyObservable._js
-        else if change.status == 'deleted'
-
-          @model.children.objects.splice change.index, 1
-    , null, 'arrayChange'
+    @stories = ko.observableArray _.map @model.stories, @_createObservablesObject
+    _.chain(@stories()).pluck('priority').invoke('subscribe', partial(@_sortByPriority, @stories))
 
     ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
 
@@ -248,14 +211,7 @@ class SprintViewModel extends ParentViewModel
 
     @addStory = =>
 
-      @model.createStory @model.sprint._id
-
-        , (story) => 
-        
-          observableObject = @createObservablesObject story
-          @stories.push observableObject
-          # TODO: sort after push?
-        , showErrorDialog
+      @model.createStory @model.sprint._id, partial(@_addChild, @stories), showErrorDialog
 
     @removeStory = (storyObservable) =>
 
@@ -274,3 +230,38 @@ class SprintViewModel extends ParentViewModel
 
               item._id == story._id
           , showErrorDialog
+          
+    # rt specific initializations
+
+    defaults = 
+
+      method: 'POST'
+      id: @model.sprint._id
+
+    notifications = @_createSprintNotifications()
+
+    notifications = notifications.concat _.chain(@stories()).map(@_createStoryNotifications).flatten().value()
+
+    _.each notifications, curry2(_.defaults)(defaults)
+    
+    @stories.subscribe (changes) =>
+
+      for change in changes
+
+        if change.status == 'added'
+
+          observable = @stories()[change.index]
+          storyNotifications = @_createStoryNotifications observable, change.index
+          _.each notifications, curry2(_.defaults)(defaults)
+          socket.registerNotifications storyNotifications
+          notifications = notifications.concat storyNotifications
+        if change.status == 'deleted'
+
+          socket.unregisterNotifications _.where(notifications, {id: change.value._id})
+    , null, 'arrayChange'
+
+    socket = new SocketIO()
+    socket.connect (sessionid) =>
+
+      @model.sessionid = sessionid
+      socket.registerNotifications notifications 

@@ -23,26 +23,24 @@ var task_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), opti
 options.filename = 'index.jade';
 var index_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), options);
 
-var task_template_2 = function(response) {
+var htmlTemplates = {
 
-  return task_template({task: response.task, story: response.story, sprint: response.sprint, messages: messages});
-}
-var htmlTemplates = {index: index_template, sprint: sprint_template, story: story_template, task: task_template_2};
+  index: index_template, 
+  sprint: function(response) {
+
+    return sprint_template({sprint: response.sprint, stories: response.stories, calculations: response.calculations, messages: messages})
+  },
+  story: function(response) {
+
+    return story_template({story: response.story, tasks: response.tasks, sprint: response.sprint, messages: messages});
+  },
+  task: function(response) {
+
+    return task_template({task: response.task, story: response.story, sprint: response.sprint, messages: messages});  
+  }
+};
 
 var clients = [];
-
-var broadcastToOtherClients = function(type, sourceUUID, data) {
-
-/*  for (var key in clients) {
-
-    if (key != sourceUUID) {
-
-      var client = clients[key];
-      console.log('emit ' + type + ' to ' + key);
-      client.emit(type, data);
-    }
-  }*/
-};
 
 function partial(fn) {
 
@@ -90,16 +88,17 @@ var postAnswer = function(key, respond, result) {
 var deleteAnswer = function(respond, result) {
 
   var removed;
+  var mapToAnswer = function(object) {
+
+    return {id: object._id.toString()}
+  };
 
   if (!_.isArray(result)) {
 
-    removed = [{id: result._id.toString()}];
+    removed = mapToAnswer(result);
   } else {
 
-    removed = _.map(result, function(object) {
-
-      return {id: object._id.toString()};
-    });
+    removed = _.map(result, mapToAnswer);
   }
 
   respond(removed);
@@ -174,13 +173,14 @@ var notify = function(request, result) {
 
   var clientIds, clients, byGenerator, byRequest, byId, byProperties, originatingClient, toNotification;
 
+  // remove might supply an array as result (cascading delete)
   if (!result) {
 
     return;
   }
   else if (_.isArray(result)) {
 
-    _.each(result, notify);
+    _.each(result, partial(notify, request));
     return;
   }
 
@@ -188,13 +188,20 @@ var notify = function(request, result) {
 
     return function(object) {
 
-      return object[key] == value;
+      if (object[key] === undefined) {
+
+        return true;
+      }
+      else {
+
+        return object[key] == value;        
+      }
     };
   };
 
   byRequest = buildEqual('method', request.method);
-
-  byId = buildEqual('object_id', result.id);
+  byId = buildEqual('id', result.id);
+  byParentId = buildEqual('parent_id', result.parent_id);
 
   originatingClient = function(registration) {
 
@@ -229,7 +236,7 @@ function processRequest(request, response) {
   //var query = url_parts.query;
   var pathname = url_parts.pathname;
   var pathParts = pathname.split("/");
-  var type = pathParts.length > 1 ? unescape(pathParts[1]) : null;
+  var type = (pathParts.length > 1 && pathParts[1] !== "") ? unescape(pathParts[1]) : 'index';
   var id = pathParts.length > 2 ? unescape(pathParts[2]) : null;
   var html = ((request.headers.accept !== undefined) && (request.headers.accept.match(/application\/json/) !== null)) ? false : true;
   var respond = html ? partial(respondWithHtml_2, response, type) : partial(respondWithJson_2, response);
@@ -326,8 +333,7 @@ function processRequest(request, response) {
     query = function() {
 
       var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
-
-      return tischDB.removeTask(filter, true);
+      return tischDB.removeTask(filter, true);;
     };
       
     answer = partial(deleteAnswer, partial(respondWithJson_2, response));
@@ -357,7 +363,7 @@ function processRequest(request, response) {
           })
           .then(function (result) {
 
-            return {story: story, tasks: tasks, sprint: result, messages: messages}; 
+            return {story: story, tasks: tasks, sprint: result}; 
           });
         } else {
 
@@ -375,6 +381,7 @@ function processRequest(request, response) {
     }
 
     answer = respond;
+
   } else if ((type == 'story') && (request.method == 'POST')) {
 
     assert.ok(id, 'id url part missing.');
@@ -413,12 +420,8 @@ function processRequest(request, response) {
 
       return tischDB.insertStory(data);
     };
-      
-    answer = function(result) {
-
-      respondWithJson(result, response);
-      broadcastAddToOtherClients(request.headers.client_uuid, result);
-    };
+    
+    answer = partial(putAnswer, 'sprint_id', partial(respondWithJson_2, response));  
   } 
   else if ((type == 'story') && (request.method == 'DELETE')) {
   
@@ -477,7 +480,7 @@ function processRequest(request, response) {
           })
           .then(function (result) {
 
-            return {sprint: sprint, stories: stories, calculations: {remaining_time: result}, messages: messages}; 
+            return {sprint: sprint, stories: stories, calculations: {remaining_time: result}}; 
           });
         }
         else {
@@ -532,12 +535,8 @@ function processRequest(request, response) {
 
       return tischDB.insertSprint(data);
     };
-      
-    answer = function(result) {
 
-      respondWithJson(result, response);
-      broadcastToClients(request.headers.client_uuid, {message: 'add', recipient: request.headers.parent_id, data: result});
-    };
+    answer = partial(putAnswer, null, partial(respondWithJson_2, response));
   }
   else if ((type == 'sprint') && (request.method == 'DELETE')) {
   
@@ -587,18 +586,9 @@ function processRequest(request, response) {
       });
     };
 
-    answer = function(result) {
-
-      // ajax response is only the requested id.
-      respondWithJson(id, response);
-      for (var i in result) {
-
-        var removedId = result[i];
-        broadcastToClients(request.headers.client_uuid, {message: 'remove', recipient: removedId, data: removedId});
-      }
-    };
+    answer = partial(deleteAnswer, partial(respondWithJson_2, response));
   }
-  else if ((!type) && (request.method == 'GET')) {
+  else if ((type == 'index') && (request.method == 'GET')) {
 
     query = function() {
 

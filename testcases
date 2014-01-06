@@ -1,0 +1,5 @@
+RT:
+
+Change existing Task's priority => Task should be moved to correct spot on peer.
+Create new Task => Task should appear on peer.
+Change newly created Task's priority => Task should be moved to the correct spot on peer.
