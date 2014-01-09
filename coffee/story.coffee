@@ -103,13 +103,15 @@ class StoryViewModel extends ParentViewModel
 
   _createObservablesObject: (task) =>
 
+    updateModel = partial @_updateModel, 'task'
+
     _id: task._id
-    summary: @_createThrottledObservable task, 'summary', @_updateTaskModel
-    description: @_createThrottledObservable task, 'description', @_updateTaskModel
-    color: @_createObservable task, 'color', @_updateTaskModel
-    priority: @_createObservable task, 'priority', @_updateTaskModel
-    remaining_time: @_createObservable task, 'remaining_time', @_updateTaskModel
-    time_spent: @_createObservable task, 'time_spent', @_updateTaskModel
+    summary: @_createThrottledObservable task, 'summary', updateModel
+    description: @_createThrottledObservable task, 'description', updateModel
+    color: @_createObservable task, 'color', updateModel
+    priority: @_createObservable task, 'priority', updateModel
+    remaining_time: @_createObservable task, 'remaining_time', updateModel
+    time_spent: @_createObservable task, 'time_spent', updateModel
     _url: '/task/' + task._id
     _js: task
     _remaining_time: ko.computed =>
@@ -185,16 +187,20 @@ class StoryViewModel extends ParentViewModel
 
       @sprint[key] value
 
-  _updateStoryModel: (observable, object, property, value) =>
-
-    @_updateModel observable, object, 'story', property, value
-  _updateTaskModel: (observable, object, property, value) =>
-
-    @_updateModel observable, object, 'task', property, value
-
   constructor: (@model) ->
 
     super(@model)
+
+    # TODO: use mixins
+    # set global options for jquery ui sortable
+
+    ko.bindingHandlers.sortable.options = 
+
+      tolerance: 'pointer'
+      delay: 150
+      cursor: 'move'
+      containment: 'ul#well'
+      handle: '.header'
 
     # breadcrumbs
 
@@ -206,17 +212,22 @@ class StoryViewModel extends ParentViewModel
         label: ko.observable @model.sprint.title
         url: '/sprint/' + @model.sprint._id
 
+    # test
+
+    updateModel = partial(@_updateModel, 'story');
+    updateChildModel = partial(@_updateModel, 'task');
+
     # title
 
-    @title = @_createThrottledObservable @model.story, 'title', @_updateStoryModel
+    @title = @_createThrottledObservable @model.story, 'title', updateModel
 
     # description
 
-    @description = @_createThrottledObservable @model.story, 'description', @_updateStoryModel
+    @description = @_createThrottledObservable @model.story, 'description', updateModel
 
     # color
 
-    @color = @_createObservable @model.story, 'color', @_updateStoryModel
+    @color = @_createObservable @model.story, 'color', updateModel
     @showColorSelector = =>
 
       @modal 'color-selector'
@@ -229,7 +240,7 @@ class StoryViewModel extends ParentViewModel
 
     @sprints = ko.observable()
 
-    @sprint_id = @_createObservable @model.story, 'sprint_id', @_updateStoryModel
+    @sprint_id = @_createObservable @model.story, 'sprint_id', updateModel
 
     @showSprintSelector = => 
 
@@ -267,7 +278,7 @@ class StoryViewModel extends ParentViewModel
 
     # initial_estimation
 
-    @estimation = @_createThrottledObservable(@model.story, 'estimation', @_updateStoryModel, true)
+    @estimation = @_createThrottledObservable(@model.story, 'estimation', updateModel, true)
       .extend({matches: common.TIME_REGEX})
 
     # tasks

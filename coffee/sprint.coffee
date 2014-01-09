@@ -35,20 +35,15 @@ class SprintModel extends ParentModel
 
 class SprintViewModel extends ParentViewModel
 
-  _updateSprintModel: (observable, object, property, value) =>
-
-    @_updateModel observable, object, 'sprint', property, value
-  _updateStoryModel: (observable, object, property, value) =>
-
-    @_updateModel observable, object, 'story', property, value
-
   _createObservablesObject: (story) =>
 
+    updateModel = partial @_updateModel, 'story'
+
     _id: story._id
-    title: @_createThrottledObservable story, 'title', @_updateStoryModel
-    description: @_createThrottledObservable story, 'description', @_updateStoryModel
-    color: @_createObservable story, 'color', @_updateStoryModel
-    priority: @_createObservable story, 'priority', @_updateStoryModel
+    title: @_createThrottledObservable story, 'title', updateModel
+    description: @_createThrottledObservable story, 'description', updateModel
+    color: @_createObservable story, 'color', updateModel
+    priority: @_createObservable story, 'priority', updateModel
     _remaining_time: ko.computed =>
 
       if @remainingTimeCalculations()[story._id]? 
@@ -106,6 +101,17 @@ class SprintViewModel extends ParentViewModel
 
     super(@model)
 
+    # TODO: use mixins
+    # set global options for jquery ui sortable
+
+    ko.bindingHandlers.sortable.options = 
+
+      tolerance: 'pointer'
+      delay: 150
+      cursor: 'move'
+      containment: 'ul#well'
+      handle: '.header'
+
     # confirmation dialog specific
 
     @confirmMessage = ko.observable()
@@ -114,64 +120,69 @@ class SprintViewModel extends ParentViewModel
       @modal null
     @confirm = ->
 
-    # title
+    # test
 
-    @title = @_createThrottledObservable @model.sprint, 'title', @_updateSprintModel
+    updateModel = partial(@_updateModel, 'sprint');
+    createObservable_ = partial @_createObservable3, updateModel, @model.sprint
 
-    # description
+    @writables = _.reduce [
 
-    @description = @_createThrottledObservable @model.sprint, 'description', @_updateSprintModel
+      {name: 'title', throttled: true}
+      {name: 'description', throttled: true}
+      {name: 'color'}
+      {name: 'start'}
+      {name: 'length'}
+    ], (object, property) ->
 
-    # color
+      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+    , {}
 
-    @color = @_createObservable @model.sprint, 'color', @_updateSprintModel
     @showColorSelector = =>
 
       @modal 'color-selector'
     @selectColor = (color) =>
 
       @modal null
-      @color color
+      @writables.color color
 
     # start
 
     @showStartDatePicker = => 
 
       @modal 'start-selector'
-    @start = @_createObservable @model.sprint, 'start', @_updateSprintModel
+
     @startDate = ko.computed
 
       read: =>
 
-        new Date(@start())
+        new Date(@writables.start())
       write: (value) =>
 
         # the datepicker binding returns a xxxx-xx-xx string, we need a Date, tho.
-        @start new moment(value).toDate()
+        @writables.start new moment(value).toDate()
       owner: @
     @startFormatted = ko.computed =>
 
-      moment(@start()).format(common.DATE_DISPLAY_FORMAT)
+      moment(@writables.start()).format(common.DATE_DISPLAY_FORMAT)
 
     # length
 
     @showLengthDatePicker = => 
 
       @modal 'length-selector'
-    @length = @_createObservable @model.sprint, 'length', @_updateSprintModel
     @lengthDate = ko.computed
 
       read: =>
 
-        moment(@start()).add('days', @length() - 1).toDate()
+        moment(@writables.start()).add('days', @writables.length() - 1).toDate()
       write: (value) =>
 
-        start = moment @start()
+        start = moment @writables.start()
         # since @start() as 'XXXX-XX-XXT00:00:00.000Z' is parsed w/o timezone offset, and value
         # is 'XXXX-XX-XX' has the timezone offset, we need to use moment.utc here to calculate
         # the delta here.
         end = moment.utc value
-        @length moment.duration(end - start).days() + 1
+        @writables.length moment.duration(end - start).days() + 1
     @endFormatted = ko.computed =>
 
       moment(@lengthDate()).format(common.DATE_DISPLAY_FORMAT)
@@ -187,8 +198,8 @@ class SprintViewModel extends ParentViewModel
 
         @remainingTimeCalculations calculations
 
-    @start.subscribe updateStats
-    @length.subscribe updateStats
+    @writables.start.subscribe updateStats
+    @writables.length.subscribe updateStats
 
     # TODO: if sprint range changes, update calculations
 
@@ -230,7 +241,7 @@ class SprintViewModel extends ParentViewModel
 
               item._id == story._id
           , showErrorDialog
-          
+
     # rt specific initializations
 
     defaults = 

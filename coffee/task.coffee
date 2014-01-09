@@ -59,11 +59,11 @@ class TaskViewModel extends ViewModel
       @[data.key]?(data.value)
       if data.key == 'story_id'
 
-        @model.getStory @story_id(), @_replaceStory
+        @model.getStory @writables.story_id(), @_replaceStory
 
   _createStoryNotification: ->
 
-    id: @story_id()
+    id: @writables.story_id()
     properties: ['title', 'sprint_id']
     handler: (data) =>
 
@@ -116,10 +116,6 @@ class TaskViewModel extends ViewModel
         write value   
     indexed
 
-  _updateTaskModel: (observable, object, property, value) =>
-
-    @_updateModel observable, object, 'task', property, value
-
   constructor: (@model) ->
 
     super(@model)   
@@ -137,31 +133,35 @@ class TaskViewModel extends ViewModel
         label: ko.observable @model.sprint.title
         url: '/sprint/' + @model.sprint._id
 
-    #summary
+    updateModel = partial @_updateModel, 'task'
+    createObservable_ = partial @_createObservable3, updateModel, @model.task
 
-    @summary = @_createThrottledObservable @model.task, 'summary', @_updateTaskModel
-    
-    #description
+    @writables = _.reduce [
 
-    @description = @_createThrottledObservable @model.task, 'description', @_updateTaskModel
-    
-    #color
+      {name: 'summary', throttled: true}
+      {name: 'description', throttled: true}
+      {name: 'color'}
+      {name: 'story_id'}
+      {name: 'initial_estimation', throttled: true, time: true}
+    ], (object, property) ->
 
-    @color = @_createObservable @model.task, 'color', @_updateTaskModel
+      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+    , {}
+
+    # TODO: as mixin plz
     @showColorSelector = =>
 
       @modal 'color-selector'
     @selectColor = (color) =>
 
       @modal null
-      @color color
+      @writables.color color
 
     # story_id
 
     @stories = ko.observable()
 
-    @story_id = @_createObservable @model.task, 'story_id', @_updateTaskModel
-    @story_id.subscribe (value) =>
+    @writables.story_id.subscribe (value) =>
 
       @model.getStory value, @_replaceStory, @_showError
 
@@ -177,21 +177,21 @@ class TaskViewModel extends ViewModel
     @selectStory = (selected) =>
 
       @modal null
-      @story_id selected.id
+      @writables.story_id selected.id
     # story specific stuff
 
     @story = 
 
       _id: ko.computed => 
 
-        @story_id()
+        @writables.story_id()
       title: ko.observable @model.story.title
       sprint_id: ko.observable @model.story.sprint_id
 
     # initial_estimation
 
-    @initial_estimation = @_createThrottledObservable(@model.task, 'initial_estimation', @_updateTaskModel, true)
-      .extend({matches: common.TIME_REGEX})
+    #@initial_estimation = @_createThrottledObservable(@model.task, 'initial_estimation', updateModel, true)
+    #@  .extend({matches: common.TIME_REGEX})
 
     # sprint specific observables
 
@@ -221,9 +221,8 @@ class TaskViewModel extends ViewModel
           newIndex = @model.getDateIndex @sprint.start(), @sprint.length()
           indexObservable newIndex
 
-    # shared write curry for indexed properties (remaining_time & time_spent)
-
-    writeIndexed = curry (property, observableObject, observableIndex, value) =>
+    # shared write for indexed properties (remaining_time & time_spent)
+    writeIndexed = (property, observableObject, observableIndex, value) =>
 
       # we need to clone the obj, b/c otherwise the observable would not be updated
       oldObject = observableObject()
@@ -260,7 +259,7 @@ class TaskViewModel extends ViewModel
     readRemainingTime = =>
 
       @model.getClosestValueByDateIndex @remaining_time(), @remainingTimeIndex(), @sprintRange().start
-    @indexedRemainingTime = @_createIndexedComputed readRemainingTime, writeIndexed('remaining_time', @remaining_time, @remainingTimeIndex), @
+    @indexedRemainingTime = @_createIndexedComputed readRemainingTime, partial(writeIndexed, 'remaining_time', @remaining_time, @remainingTimeIndex), @
 
     # time_spent
 
@@ -277,7 +276,7 @@ class TaskViewModel extends ViewModel
 
       value = @time_spent()[@timeSpentIndex()]
       if value? then value else 0
-    @indexedTimeSpent = @_createIndexedComputed readTimeSpent, writeIndexed('time_spent', @time_spent, @timeSpentIndex), @
+    @indexedTimeSpent = @_createIndexedComputed readTimeSpent, partial(writeIndexed, 'time_spent', @time_spent, @timeSpentIndex), @
 
     # realtime specific initializations
 

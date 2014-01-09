@@ -11,9 +11,19 @@ curry2 = (fn) ->
 
   (arg2) ->
 
+    (arg1) ->
+
+      fn arg1, arg2
+
+curry3 = (fn) ->
+
+  (arg3) ->
+    
+    (arg2) ->
+
       (arg1) ->
 
-        fn arg1, arg2
+        fn arg1, arg2, arg3
 
 common = (->
 
@@ -226,7 +236,7 @@ class Model
   # TODO: write unit-tests
   # TODO: more verbose error message, pass along those from http responses.
 
-  remove = curry (type, item, successCb, errorCb) ->
+  remove = (type, item, successCb, errorCb) ->
 
     getRev = ->
 
@@ -279,7 +289,7 @@ class Model
 
         #TODO: proper errmsg
         errorCb? errorThrown
-  getMultiple = curry (type, parentId, successCb) ->
+  getMultiple = (type, parentId, successCb) ->
 
     if parentId?
 
@@ -304,16 +314,16 @@ class Model
 
   createTask: partial create, 'task'
   createStory: partial create, 'story'
-  createSprint: partial create, 'sprint'
-  removeTask: remove 'task'
-  removeStory: remove 'story'  
-  removeSprint: remove 'sprint'
+  createSprint: partial create, 'sprint', null
+  removeTask: partial remove, 'task'
+  removeStory: partial remove, 'story'  
+  removeSprint: partial remove, 'sprint'
   getTask: partial get, 'task'
   getStory: partial get, 'story'
   getSprint: partial get, 'sprint'
-  getTasks: getMultiple 'task'
-  getStories: getMultiple 'story'
-  getSprints: getMultiple 'sprint', null
+  getTasks: partial getMultiple, 'task'
+  getStories: partial getMultiple, 'story'
+  getSprints: partial getMultiple, 'sprint', null
   ###updateChild: (index, key, successCb, errorCb) => 
 
     @_update @children.objects[index], key, @children.type, successCb, errorCb###
@@ -414,16 +424,66 @@ class ViewModel
 
           updateModel observable, object, property, value
     instantaneousProperty
-  _updateModel: (observable, object, type, property, value) =>
 
-      oldValue = object[property]
-      object[property] = value
-      @model.update object, property, type, null, (message) =>
+  _createObservable2: (property, type, options = {}) =>
 
-        object[property] = oldValue
-        observable(oldValue)
-        @modal 'error-dialog'
-        @errorMessage message
+    updateModel = partial(@_updateModel, type);
+    object = @model[type];
+
+    instantaneousProperty = ko.observable(object[property])
+
+    if options.throttled == true
+
+      observable = ko.computed(instantaneousProperty).extend({throttle: common.KEYUP_UPDATE_DELAY})
+      observable.subscribe (value) ->
+
+        if (!instantaneousProperty.hasError? || !instantaneousProperty.hasError()) && object[property] != value
+
+          updateModel observable, object, property, value
+    else 
+
+      instantaneousProperty.subscribe (value) ->
+
+        if !instantaneousProperty.hasError && object[property] != value
+      
+          updateModel instantaneousProperty, object, property, value   
+
+    @[property] = instantaneousProperty
+
+  _createObservable3: (updateModelFn, object, property, options = {}) ->
+
+    instantaneousProperty = ko.observable(object[property])
+
+    update = (observable, value) ->
+
+      value = if options.time == true then parseFloat value, 10 else value
+      if !instantaneousProperty.hasError?() && object[property] != value
+
+        updateModelFn observable, object, property, value      
+
+    if options.throttled == true
+
+      observable = ko.computed(instantaneousProperty).extend({throttle: common.KEYUP_UPDATE_DELAY})
+      observable.subscribe partial(update, observable)
+    else 
+
+      instantaneousProperty.subscribe partial(update, instantaneousProperty)
+
+    if options.time == true
+
+      instantaneousProperty.extend({matches: common.TIME_REGEX})
+    instantaneousProperty
+
+  _updateModel: (type, observable, object, property, value) =>
+
+    oldValue = object[property]
+    object[property] = value
+    @model.update object, property, type, null, (message) =>
+
+      object[property] = oldValue
+      observable(oldValue)
+      @modal 'error-dialog'
+      @errorMessage message
 
   _showError: (message) =>
 
@@ -536,13 +596,3 @@ class ParentViewModel extends ViewModel
   constructor: (@model) ->
 
     super @model
-
-    # set global options for jquery ui sortable
-
-    ko.bindingHandlers.sortable.options = 
-
-      tolerance: 'pointer'
-      delay: 150
-      cursor: 'move'
-      containment: 'ul#well'
-      handle: '.header'

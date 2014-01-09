@@ -1,27 +1,39 @@
-class IndexSocketIO extends SocketIO
-
 class IndexModel extends Model
 
-  constructor: (sprints) ->
-
-  	@children = {type: 'sprint', objects: sprints}
+  constructor: (@sprints) ->
 
 class IndexViewModel extends ParentViewModel
 
+  _createObservablesObject: (sprint) =>
+
+    updateModel = partial(@_updateModel, 'sprint')
+
+    _id: sprint._id
+    start: ko.observable sprint.start
+    length: ko.observable sprint.length
+    title: @_createThrottledObservable sprint, 'title', updateModel
+    description: @_createThrottledObservable sprint, 'description', updateModel
+    color: ko.observable sprint.color
+    _url: '/sprint/' + sprint._id
+    _js: sprint
+
   constructor: (@model) ->
 
-    @common = common
+    super @model
 
-    sprints = _.map @model.children.objects, (sprint) ->
+    # confirmation dialog specific
 
-      _id: ko.observable sprint._id
-      start: ko.observable sprint.start
-      length: ko.observable sprint.length
-      title: ko.observable sprint.title
-      description: ko.observable sprint.description
-      color: ko.observable sprint.color
+    @confirmMessage = ko.observable()
+    @cancel = =>
 
-    @sprints = ko.observableArray sprints
+      @modal null
+    @confirm = ->
+
+    # sprints
+
+    # TODO: sort on start changes
+
+    @sprints = ko.observableArray _.map @model.sprints, @_createObservablesObject
     
     @formatStart = (sprint) ->
 
@@ -29,40 +41,37 @@ class IndexViewModel extends ParentViewModel
     @formatEnd = (sprint) ->
 
       moment(sprint.start()).add('days', sprint.length() - 1).format(common.DATE_DISPLAY_FORMAT)
-    @sprintUrl = (sprint) ->
 
-      '/sprint/' + sprint._id()
+    # button handlers
 
-    ###@view = new IndexView ractiveTemplate, @model
-    super(@view, @model)
-    @socketio = new IndexSocketIO @view, @model
+    showErrorDialog = (message) =>
 
-    $('#title, #description, [id^="title-"], [id^="description-"]').each (index, element) => @_setConfirmedValue element
-  handleButton: (ractiveEvent, action) => 
+      @modal 'error-dialog'
+      @errorMessage message
 
-    super ractiveEvent, action
+    @addSprint = =>
 
-    switch action
+      # TODO: sort correctly
+      onSuccess = (data) =>
 
-      when 'sprint_add' 
+        @sprints.push @_createObservablesObject data.new
 
-        @model.createSprint (data) => 
+      @model.createSprint onSuccess, showErrorDialog
 
-            @model.children.objects.push data
-            $("#summary-#{data._id}, #description-#{data._id}").each (index, element) => @_setConfirmedValue element
-          ,(message) => 
+    @removeSprint = (sprintObservable) =>
 
-            @showError message
-      when 'sprint_open' then window.location.href = "/sprint/#{ractiveEvent.context._id}"
-      when 'sprint_remove'
-        @onConfirm = => 
+      @modal 'confirm-dialog'
+      # TODO: i18n
+      @confirmMessage 'Are you sure? The sprint, its stories and the tasks assigned to them will be permanently removed.'
+      @confirm = =>
 
-          @model.removeSprint ractiveEvent.context
-            , (id) => 
+        @modal null
+        sprint = sprintObservable._js
+        @model.removeSprint sprint
 
-              @view.get('children').splice ractiveEvent.index.i, 1
-            ,(message) => 
+          , =>
 
-              @showError message
-        @showConfirm common.constants.en_US.CONFIRM_SPRINT_REMOVAL ractiveEvent.context.title
-      when 'confirm_confirm' then @onConfirm()###
+            @sprints.remove (item) =>
+
+              item._id == sprint._id
+          , showErrorDialog
