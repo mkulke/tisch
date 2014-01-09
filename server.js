@@ -108,12 +108,20 @@ var deleteAnswer = function(respond, result) {
 var putAnswer = function(parentKey, respond, result) {
 
   var parentId, added;
-  if (!(parentId = result[parentKey]) instanceof ObjectID) {
+  if (parentKey === null) {
+
+    parentId = 'index';  
+  }
+  else if (!(result[parentKey] instanceof ObjectID)) {
 
     // TODO i18n
     throw "The " + parentKey + " property is not an Object ID";
   }
-  added = {id: parentId.toString(), new: result};
+  else {
+
+    parentId = result[parentKey].toString();
+  }
+  added = {id: parentId, new: result};
   respond(added);
   return added;
 };
@@ -546,43 +554,30 @@ function processRequest(request, response) {
     query = function() {
 
       var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
-      var removedIds = [];
+      var removed = [];
 
       return tischDB.removeSprint(filter, true)
-      .then(function() {
+      .then(function(result) {
 
+        removed.push(result);
         filter = {sprint_id: ObjectID(id)};
 
         return tischDB.findAndRemoveStories(filter);
       })
       .then(function (result) {
 
-        removedIds = result;
+        removed = removed.concat(result);
 
-        function buildCalls() {
+        // remove all the stories' tasks 
+        return Q.all(_.map(result, function(story) {
 
-          var calls = [];
-          for (var i in removedIds) {
-
-            var storyId = ObjectID(removedIds[i]);
-            filter = {story_id: storyId};
-
-            calls.push(tischDB.findAndRemoveTasks(filter));
-          }
-          return calls;
-        }
-
-        return Q.all(buildCalls());
+          return tischDB.findAndRemoveTasks({story_id: story._id});
+        }));
       })
       .then(function (result) {
 
-        for (var i in result) {
-
-          removedIds = removedIds.concat(result[i]);
-        }
-        removedIds.push(id);
-
-        return removedIds;
+        removed = removed.concat(_.flatten(result));
+        return removed;
       });
     };
 
