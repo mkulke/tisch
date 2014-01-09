@@ -100,7 +100,6 @@ casper.then ->
 
 	@test.info 'Use illegal character in number field.'
 	@fill '#content form', 'initial_estimation': 'a'
-	@capture 'hallo.png'
 	@test.assertVisible 'input[name="initial_estimation"] + span.error-popup .content', 'Error popup appeared.'
 	@fill '#content form', 'initial_estimation': '5'
 	@test.assertNotVisible 'input[name="initial_estimation"] + span.error-popup .content', 'Error popup disappeared.'

@@ -35,23 +35,29 @@ class SprintModel extends ParentModel
 
 class SprintViewModel extends ParentViewModel
 
-  _createObservablesObject: (story) =>
+  _createObservables: (story) =>
 
     updateModel = partial @_updateModel, 'story'
+    createObservable_ = partial @_createObservable3, updateModel, story
 
+    writables = _.reduce [
+
+      {name: 'title', throttled: true}
+      {name: 'description', throttled: true}
+      {name: 'priority'}
+    ], (object, property) ->
+
+      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+    , {}
+    
     _id: story._id
-    title: @_createThrottledObservable story, 'title', updateModel
-    description: @_createThrottledObservable story, 'description', updateModel
-    color: @_createObservable story, 'color', updateModel
-    priority: @_createObservable story, 'priority', updateModel
+    title: writables.title
+    description: writables.description
+    color: ko.observable story.color
+    priority: writables.priority
     _remaining_time: ko.computed =>
 
-      if @remainingTimeCalculations()[story._id]? 
-
-        @remainingTimeCalculations()[story._id]
-      else
-
-        null
+      @remainingTimeCalculations()[story._id]
     _url: '/story/' + story._id
     _js: story
 
@@ -122,7 +128,7 @@ class SprintViewModel extends ParentViewModel
 
     # test
 
-    updateModel = partial(@_updateModel, 'sprint');
+    updateModel = partial @_updateModel, 'sprint'
     createObservable_ = partial @_createObservable3, updateModel, @model.sprint
 
     @writables = _.reduce [
@@ -205,7 +211,7 @@ class SprintViewModel extends ParentViewModel
 
     # stories
 
-    @stories = ko.observableArray _.map @model.stories, @_createObservablesObject
+    @stories = ko.observableArray _.map @model.stories, @_createObservables
     _.chain(@stories()).pluck('priority').invoke('subscribe', partial(@_sortByPriority, @stories))
 
     ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>

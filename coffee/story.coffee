@@ -101,17 +101,28 @@ class StoryModel extends ParentModel
 
 class StoryViewModel extends ParentViewModel
 
-  _createObservablesObject: (task) =>
+  _createObservables: (task) =>
 
     updateModel = partial @_updateModel, 'task'
+    createObservable_ = partial @_createObservable3, updateModel, task
 
+    writables = _.reduce [
+
+      {name: 'summary', throttled: true}
+      {name: 'description', throttled: true}
+      {name: 'priority'}
+    ], (object, property) ->
+
+      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+    , {}
+    
     _id: task._id
-    summary: @_createThrottledObservable task, 'summary', updateModel
-    description: @_createThrottledObservable task, 'description', updateModel
-    color: @_createObservable task, 'color', updateModel
-    priority: @_createObservable task, 'priority', updateModel
-    remaining_time: @_createObservable task, 'remaining_time', updateModel
-    time_spent: @_createObservable task, 'time_spent', updateModel
+    summary: writables.summary
+    description: writables.description
+    color: ko.observable task.color
+    priority: writables.priority
+    remaining_time: ko.observable task.remaining_time
+    time_spent: ko.observable task.time_spent
     _url: '/task/' + task._id
     _js: task
     _remaining_time: ko.computed =>
@@ -283,7 +294,7 @@ class StoryViewModel extends ParentViewModel
 
     # tasks
 
-    @tasks = ko.observableArray _.map @model.tasks, @_createObservablesObject
+    @tasks = ko.observableArray _.map @model.tasks, @_createObservables
     _.chain(@tasks()).pluck('priority').invoke('subscribe', partial(@_sortByPriority, @tasks))
 
     ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>

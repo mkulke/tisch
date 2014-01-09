@@ -589,9 +589,9 @@ class ParentViewModel extends ViewModel
   # this is a template for rt/ajax callbacks
   _addChild: (array, data) =>
       
-    observableObject = @_createObservablesObject data.new
-    observableObject.priority.subscribe partial(@_sortByPriority, array)
-    array.push observableObject
+    observables = @_createObservables data.new
+    observables.priority.subscribe partial(@_sortByPriority, array)
+    array.push observables
 
   constructor: (@model) ->
 

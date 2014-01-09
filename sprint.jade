@@ -41,7 +41,7 @@ html
 							div(data-bind="css: $data.color() + ' header hoverable'")
 								input(data-bind="value: $data.title, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'title-' + $index()}")
 								.stats
-										div(data-bind="if: $data._remaining_time() !== null")
+										div(data-bind="if: $data._remaining_time() !== undefined")
 											div(data-bind="ifnot: $data._remaining_time() > 0")
 												img(src="/done_white_30.png")
 											div(data-bind="if: $data._remaining_time() > 0")
