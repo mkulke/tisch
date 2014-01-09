@@ -96,8 +96,16 @@ casper.then ->
 				@test.assertField 'initial_estimation', '7', 'Initial estimation field correct.'
 				@test.assertEquals @getElementInfo("button[name='color']").attributes.class, 'green', 'Color button correct.'
 				@test.assertEquals @getElementInfo("button[name='story_id']").text, 'Test Story B', 'Story button correct.'
+casper.then ->
+
+	@test.info 'Use illegal character in number field.'
+	@fill '#content form', 'initial_estimation': 'a'
+	@capture 'hallo.png'
+	@test.assertVisible 'input[name="initial_estimation"] + span.error-popup .content', 'Error popup appeared.'
+	@fill '#content form', 'initial_estimation': '5'
+	@test.assertNotVisible 'input[name="initial_estimation"] + span.error-popup .content', 'Error popup disappeared.'
 
 casper.run ->
 
-	@test.done 30
+	@test.done 32
 	@test.renderResults true
