@@ -29,18 +29,18 @@ module.exports = function(grunt) {
 		    },
 		    files: {
 
-		      'coffee/task.coffee.js': 'coffee/task.coffee',
-					'coffee/story.coffee.js': 'coffee/story.coffee',
-					'coffee/sprint.coffee.js': 'coffee/sprint.coffee',
-					'coffee/index.coffee.js': 'coffee/index.coffee',
+		      	'coffee/task.coffee.js': 'coffee/task.coffee',
+				'coffee/story.coffee.js': 'coffee/story.coffee',
+				'coffee/sprint.coffee.js': 'coffee/sprint.coffee',
+				'coffee/index.coffee.js': 'coffee/index.coffee',
 		     	'coffee/shared.coffee.js': 'coffee/shared.coffee',
 		     	'test/unit/sprint.coffee.js': 'test/unit/sprint.coffee',
-		      'test/unit/task.coffee.js': 'test/unit/task.coffee',
-		      'test/unit/story.coffee.js': 'test/unit/story.coffee',
-		      'test/unit/shared.coffee.js': 'test/unit/shared.coffee',
-		      'test/functional/task.coffee.js': 'test/functional/task.coffee',
-		      'test/functional/sprint.coffee.js': 'test/functional/sprint.coffee',
-		      'test/functional/story.coffee.js': 'test/functional/story.coffee'
+		      	'test/unit/task.coffee.js': 'test/unit/task.coffee',
+		      	'test/unit/story.coffee.js': 'test/unit/story.coffee',
+		      	'test/unit/shared.coffee.js': 'test/unit/shared.coffee',
+		      	'test/functional/task.coffee.js': 'test/functional/task.coffee',
+		      	'test/functional/sprint.coffee.js': 'test/functional/sprint.coffee',
+		      	'test/functional/story.coffee.js': 'test/functional/story.coffee'
 		    }
   		},
 		},
