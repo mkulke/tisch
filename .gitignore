@@ -5,6 +5,8 @@ coffee/*.js.map
 coffee/*.js
 test/unit/*.js.map
 test/unit/*.js
+test/functional/*.coffee.js.map
+test/functional/*.coffee.js
 
 .DS_Store
 

@@ -1,4 +1,4 @@
-describe 'SprintViewModel._selectDate', ->
+###describe 'SprintViewModel._selectDate', ->
 
   before ->
 
@@ -65,4 +65,4 @@ describe 'SprintViewModel._selectDate', ->
     sinon.stub @viewModel.view, 'get', -> 4
     @viewModel.view.set.reset()
     @viewModel._selectDate('2010-01-10', {input: '#fake_length'})
-    assert @viewModel.view.set.calledWith('sprint.length', 4), 'undoValue not set on failed update'
+    assert @viewModel.view.set.calledWith('sprint.length', 4), 'undoValue not set on failed update'###

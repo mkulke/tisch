@@ -75,7 +75,7 @@
 
 .date-selector.popup-selector .content {
 
-  background-color: #ffffff;
+	background-color: #ffffff;
 	padding: 0px;
 }
 
@@ -147,8 +147,8 @@
 
 .error-popup {
 
-  top: 3px;
-  left: -116px;
+  top: 5px;
+  left: -115px;
   position: relative;
   cursor: pointer;
   text-decoration: none;
@@ -156,7 +156,7 @@
   display: inline-block;
   font-weight: 200;
   /*border-bottom: 1px DimGray solid;*/
-  display: none;
+  /*display: none;*/
 }
 
 .error-popup > .content {
@@ -169,11 +169,11 @@
   -moz-box-shadow: 0px 0px 15px #999;*/
   position: absolute;
   padding: 5px;
-  top: 25px;
+  top: 10px;
   margin-bottom: 15px;
   z-index: 2;
   border-radius: 3px;
-	-moz-border-radius: 3px;
+  -moz-border-radius: 3px;
 }
 
 .error-popup > .content:before, .error-popup .content:after {
@@ -200,14 +200,14 @@
   z-index: 2;
 }
 
-.popup-selector a {
+.popup-selector {
 
 	position: relative;
 }
 
 a {
 
-	font-weight: 400;
+  font-weight: 400;
   text-decoration: none;
 }
 
@@ -226,34 +226,36 @@ span {
 	margin: 0px;
 }
 
-#popup-selector span.selected {
+.popup-selector button.selected {
 
-  color: black;
+	outline: none;
+	background-color: transparent;
+	padding: 0px;
+	border: none;
+	color: black;
+	cursor: pointer;
 	font-weight: 400;
+	font-family: inherit;
+	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
+	font-size: 16px;
 }
 
-.popup-selector a > .content {
+.popup-selector .content {
 
 	color: #999999;
 	background-color: #333333;
 	font-weight: 300;
-	/*background: #ffffff;*/
-	/*background-clip: padding-box;*/
-  border: solid 0px #bbbbbb;
-  /*box-shadow: 0px 0px 15px #999;
-  -webkit-box-shadow: 0px 0px 15px #999;
-  -moz-box-shadow: 0px 0px 15px #999;*/
-  border-radius: 3px;
+  	border: solid 0px #bbbbbb;
+  	border-radius: 3px;
 	-moz-border-radius: 3px;
 	position: absolute;
 	padding: 5px;
-	left: -11px;
+	left: -10px;
 	top: 32px;
-	display: none;
 	z-index: 3;
 }
 
-.popup-selector a > .content:before, .popup-selector a > .content:after {
+.popup-selector .content:before, .popup-selector .content:after {
 
 	content: "";
 	position: absolute;
@@ -265,14 +267,14 @@ span {
 	margin-left: -10px;
 }
 
-.popup-selector a > .content:before {
+.popup-selector .content:before {
 
 	border-bottom: 10px solid #333333;
 	/*border-bottom: 10px solid #bbbbbb;*/
 	margin-bottom: 0px;
 }
 
-.popup-selector a > .content:after {
+.popup-selector .content:after {
 
 	border-bottom: 10px solid #333333;
 	/*border-bottom: 10px solid #ffffff;*/
@@ -297,7 +299,7 @@ span {
 	padding: 5 0 5 0px;
 }
 
-#color-selector a > .content {
+#color-selector .content {
 
   height: 85px;
   width: 125px;
@@ -329,12 +331,26 @@ span {
 
 	padding-top: 2px;
 	padding-left: 2px;
-	vertical-align: text-top;
+	vertical-align: text-bottom;
 	display: inline-block;
 	height: 16px;
 	width: 16px;
 	border-radius: 50%;
-	/*border: 1px solid #333333;*/
+}
+
+#color-selector button {
+
+	background-color: transparent;
+	padding: 0px;
+	border: none;
+	color: black;
+	cursor: pointer;
+	outline: none;
+}
+
+.attribute .label {
+
+	margin-right: 5px;
 }
 
 body {
@@ -378,6 +394,7 @@ textarea#description {
 .attribute {
 
 	margin-left: 10px;
+	margin-bottom: 10px;
 }
 
 .attribute input {
@@ -417,14 +434,22 @@ a.breadcrumb:hover {
 
 .breadcrumb.selected {
 
+	font-weight: 400;
 	cursor: default;
 	background-color: #000000;
 	color: #ffffff;
 }
 
+#breadcrumb-bar img.logo {
+
+	float: right;
+	margin: 4px;
+}
+
 html, body {
 
 	margin: 0;
+	padding:0;
 	height: 100%;
 }
 
@@ -433,7 +458,7 @@ form {
 	margin: 0px;
 }
 
-#output {
+#output, #container {
 
 	min-height:100%;
 	position:relative;
@@ -449,7 +474,7 @@ form {
 
 	width: 100%;
 	height: 45px;
-	position:absolute;
+	position: absolute;
 	bottom: 0;
 	left: 0;
 	background-color: #333333;
@@ -488,16 +513,23 @@ form {
 
 	font-size: 16px;
 	height: 35px;
-	margin: 5 2 5 0px;
+	margin: 5 2 5 3px;
 	padding: 0 15 2 15px;
 }
 
 .panel .button {
 
 	font-size: 14px;
-	margin: 5 2 5 0px;
+	margin: 5 2 5 3px;
 	height: 30px;
 	padding: 0 15 2 15px;
+}
+
+.panel a.button.open {
+
+	padding-top: 5px;
+	padding-bottom: 8px;
+	height: 30px;
 }
 
 .panel .header input {
@@ -556,12 +588,17 @@ form {
 	background-color: #2accac;
 }
 
-.modal {
+/*.modal {
 
 	visibility: hidden;
-	/*display: none;*/
 	position: fixed;
 	z-index: 3;
+}*/
+
+#error-dialog, #confirm-dialog, #stats-dialog {
+
+	position: fixed;
+	z-index: 3;	
 }
 
 #stats-dialog {
@@ -592,10 +629,21 @@ form {
 	/*padding: 15px;*/
 }
 
+#stats-dialog .textbox span.label {
+
+	margin-right: 5px;
+}
+
+#stats-dialog .textbox span.indicator {
+
+	margin-right: 5px;
+}
+
 #stats-dialog .textbox > p {
 
+	width: 160px;
 	font-weight: 300;
-	margin: 0 0 15 0px;
+	margin: 0 5 15 0px;
 }
 
 #stats-dialog .chartbox {
@@ -631,9 +679,10 @@ form {
   top: 0;
   left: 0;
   width: 100%;
+  height: 100%;
   opacity: 0.6;
   background: white;
-  display: none;
+  /*display: none;*/
   z-index: 2
 }
 
@@ -758,6 +807,11 @@ h2 {
 	font-weight: 300;
 }
 
+span.date-selector {
+
+	font-weight: 200;
+}
+
 ul#sprints li:not(:first-child) {
 
 	border-top: 1px solid #333333;	
@@ -804,7 +858,7 @@ ul#sprints li:first-child {
   stroke-width: 1.5px;
 }
 
-#stats-dialog #chart .remainingTime {
+#stats-dialog #chart .remaining-time {
 
 	stroke: #3498DB;
 }
@@ -814,7 +868,7 @@ ul#sprints li:first-child {
 	stroke: #E98813;
 }
 
-#stats-dialog #chart .timeSpent {
+#stats-dialog #chart .time-spent {
 
 	stroke: #D2315D;
 }

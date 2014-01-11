@@ -1,3 +1,30 @@
+partial = (fn) ->
+
+  aps = Array.prototype.slice
+  args = aps.call arguments, 1
+  
+  -> 
+
+    fn.apply @, args.concat(aps.call(arguments))
+
+curry2 = (fn) ->
+
+  (arg2) ->
+
+    (arg1) ->
+
+      fn arg1, arg2
+
+curry3 = (fn) ->
+
+  (arg3) ->
+    
+    (arg2) ->
+
+      (arg1) ->
+
+        fn arg1, arg2, arg3
+
 common = (->
 
   uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace /[xy]/g, (c) ->
@@ -44,48 +71,63 @@ common = (->
     uuid: uuid
     constants: constants
     MS_TO_DAYS_FACTOR: 86400000
-    KEYUP_UPDATE_DELAY: 1500
+    KEYUP_UPDATE_DELAY: 500
     DATE_DISPLAY_FORMAT: 'MM/DD/YY'
     DATE_DB_FORMAT: 'YYYY-MM-DD'
+    TIME_REGEX: /^\d{1,2}(\.\d{1,2}){0,1}$/
+    ###COLOR_SELECTOR: 1
+    STORY_SELECTOR: 2
+    REMAINING_TIME_DATEPICKER: 3###
   }
 )()
 
 class SocketIO
 
-  constructor: (@view, @model) ->
+  arrayify = (fn) ->
 
-    @server = io.connect "http://#{window.location.hostname}"   
-    @server.on 'connect', ->
+    return ->
 
-      @emit 'register', common.uuid
-    @server.on 'update', @_onUpdate
-    @server.on 'add', @_onAdd
-    @server.on 'remove', @_onRemove
-  _onUpdate: (data) ->
-  _onAdd: (data) ->
-  _onRemove: (data) ->
-class View
+      argument = _.first(arguments)
+      array = if _.isArray argument then argument else [argument]
+      fn.call @, array
 
-  constructor: (ractiveTemplate, @model) ->
+  _registrations: []
 
-    @ractive = new Ractive
+  registerNotifications: arrayify (notifications) ->
 
-      el: 'output'
-      template: ractiveTemplate
-      data: @_buildRactiveData(model)
-  _buildRactiveData: ->
-  setRactiveHandlers: (ractiveHandlers) =>
+    registrations = _.map notifications, (notification) ->
 
-    @ractive.on ractiveHandlers
-  update: (keypath) =>
+      _.extend notification, {index: _.uniqueId()}
+      server: _.omit notification, 'handler'
+      client: {index: notification.index, handler: notification.handler} 
+    @server.emit 'register', _.pluck registrations, 'server'
+    @_registrations = @_registrations.concat _.pluck registrations, 'client'
 
-    @ractive.update(keypath)
-  set: (keypath, value) => 
+  unregisterNotifications: arrayify (notifications) ->
 
-    @ractive.set keypath, value
-  get: (keypath) => 
+    indices = _.pluck notifications, 'index'
+    unregistered = (notification) ->
 
-    @ractive.get keypath
+      _.contains indices, notification.index
+    @_registrations = _.reject @_registrations, unregistered
+    @server.emit 'unregister', indices
+
+  connect: (connectedCb) ->
+
+    @server = io.connect "http://#{window.location.hostname}"
+    onConnect = =>
+
+      connectedCb @server.socket?.sessionid
+    @server.on 'connect', onConnect
+    onNotify = (data) =>
+
+      registration = _.findWhere @_registrations, {index: data.index}
+      registration?.handler? data.data
+    @server.on 'notify', onNotify
+    onDisconnect = =>
+
+      @_registrations = []
+    @server.on 'disconnect', onDisconnect
 
 class Chart 
 
@@ -97,10 +139,11 @@ class Chart
     @dateFn = (d) -> format.parse d.date
 
     padding = $('#stats-dialog .content').css('padding')
-    width = $('#stats-dialog .content').width() - $('#stats-dialog .textbox').width()
+    width = 365
+    #width = $('#stats-dialog .content').width() - $('#stats-dialog .textbox').width()
     height = $('#stats-dialog').height() - $('#stats-dialog .popup-buttons').height() - 2 * parseInt(padding)
 
-    @xScale = d3.time.scale().range([30, width - 5])
+    @xScale = d3.time.scale().range([20, width - 10])
     @yScale = d3.scale.linear().range([height - 20, 5])
 
     @yAxis = d3.svg.axis()
@@ -125,7 +168,7 @@ class Chart
 
     @svg.append("g")         
       .attr("class", "y axis")
-      .attr("transform", "translate(30, 0)")
+      .attr("transform", "translate(20, 0)")
     @svg.append("g")         
       .attr("class", "x axis")
       .attr("transform", "translate(0, #{height - 20})")
@@ -193,7 +236,7 @@ class Model
   # TODO: write unit-tests
   # TODO: more verbose error message, pass along those from http responses.
 
-  remove = curry (type, item, successCb, errorCb) ->
+  remove = (type, item, successCb, errorCb) ->
 
     getRev = ->
 
@@ -202,20 +245,19 @@ class Model
 
       url: "/#{type}/#{item._id}"
       type: 'DELETE'
-      headers: {client_uuid: common.uuid}
+      headers: {client_uuid: common.uuid, sessionid: @sessionid}
       beforeSend: (jqXHR, settings) =>
 
         jqXHR.setRequestHeader 'rev', getRev()
       success: (data, textStatus, jqXHR) -> 
 
         successCb? data
-      error: (data, textStatus, jqXHR) -> 
+      error: (jqXHR, textStatus, errorThrown) -> 
 
-        msgFunction = common.constants.en_US["ERROR_REMOVE_#{type}"]
-        errorCb? msgFunction #{jqXHR}
-  create = curry (type, parentId, successCb, errorCb) ->
+        errorCb? (if errorThrown == "" then 'Error: Unknown communications problem with server.' else errorThrown)
+  create = (type, parentId, successCb, errorCb) ->
 
-    headers = {client_uuid: common.uuid}
+    headers = {client_uuid: common.uuid, sessionid: @sessionid}
     if parentId?
 
       headers.parent_id = parentId
@@ -228,11 +270,12 @@ class Model
       success: (data, textStatus, jqXHR) -> 
 
         successCb? data
-      error: (data, textStatus, jqXHR) -> 
+      error: (jqXHR, textStatus, errorThrown) -> 
 
-        msgFunction = common.constants.en_US["ERROR_CREATE_#{type}"]
-        errorCb? msgFunction #{jqXHR}
-  get = curry (type, id, successCb) ->
+        # TODO: proper err msg
+        #msgFunction = common.constants.en_US["ERROR_CREATE_#{type}"]
+        errorCb? #{errorThrown}
+  get = (type, id, successCb, errorCb) ->
 
     $.ajaxq 'client',
 
@@ -242,11 +285,11 @@ class Model
       success: (data, textStatus, jqXHR) -> 
 
         successCb? data
-      error: (data, textStatus, jqXHR) -> 
+      error: (jqXHR, textStatus, errorThrown) -> 
 
         #TODO: proper errmsg
-        console.log 'error: #{data}'
-  getMultiple = curry (type, parentId, successCb) ->
+        errorCb? errorThrown
+  getMultiple = (type, parentId, successCb) ->
 
     if parentId?
 
@@ -269,25 +312,20 @@ class Model
         #TODO: proper errmsg
         console.log 'error: #{data}'    
 
-  createTask: create 'task'
-  createStory: create 'story'
-  createSprint: create 'sprint', null
-  removeTask: remove 'task'
-  removeStory: remove 'story'  
-  removeSprint: remove 'sprint'
-  getTask: get 'task'
-  getStory: get 'story'
-  getSprint: get 'sprint'
-  getTasks: getMultiple 'task'
-  getStories: getMultiple 'story'
-  getSprints: getMultiple 'sprint', null
-  updateChild: (index, key, successCb, errorCb) => 
+  createTask: partial create, 'task'
+  createStory: partial create, 'story'
+  createSprint: partial create, 'sprint', null
+  removeTask: partial remove, 'task'
+  removeStory: partial remove, 'story'  
+  removeSprint: partial remove, 'sprint'
+  getTask: partial get, 'task'
+  getStory: partial get, 'story'
+  getSprint: partial get, 'sprint'
+  getTasks: partial getMultiple, 'task'
+  getStories: partial getMultiple, 'story'
+  getSprints: partial getMultiple, 'sprint', null
 
-    @_update @children.objects[index], key, @children.type, successCb, errorCb
-  update: (key, successCb, errorCb) => 
-
-    @_update @[@type], key, @type, successCb, errorCb
-  _update: (object, key, type, successCb, errorCb) =>
+  update: (object, key, type, successCb, errorCb) =>
 
     getRev = ->
 
@@ -297,19 +335,22 @@ class Model
 
       url: "/#{type}/#{object._id}"
       type: 'POST'
-      headers: {client_uuid: common.uuid}
+      headers: {client_uuid: common.uuid, sessionid: @sessionid} # TODO get rid of common.uuid
       contentType: 'application/json'
+      dataType: 'json'
       data: JSON.stringify {key: key, value: object[key]}
       beforeSend: (jqXHR, settings) ->
 
         jqXHR.setRequestHeader 'rev', getRev()
       success: (data, textStatus, jqXHR) ->
 
+        object._rev = data.rev
         successCb? data
-      error: (data, textStatus, jqXHR) ->
+      error: (jqXHR, textStatus, errorThrown) ->
 
-        errorCb? "#{common.constants.en_US.ERROR_UPDATE_TASK} #{jqXHR}"
-  _getClosestValueByDateIndex: (object, index, startIndex) ->
+        # TODO: i18n
+        errorCb? (if errorThrown == "" then 'Error: Unknown communications problem with server.' else errorThrown)
+  getClosestValueByDateIndex: (object, index, startIndex) ->
 
     if object[index]?
 
@@ -328,314 +369,285 @@ class Model
         object.initial
   get: (key) => @[@type]?[key]
   set: (key, value) => @[@type]?[value]
+  buildSprintRange: (sprintStart, sprintLength) ->
+
+    start = moment sprintStart
+    end = moment(start).add 'days', sprintLength - 1
+    start: start.format(common.DATE_DB_FORMAT), end: end.format(common.DATE_DB_FORMAT)
+
+class ParentModel extends Model
+
+  # TODO: unit-test
+
+  calculatePriority_: (objects, index) =>
+
+    if index == 0 then prevPrio = 0
+    else prevPrio = objects[index - 1].writable.priority()
+
+    last = objects.length - 1
+    if index == last 
+
+      Math.ceil objects[index - 1].writable.priority() + 1
+    else
+
+      nextPrio = objects[index + 1].writable.priority()
+      (nextPrio - prevPrio) / 2 + prevPrio
+
+  calculatePriority: (objects, originalIndex, index) =>
+
+    if index == 0 then prevPrio = 0
+    else prevPrio = objects[index - 1].priority()
+
+    last = objects.length - 1
+    if index == last 
+
+      Math.ceil objects[index - 1].priority() + 1
+    else
+
+      nextPrio = objects[index + 1].priority()
+      (nextPrio - prevPrio) / 2 + prevPrio
+
+  calculatePriority: (objects, originalIndex, index) =>
+
+    if index == 0 then prevPrio = 0
+    else prevPrio = objects[index - 1].priority()
+
+    last = objects.length - 1
+    if index == last 
+
+      Math.ceil objects[index - 1].priority() + 1
+    else
+
+      nextPrio = objects[index + 1].priority()
+      (nextPrio - prevPrio) / 2 + prevPrio
 
 class ViewModel
 
-  constructor: (@view, @model) ->
+  # knockout specific method
 
-    ractiveHandlers =
+  _createObservable3: (updateModelFn, object, property, options = {}) ->
 
-      execute_pending_update: @executePendingUpdate
-      set_before_value: @setBeforeValue
-      trigger_update: @triggerUpdate
-      tapped_selector: @openSelectorPopup
-      tapped_selector_item: @selectPopupItem
-      tapped_button: @handleButton
-    @view.setRactiveHandlers ractiveHandlers
-  setBeforeValue: (ractiveEvent) ->
+    instantaneousProperty = ko.observable(object[property])
 
-    node = ractiveEvent.node
-    $(node).data 'before_value', #{$(node).val()
-  _initDatePickers: (options) =>
+    update = (observable, value) ->
 
-    $('.date-selector .content').datepicker
+      value = if options.time == true then parseFloat value, 10 else value
+      if !instantaneousProperty.hasError?() && object[property] != value
 
-      inline: true
-      showOtherMonths: true
-      dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-      nextText: '<div class="arrow right"></div>'
-      prevText: '<div class="arrow left"></div>'
-      dateFormat: $.datepicker.ISO_8601
-      gotoCurrent: true
-      onSelect: @_selectDate
+        updateModelFn observable, object, property, value      
 
-    for key, value of options
+    if options.throttled == true
 
-      $('.date-selector .content').datepicker 'option', key, value
-  _selectDate: (dateText, inst) =>
+      observable = ko.computed(instantaneousProperty).extend({throttle: common.KEYUP_UPDATE_DELAY})
+      observable.subscribe partial(update, observable)
+    else 
 
-    dateSelector = $(inst.input).parents('.date-selector')
-    @_hidePopup dateSelector.attr('id')
-    # rather put that in as a ractive variable? TODO: FIX THAT FOR SPRINTS, TOO!
-    $('.selected', dateSelector).data 'date', dateText
-    $('.selected', dateSelector).text moment(dateText).format(common.DATE_DISPLAY_FORMAT)
-  _initPopupSelectors: =>
+      instantaneousProperty.subscribe partial(update, instantaneousProperty)
 
-    $('.popup-selector a.open').click (event) -> event.preventDefault()
-    $('.popup-selector').each (index, element) =>
+    if options.time == true
 
-      $('.selected', $(element)).click => $(document).one 'keyup', (event) =>
+      instantaneousProperty.extend({matches: common.TIME_REGEX})
+    instantaneousProperty
 
-        if event.keyCode == 27 then @_hidePopup(element.id)
-  _setConfirmedValue: (node) ->
+  # test, TODO: move to super class
+  _createUpdateNotification: (model, observables) ->
 
-    key = node.id 
-    value = @model.get key
-    $(node).data 'confirmed_value', value
-  _resetToConfirmedValue: (node) -> 
+    id: model._id
+    method: 'POST'
+    properties: _.keys(observables)
+    handler: (data) ->
 
-    key = node.id 
-    @model.set key, $(node).data('confirmed_value')
-  _isConfirmedValue: (node) ->
+      key = data.key
+      value = data.value
+      model._rev = data.rev
+      model[key] = value
+      observables[key] value
 
-    key = node.id 
-    value = @model.get key
-    value == $(node).data('confirmed_value')
-  _showPopup: (id) -> 
+  _updateModel: (type, observable, object, property, value) =>
 
-    contentHeight = $('#content').height()
-    popupHeight = $("##{id} .content").height()
-    footerHeight = $("#button-bar").height()
-    $("##{id} .content").show()
-    popupTop = $("##{id}").position()?.top
+    oldValue = object[property]
+    object[property] = value
+    @model.update object, property, type, null, (message) =>
 
-    $('#overlay').css({height: $(window).height() + 'px'}).show()
-    if (popupTop + popupHeight) > (contentHeight + footerHeight)
+      object[property] = oldValue
+      observable(oldValue)
+      @modal 'error-dialog'
+      @errorMessage message
 
-      $('#content').css 'height', popupTop + popupHeight - footerHeight
-  _hidePopup: (id) -> 
+  _showError: (message) =>
 
-    $("##{id} .content").hide()
-    $('#overlay').hide()
-    $('#content').css('height', 'auto')
-  _showModal: (type, message) =>
+    @errorMessage message
+    @modal 'error-dialog'
 
-    if message? then @view.set("#{type}_message", message)
-    $('#overlay').css({height: $(window).height() + 'px'}).show()
-    #$("##{type}-dialog").show()
-    $("##{type}-dialog").css('visibility','visible')
-  showConfirm: (message) => @_showModal 'confirm', message
-  showError: (message) => @_showModal 'error', message
-  _hideModal: (type) -> 
+  _afterConfirm: (message, fn) =>
 
-    $("##{type}-dialog").css('visibility','hidden')
-    $("#overlay").hide()
-    #$("##{type}-dialog, #overlay").hide()
-  hideConfirm: -> @_hideModal 'confirm'
-  hideError: -> @_hideModal 'error'
-  openSelectorPopup: (ractiveEvent, id) =>
+    @confirmMessage message
+    @modal 'confirm-dialog'
+    @confirm = =>
 
-    @_showPopup(id)
-  selectPopupItem: (ractiveEvent, args) =>
+      @modal null
+      fn()
 
-    id = args.selector_id
-    @_hidePopup id
-  handleButton: (ractiveEvent, action) => 
+  cancelPopup: (data, event) =>
 
-    switch action
+    if event.keyCode == 27 && @modal != null
 
-      when 'error_ok' then @hideError()
-      when 'confirm_cancel' then @hideConfirm()
-      when 'confirm_confirm' then @hideConfirm()
+      @modal null
+  
+  confirmError: => 
 
-  _buildUpdateCall: (node) =>
+    @modal null
 
-    key = node.id;
-    value = @model.get key
+  showErrorDialog: (message) =>
 
-    return =>
+    @modal 'error-dialog'
+    @errorMessage message
 
-      undoValue = @view.get "#{@model.type}.#{key}"
-      successCb = (data) => 
+  cancel: =>
 
-        @view.set "#{@model.type}._rev", data.rev
-        if $(node).data('confirmed_value')? then @_setConfirmedValue node
-      errorCb = => 
+    @modal null
 
-        @view.set "#{@model.type}.#{key}", undoValue
-      if !@_isConfirmedValue(node) 
+  constructor: (@model) ->
 
-        @view.set "#{@model.type}.#{key}", value
-        @model.update key, successCb, errorCb
-  _abortCall: (timer) ->
+    ko.extenders.matches = (target, regex) ->
 
-    clearTimeout timer?.id
-    call = timer?.call
-    timer = null
-    call
-  _delayCall: (call) ->
+      target.hasError = ko.observable()
+      target.validationMessage = ko.observable()
 
-    id = setTimeout call, common.KEYUP_UPDATE_DELAY
-    {id, call}
+      validate = (newValue) ->
 
-  executePendingUpdate: (ractiveEvent) =>
+        target.hasError(newValue.toString().search(regex) != 0)
+      validate target()
+      target.subscribe(validate)
+      target
 
-    call = @_abortCall @keyboardTimer
-    if call? then do call
+    ko.bindingHandlers.datepicker = 
 
-  triggerUpdate: (ractiveEvent) =>
+      init: (element, valueAccessor, allBindingsAccessor) =>
 
-    event = ractiveEvent.original
-    node = ractiveEvent.node
-    value = $(node).val()
+        options =
 
-    if $(node).data('before_value') != value
+          inline: true
+          showOtherMonths: true
+          dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+          nextText: '<div class="arrow right"></div>'
+          prevText: '<div class="arrow left"></div>'
+          dateFormat: $.datepicker.ISO_8601
+          gotoCurrent: true
+          onSelect: (dateText, inst) => 
 
-      $(node).removeData('before_value')
+            @modal null
+            observable = valueAccessor()
+            observable dateText
 
-      @_abortCall @keyboardTimer
+        if allBindingsAccessor().datepickerMin? 
 
-      if (node.localName == 'input') && (event.which == 13) then event.preventDefault()
+          options.minDate = new Date(allBindingsAccessor().datepickerMin)
+        if allBindingsAccessor().datepickerMax?
 
-      updateCall = @_buildUpdateCall node
+          options.maxDate = new Date(allBindingsAccessor().datepickerMax)
+        $(element).datepicker options
+      update: (element, valueAccessor, allBindingsAccessor) ->
 
-      if (node.localName.match /^input$|^textarea$/)? && $(node).data('validation')?
+        value = ko.utils.unwrapObservable valueAccessor()
+        dateValue = $(element).datepicker().val()
+        if value? && value != dateValue
 
-        if !$(node).data('validation') value 
+          $(element).datepicker 'setDate', new Date(value)
+        min = allBindingsAccessor().datepickerMin
 
-          @_resetToConfirmedValue(node)
-          updateCall = -> $(node).next().show()  
-        else $(node).next().hide()
+        if allBindingsAccessor().datepickerMin? && moment($(element).datepicker('option', 'minDate')).format(common.DATE_DB_FORMAT) != allBindingsAccessor().datepickerMin
 
-      @keyboardTimer = @_delayCall updateCall
+          $(element).datepicker('option', 'minDate', new Date(allBindingsAccessor().datepickerMin))
+        if allBindingsAccessor().datepickerMax? && moment($(element).datepicker('option', 'maxDate')).format(common.DATE_DB_FORMAT) != allBindingsAccessor().datepickerMax
 
-class ChildViewModel extends ViewModel
+          $(element).datepicker('option', 'maxDate', new Date(allBindingsAccessor().datepickerMax))
 
-  constructor: (@view, @model) ->
+    @common = common
 
-    super(@view, @model)
+    @modal = ko.observable null
+    
+    # we need that recalculation, so the footer stays on bottom even
+    # with the absolute positionen popups.  
+    @modal.subscribe (value) ->
 
-    $('ul#well').sortable
+      if value?
+
+        contentHeight = $('#content').height()
+        popupHeight = $("##{value} .content").height()
+        footerHeight = $("#button-bar").height()
+        popupTop = $("##{value}").position()?.top
+
+        if (popupTop + popupHeight) > (contentHeight + footerHeight)
+
+          $('#content').css 'height', popupTop + popupHeight - footerHeight
+      else
+
+        $('#content').css 'height', 'auto'
+
+    @errorMessage = ko.observable()
+    @confirmMessage = ko.observable()
+
+class ParentViewModel extends ViewModel
+
+  _sortByPriority_: (array) ->
+
+    array.sort (a, b) ->
+
+      a.writable.priority() - b.writable.priority()
+
+  _addChild_: (array, data) =>
+    
+    observables = @_createObservables data.new
+    observables.writable.priority.subscribe partial(@_sortByPriority_, array)
+    array.push observables
+
+  _createAddNotification: (parentId, children) ->
+
+    id: parentId
+    method: 'PUT'
+    handler: partial @_addChild_, children    
+
+  _createRemoveNotification: (id, children) ->
+
+    method: 'DELETE'
+    id: id
+    handler: =>
+
+      children.remove (item) ->
+
+        item.id == id 
+
+  _createChildNotifications: (children, observables) =>
+
+    [@_createUpdateNotification(observables.js, _.extend({}, observables.writable, observables.readonly)), 
+    @_createRemoveNotification(observables.id, children)]
+
+  _adjustNotifications: (socket, children, notifications, changes) =>
+
+    _.each changes, (change) =>
+
+      if change.status == 'added'
+
+        observables = children()[change.index]
+        newNotifications = @_createChildNotifications children, observables
+        socket.registerNotifications newNotifications
+        notifications = notifications.concat newNotifications
+      else if change.status == 'deleted'
+
+        socket.unregisterNotifications _.where(notifications, {id: change.value.id})
+
+  constructor: (@model) ->
+
+    super @model
+
+    # TODO: use mixins
+    # set global options for jquery ui sortable
+
+    ko.bindingHandlers.sortable?.options = 
 
       tolerance: 'pointer'
       delay: 150
       cursor: 'move'
       containment: 'ul#well'
       handle: '.header'
-    $('ul#well').on 'sortstart', (event, ui) => 
-
-      originalIndex = ui.item.index()
-      $('ul#well').one 'sortstop', (event, ui) =>
-
-        index = ui.item.index()
-        if index != originalIndex then @_handleSortstop originalIndex, index
-  _calculatePriority: (originalIndex, index) =>
-
-    objects = @model.children.objects.slice()
-    object = objects[originalIndex]
-    objects.splice(originalIndex, 1)
-    objects.splice(index, 0, object)
-
-    if index == 0 then prevPrio = 0
-    else prevPrio = objects[index - 1].priority
-
-    last = objects.length - 1
-    if index == last 
-
-      Math.ceil objects[index - 1].priority + 1
-    else
-
-      nextPrio = objects[index + 1].priority
-      (nextPrio - prevPrio) / 2 + prevPrio
-  _setConfirmedValue: (node) ->
-
-    [key, childIndex] = @_buildKey node
-    if childIndex? then value = @model.children.objects[childIndex]?[key]
-    else value = @model.get key
-    $(node).data 'confirmed_value', value
-  _resetToConfirmedValue: (node) -> 
-
-    [key, childIndex] = @_buildKey node
-    if childIndex? then @model.children.objects[childIndex]?[key] = $(node).data('confirmed_value')
-    else value = @model.set key, $(node).data('confirmed_value')
-  _isConfirmedValue: (node) ->
-
-    [key, childIndex] = @_buildKey node
-    if childIndex? then value = @model.children.objects[childIndex]?[key]
-    else value = @model.get key
-    value == $(node).data('confirmed_value')
-  _handleSortstop: (originalIndex, index) => 
-
-    priority = @_calculatePriority originalIndex, index
-    undoValue = @model.children.objects[originalIndex].priority
-    @model.children.objects[originalIndex].priority = priority
-    @model.updateChild originalIndex, 'priority'
-
-      ,(data) =>
-
-        @model.children.objects[originalIndex]._rev = data.rev
-        children = @model.children.objects.slice()
-        children.sort (a, b) -> 
-
-          a.priority > b.priority ? -1 : 1
-        @model.children.objects = children
-      ,(message) =>
-
-        @model.children.objects[originalIndex].priority = undoValue
-        li = $("ul#well li:nth-child(#{index + 1})")
-        li.detach()
-        $("ul#well li:nth-child(#{originalIndex})").after(li)
-        @showError message
-   _buildKey: (node) ->
-
-    idParts = node.id.split('-')
-    if idParts.length > 1 then [idParts[0], idParts[1]]
-    else [idParts[0], undefined]
-  _buildUpdateCall: (node) =>
-
-    [key, childIndex] = @_buildKey node
-    if childIndex? 
-
-      value = @model.children.objects[childIndex]?[key]
-      type = @model.children.type
-    else 
-
-      type = @model.type
-      value = @model[type][key]
-
-    return =>
-
-      successCb = (data) => 
-
-        if childIndex? then keypathPrefix = "children[#{childIndex}]"
-        else keypathPrefix = "#{type}"
-        @view.set "#{keypathPrefix}._rev", data.rev
-        @view.set "#{keypathPrefix}.#{key}", data.value
-        if $(node).data('confirmed_value')? then @_setConfirmedValue node
-      errorCb = => 
-
-        if childIndex? then keypath = "children[#{childIndex}].#{key}"
-        else keypath = "#{type}.#{key}"       
-        @view.set keypath, $(node).data('confirmed_value')
-
-      if !@_isConfirmedValue(node) 
-
-        if childIndex? then @model.updateChild childIndex, key, successCb, errorCb
-        else @model.update key, successCb, errorCb
-  ###_debug_printPrio: (objects = @model.children.objects) =>
-
-    for task in objects
-
-      console.log "#{task.summary}: #{task.priority}"
-  _debug_setPrio: (x = 1) =>
-    
-    i = 0
-    objects = @model.children.objects #.slice()
-    objects.sort (a, b) -> a.summary > b.summary ? -1 : 1
-    for task in objects
-
-      task.priority = i + x
-      @model.updateChild i++, 'priority'
-    @_debug_printPrio objects
-  _setChildPriority: (index, priority) =>
-    
-    @view.set "children.#{index}.priority", priority
-    @view.get('children').sort @_sortByPriority
-  _sortChildren: =>
-
-    objects = @model.children.objects.slice()
-    objects.sort @_sortByPriority
-
-  _sortByPriority: (a, b) ->
-
-      a.priority > b.priority ? -1 : 1###

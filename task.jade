@@ -1,0 +1,80 @@
+html
+	head
+		title Task details
+		include shared
+		script(type='text/javascript', src='/task.coffee.js')
+	body(data-bind="event: {keyup: cancelPopup}")
+		#container
+			#breadcrumb-bar
+				a(href="/").breadcrumb.index Index
+				a(data-bind="attr: {href: breadcrumbs.sprint.url}, text: breadcrumbs.sprint.readonly.title()").breadcrumb.sprint
+				a(data-bind="attr: {href: breadcrumbs.story.url}, text: breadcrumbs.story.readonly.title()").breadcrumb.story
+				span(data-bind="text: writable.summary").breadcrumb.task.selected
+				img(src="/logo_30.png").logo
+			#content
+				form
+					p
+						input(data-bind="value: writable.summary, valueUpdate: ['afterkeydown','propertychange','input']", name="summary", autocomplete="off")#summary.identifier
+					p
+						textarea(data-bind="value: writable.description, valueUpdate: ['afterkeydown','propertychange','input']", name="description")#description
+					.attribute
+						span.label
+							=messages.en.COLOR+':'
+						span#color-selector.popup-selector
+							button(data-bind="click: showColorSelector, css: writable.color", name="color")
+								span(data-bind="css: writable.color").selected
+							div(data-bind="foreach: common.COLORS, visible: modal() == 'color-selector'").content
+								div(data-bind="click: $parent.selectColor, css: $data + ' box-' + $index()").color.hoverable							
+					.attribute
+						span.label
+							=messages.en.STORY+':'
+						span#story-selector.popup-selector.line-selector
+							button(data-bind="click: showStorySelector, text: story.readonly.title()", name="story_id").selected
+							div(data-bind="foreach: stories, visible: modal() == 'story-selector'").content
+								div(data-bind="click: $parent.selectStory, text: label").line
+					.attribute
+						span.label
+							=messages.en.INITIAL_ESTIMATION+':'
+						input(data-bind="value: writable.initial_estimation, valueUpdate: ['afterkeydown','propertychange','input']", name="initial_estimation", autocomplete="off")
+						span(data-bind="visible: writable.initial_estimation.hasError").error-popup
+							.content.error
+								=messages.en.VALID_TIME_MESSAGE
+					.attribute
+						span.label
+							=messages.en.REMAINING_TIME
+						span#remaining_time-index.popup-selector.date-selector
+							|(
+							button(data-bind="click: showRemainingTimeDatePicker, text: remainingTimeIndexFormatted()", name="remaining_time-index").selected
+							div(data-bind="datepicker: remainingTimeIndex, datepickerMin: sprint.computed.range().start, datepickerMax: sprint.computed.range().end, visible: modal() == 'remaining_time-index'").content
+							|):&nbsp;
+						input(data-bind="value: indexedRemainingTime, valueUpdate: ['afterkeydown','propertychange','input']", name="remaining_time", autocomplete="off")
+						span(data-bind="visible: indexedRemainingTime.hasError").error-popup
+							.content.error
+								=messages.en.VALID_TIME_MESSAGE
+					.attribute
+						span.label
+							=messages.en.TIME_SPENT
+						span#time_spent-index.popup-selector.date-selector
+							|(
+							button(data-bind="click: showTimeSpentDatePicker, text: timeSpentIndexFormatted()", name="time_spent-index").selected
+							div(data-bind="datepicker: timeSpentIndex, datepickerMin: sprint.computed.range().start, datepickerMax: sprint.computed.range().end, visible: modal() == 'time_spent-index'").content
+							|):&nbsp;
+						input(data-bind="value: indexedTimeSpent, valueUpdate: ['afterkeydown','propertychange','input']", name="time_spent", autocomplete="off")
+						span(data-bind="visible: indexedTimeSpent.hasError").error-popup
+							.content.error
+								=messages.en.VALID_TIME_MESSAGE
+			#button-bar
+				form.buttons
+					input(type='button', value=messages.en.REMOVE).button.remove
+		div(data-bind="visible: modal() == 'error-dialog'")#error-dialog
+			div(data-bind="text: errorMessage()").message.error
+			.popup-buttons
+				form.buttons
+					input(data-bind="click: confirmError", type="button", value=messages.en.OK).button
+		div(data-bind="visible: modal() != null")#overlay
+		script(type='text/javascript')
+			
+			var model, viewModel;
+			model = new TaskModel(!{JSON.stringify(task)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
+			viewModel = new TaskViewModel(model);
+			ko.applyBindings(viewModel);

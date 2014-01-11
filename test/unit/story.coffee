@@ -1,4 +1,4 @@
-describe 'StoryViewModel.openSelectorPopup', ->
+###describe 'StoryViewModel.openSelectorPopup', ->
 
   before ->
 
@@ -68,21 +68,16 @@ describe 'StoryViewModel.selectPopupItem', ->
 
   it 'should set the view rev, value and story after successful requests', ->
 
-    assert @viewModel.view.set.calledThrice, 'view is not called three times'
+    assert @viewModel.view.set.calledThrice, 'view is not called three times'###
 
-describe 'StoryView.buildRemainingTime', ->
+describe 'StoryModel.buildRemainingTime', ->
 
   before ->
 
-    class StubView extends StoryView
-
-      constructor: ->
-
-        @model = {children: {}}
-    @view = new StubView
+    @model = new StoryModel
   it 'should return the initial remaining time when there are no date/number pairs', ->
 
-    ret = @view.buildRemainingTime {initial: 9.5}, {} 
+    ret = @model.buildRemainingTime {initial: 9.5}, {} 
     assert.equal ret, 9.5
   it 'should return the initial remaining time when none of the date/number pairs is within in the sprint', ->
 
@@ -91,11 +86,11 @@ describe 'StoryView.buildRemainingTime', ->
       initial: 10
       '2010-01-02': 8 
       '2010-01-04': 7
-      '2010-01-10': 6
+      '2010-01-11': 6
 
     range = start: '2010-01-05', end: '2010-01-10'
 
-    ret = @view.buildRemainingTime remainingTime, range
+    ret = @model.buildRemainingTime remainingTime, range
     assert.equal ret, 10
   it 'should return the number of the last date within in the sprint', ->
 
@@ -105,55 +100,76 @@ describe 'StoryView.buildRemainingTime', ->
       '2010-01-02': 8 
       '2010-01-04': 7
       '2010-01-08': 6
-      '2010-01-09': 5
+      '2010-01-10': 5
 
     range = start: '2010-01-05', end: '2010-01-10'
 
-    ret = @view.buildRemainingTime remainingTime, range
+    ret = @model.buildRemainingTime remainingTime, range
     assert.equal ret, 5
-describe 'StoryModel.buildSprintRange', ->
+
+describe 'StoryModel.buildTimeSpent', ->
 
   before ->
 
     @model = new StoryModel
-  it 'should return a calculated sprint range object', ->
+  it 'should return 0 when there are no date/number pairs', ->
 
-    range = @model.buildSprintRange {start: '2010-01-01T00:00:00.000Z', length: 7}
-    assert.equal range.start, '2010-01-01'
-    assert.equal range.end, '2010-01-08'
+    range = start: '2010-01-05', end: '2010-01-10'
+    ret = @model.buildTimeSpent {}, range 
+    assert.equal ret, 0
+  it 'should return 0 when none of the date/number pairs is within in the sprint', ->
+
+    timeSpent =
+
+      initial: 0
+      '2010-01-02': 1 
+      '2010-01-04': 2
+      '2010-01-11': 3
+
+    range = start: '2010-01-05', end: '2010-01-10'
+
+    ret = @model.buildTimeSpent timeSpent, range
+    assert.equal ret, 0
+  it 'should return the cumulative value of all dates within in the sprint', ->
+
+    timeSpent =
+
+      initial: 0
+      '2010-01-02': 1
+      '2010-01-04': 2
+      '2010-01-08': 3
+      '2010-01-09': 4
+
+    range = start: '2010-01-05', end: '2010-01-10'
+
+    ret = @model.buildTimeSpent timeSpent, range
+    assert.equal ret, 7
 
 describe 'StoryModel.buildRemainingTimeChartData', ->
 
   before ->
 
     @model = new StoryModel
-    @story = {estimation: 1}
     @range = start: '2010-01-01', end: '2010-01-08'
 
   it 'should return the story\'s estimation, if there are no remaining_time values specified', ->
 
-    tasks = [
-
-      { remaining_time: {initial: 1} }
-    ] 
-    chartData = @model.buildRemainingTimeChartData @story, tasks, @range
+    remainingTimes = [{initial: 1}] 
+    chartData = @model.buildRemainingTimeChartData 1, remainingTimes, @range
     assert.deepEqual chartData, [{date: '2010-01-01', value: 1}]    
   it 'should return the story\'s estimation, if none of the remaining_time values specified are within the sprint range', ->
 
-    tasks = [
-
-      { remaining_time: {initial: 1, '2010-01-08': 1, '2010-01-09': 1.5, '2010-01-09': 0.5} }
-    ] 
-    chartData = @model.buildRemainingTimeChartData @story, tasks, @range
+    remainingTimes = [{initial: 1, '2010-01-09': 1, '2010-01-10': 1.5, '2010-01-10': 0.5}] 
+    chartData = @model.buildRemainingTimeChartData 1, remainingTimes, @range
     assert.deepEqual chartData, [{date: '2010-01-01', value: 1}] 
   it 'should return add up remaining_time values from several tasks', ->
 
-    tasks = [
+    remainingTimes = [
 
-      { remaining_time: {initial: 1, '2010-01-01': 2, '2010-01-02': 1.5, '2010-01-04': 0.5} }
-      { remaining_time: {initial: 1, '2010-01-01': 1, '2010-01-02': 0.5, '2010-01-03': 0.25} }
+      {initial: 1, '2010-01-01': 2, '2010-01-02': 1.5, '2010-01-04': 0.5}
+      {initial: 1, '2010-01-01': 1, '2010-01-02': 0.5, '2010-01-03': 0.25}
     ]
-    chartData = @model.buildRemainingTimeChartData @story, tasks, @range
+    chartData = @model.buildRemainingTimeChartData 1, remainingTimes, @range
     assert.deepEqual chartData, [
       {date: '2010-01-01', value: 3}, 
       {date: '2010-01-02', value: 2},
@@ -162,20 +178,20 @@ describe 'StoryModel.buildRemainingTimeChartData', ->
     ]
   it 'should exclude remaining_time values, which are not within sprint range', ->
 
-    tasks = [
-
-      { remaining_time: {initial: 1, '2010-01-02': 0.75, '2010-01-08': 0.25} }
-    ]
-    chartData = @model.buildRemainingTimeChartData @story, tasks, @range
+    remainingTimes = [{initial: 1, '2010-01-02': 0.75, '2010-01-09': 0.25}]
+    chartData = @model.buildRemainingTimeChartData 1, remainingTimes, @range
     assert.deepEqual chartData, [{date: '2010-01-01', value: 1}, {date: '2010-01-02', value: 0.75}]
   it 'should sort remaining_time values', ->
 
-    tasks = [
-
-      { remaining_time: {initial: 1, '2010-01-02': 0.5, '2010-01-01': 0.75} }
-    ]
-    chartData = @model.buildRemainingTimeChartData @story, tasks, @range
+    remainingTimes = [{initial: 1, '2010-01-02': 0.5, '2010-01-01': 0.75}]
+    chartData = @model.buildRemainingTimeChartData 1, remainingTimes, @range
     assert.deepEqual chartData, [{date: '2010-01-01', value: 0.75}, {date: '2010-01-02', value: 0.5}]
+  it 'should set the 1st sprint date to the story\'s estimation, if not present in remaining_time values', ->
+
+    remainingTimes = [{initial: 1, '2010-01-02': 1.5, '2010-01-03': 0.5}]
+    chartData = @model.buildRemainingTimeChartData 2.5, remainingTimes, @range
+    assert.deepEqual chartData, [{date: '2010-01-01', value: 2.5}, {date: '2010-01-02', value: 1.5}, {date: '2010-01-03', value: 0.5}]
+
 
 describe 'StoryModel.buildTimeSpentChartData', ->
 
@@ -184,43 +200,30 @@ describe 'StoryModel.buildTimeSpentChartData', ->
     @model = new StoryModel
   it 'should return an empty list, if there are no time_spent values specified', ->
 
-    tasks = [
-
-      { time_spent: {initial: 0} }
-    ]
-    chartData = @model.buildTimeSpentChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
+    timesSpent = [{initial: 0}]
+    chartData = @model.buildTimeSpentChartData timesSpent, {start: '2010-01-01', end: '2010-01-08'}
     assert.deepEqual chartData, []
   it 'should return an empty list, if no time_spent value is within sprint range', ->
 
-    tasks = [
-
-      { time_spent: {initial: 0, '2010-01-08': 1, '2010-01-09': 1.5, '2010-01-09': 0.5} }
-    ]
-    chartData = @model.buildTimeSpentChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
+    timesSpent = [{initial: 0, '2010-01-09': 1, '2010-01-10': 1.5, '2010-01-10': 0.5}]
+    chartData = @model.buildTimeSpentChartData timesSpent, {start: '2010-01-01', end: '2010-01-08'}
     assert.deepEqual chartData, []
   it 'should return cumulative time_spent values', ->
 
-    tasks = [
-
-      { time_spent: {initial: 0, '2010-01-01': 1, '2010-01-07': 1.5} }
-    ]
-    chartData = @model.buildTimeSpentChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
+    timesSpent = [{initial: 0, '2010-01-01': 1, '2010-01-07': 1.5}]
+    chartData = @model.buildTimeSpentChartData timesSpent, {start: '2010-01-01', end: '2010-01-08'}
     assert.deepEqual chartData, [{date: '2010-01-01', value: 1}, {date: '2010-01-07', value: 2.5}]
   it 'should exlude values which are not in sprint range', ->
 
-    tasks = [
-
-      { time_spent: {initial: 0, '2010-01-01': 1, '2010-01-07': 1.5, '2010-01-08': 0.5} }
-    ]
-    chartData = @model.buildTimeSpentChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
+    timesSpent = [{initial: 0, '2010-01-01': 1, '2010-01-07': 1.5, '2010-01-09': 0.5}]
+    chartData = @model.buildTimeSpentChartData timesSpent, {start: '2010-01-01', end: '2010-01-08'}
     assert.deepEqual chartData, [{date: '2010-01-01', value: 1}, {date: '2010-01-07', value: 2.5}]
   it 'should add up time spent values from different tasks', ->
 
-    tasks = [
+    timesSpent = [
 
-      { time_spent: {initial: 0, '2010-01-01': 1, '2010-01-07': 1.5} }
-      { time_spent: {initial: 0, '2010-01-02': 1.5, '2010-01-07': 0.25} }
+      {initial: 0, '2010-01-01': 1, '2010-01-07': 1.5}
+      {initial: 0, '2010-01-02': 1.5, '2010-01-07': 0.25}
     ]
-    chartData = @model.buildTimeSpentChartData tasks, {start: '2010-01-01', end: '2010-01-08'}
+    chartData = @model.buildTimeSpentChartData timesSpent, {start: '2010-01-01', end: '2010-01-08'}
     assert.deepEqual chartData, [{date: '2010-01-01', value: 1}, {date: '2010-01-02', value: 2.5}, {date: '2010-01-07', value: 4.25}]
-

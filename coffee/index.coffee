@@ -1,64 +1,74 @@
-class IndexSocketIO extends SocketIO
-
-  messageHandler: (data) =>
-
-class IndexView extends View
-
-  _buildRactiveData: =>
-
-    children: @model.children.objects
-    COLORS: common.COLORS
-    constants: common.constants
-    error_message: "Dummy message"
-    confirm_message: "Dummy message"
-    format_date: (displayDate) -> 
-
-      moment(displayDate).format(common.DATE_DISPLAY_FORMAT)
-    calculate_end_date: (start, length) ->
-
-      startDate = new Date(start)
-      new Date(startDate.getTime() + (length * common.MS_TO_DAYS_FACTOR))
-
 class IndexModel extends Model
 
-  constructor: (sprints) ->
+  constructor: (@sprints) ->
 
-  	@children = {type: 'sprint', objects: sprints}
+class IndexViewModel extends ParentViewModel
 
-class IndexViewModel extends ChildViewModel
+  _createObservables: (sprint) =>
 
-  constructor: (@model, ractiveTemplate) ->
+    updateModel = partial @_updateModel, 'sprint'
+    createObservable_ = partial @_createObservable3, updateModel, sprint
 
-    @view = new IndexView ractiveTemplate, @model
-    super(@view, @model)
-    @socketio = new IndexSocketIO @view, @model
+    id: sprint._id
+    url: '/sprint/' + sprint._id
+    js: sprint
+    readonly:
 
-    $('#title, #description, [id^="title-"], [id^="description-"]').each (index, element) => @_setConfirmedValue element
-  handleButton: (ractiveEvent, action) => 
+      color: ko.observable sprint.color
+      start: ko.observable sprint.start
+      length: ko.observable sprint.length  
+    writable: _.reduce [
 
-    super ractiveEvent, action
+      {name: 'title', throttled: true}
+      {name: 'description', throttled: true}
+    ], (object, property) ->
 
-    switch action
+      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+    , {}
 
-      when 'sprint_add' 
+  formatStart: (sprint) ->
 
-        @model.createSprint (data) => 
+    moment(sprint.readonly.start()).format(common.DATE_DISPLAY_FORMAT)
+  formatEnd: (sprint) ->
 
-            @model.children.objects.push data
-            $("#summary-#{data._id}, #description-#{data._id}").each (index, element) => @_setConfirmedValue element
-          ,(message) => 
+    moment(sprint.readonly.start()).add('days', sprint.readonly.length() - 1).format(common.DATE_DISPLAY_FORMAT)
 
-            @showError message
-      when 'sprint_open' then window.location.href = "/sprint/#{ractiveEvent.context._id}"
-      when 'sprint_remove'
-        @onConfirm = => 
+  addSprint: =>
 
-          @model.removeSprint ractiveEvent.context
-            , (id) => 
+    # TODO: sort correctly
+    onSuccess = (data) =>
 
-              @view.get('children').splice ractiveEvent.index.i, 1
-            ,(message) => 
+      @sprints.push @_createObservables data.new
 
-              @showError message
-        @showConfirm common.constants.en_US.CONFIRM_SPRINT_REMOVAL ractiveEvent.context.title
-      when 'confirm_confirm' then @onConfirm()
+    @model.createSprint onSuccess, @showErrorDialog
+
+  removeSprint: (observables) =>
+
+    # TODO: i18n
+    @_afterConfirm 'Are you sure? The sprint, its stories and the tasks assigned to them will be permanently removed.', =>
+
+      sprint = observables.js
+      @model.removeSprint sprint, =>
+
+        @sprints.remove (item) =>
+
+          item.id == sprint._id
+        , @showErrorDialog
+
+  constructor: (@model) ->
+
+    super @model
+
+    @sprints = ko.observableArray _.map @model.sprints, @_createObservables
+    # TODO: sort on start changes
+
+    # rt specific initializations
+
+    notifications = _.chain(@sprints()).map(partial(@_createChildNotifications, @sprints)).flatten().value()
+
+    socket = new SocketIO()
+    socket.connect (sessionid) =>
+
+      @sprints.subscribe partial(@_adjustNotifications, socket, @sprints, notifications), null, 'arrayChange'
+      @model.sessionid = sessionid
+      socket.registerNotifications notifications

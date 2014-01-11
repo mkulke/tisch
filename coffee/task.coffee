@@ -1,89 +1,35 @@
-class TaskSocketIO extends SocketIO
-  
-  _onUpdate: (data) =>
-
-    update = (path) =>
-
-      @view.set "#{path}._rev", data.rev
-      @view.set "#{path}.#{data.key}", data.value
-
-    if data.id == @view.get 'task._id' 
-
-      update 'task'
-      if data.key == 'story_id' then @model.getStory data.value, (data) => 
-
-        @view.set 'story', data
-    else if data.id == @view.get 'story._id' 
-
-      update 'story'
-      if data.key == 'sprint_id' 
-
-        @model.getSprint data.value, (data) => 
-
-          @view.set 'sprint', data
-        #also get new stories for the selector
-        @model.getStories data.value, (data) =>
-
-          @view.set 'stories', data
-
-    else if data.id == @view.get 'sprint._id' then update 'sprint'
-    
-    # stories from the selector
-    storyIndex = index for story, index in @view.get 'stories' when story._id == data.id
-    if storyIndex? then update "stories[#{storyIndex}]"
-
-    # breadcrumbs
-    if (@view.get 'breadcrumbs.story.id') == data.id && data.key == 'title'
-
-      @view.set 'breadcrumbs.story.title', data.value
-    else if (@view.get 'breadcrumbs.sprint.id') == data.id && data.key == 'title' 
-
-      @view.set 'breadcrumbs.sprint.title', data.value
-
-class TaskView extends View
- 
-  _buildRactiveData: =>
-
-    breadcrumbs: 
-
-      story: title: @model.story.title, id: @model.story._id
-      sprint: title: @model.sprint.title, id: @model.sprint._id
-    task: @model.task
-    story: @model.story
-    COLORS: common.COLORS
-    constants: common.constants
-    sprint: @model.sprint
-    stories: [@model.story]
-    getDateIndex: @model.getDateIndex
-    time_spent_index: @model.getDateIndex(@model.sprint)
-    remaining_time_index: @model.getDateIndex(@model.sprint)
-    formatTimeSpent: (timeSpent, index) ->
-
-      if timeSpent[index]? then timeSpent[index]
-      else 0
-    formatRemainingTime: (remainingTime, index, sprint) => 
-
-      startIndex = moment(sprint.start).format(common.DATE_DB_FORMAT)      
-      @model._getClosestValueByDateIndex remainingTime, index, startIndex
-    formatDateIndex: (dateIndex) -> 
-
-      moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
-    error_message: "Dummy message"
 class TaskModel extends Model
 
   type: 'task'
   constructor: (@task, @story, @sprint) ->
-  getDateIndex: (sprint) ->
+  getDateIndex: (sprintStart, sprintLength) ->
 
-    currentDate = new moment()
-    sprintStart = new moment sprint.start
-    sprintInclusiveEnd = sprintStart.clone().add('days', sprint.length - 1)
+    current = new moment()
+    start = new moment sprintStart
+    inclusiveEnd = start.clone().add('days', sprintLength - 1)
     dateIndex = 
 
-      if currentDate < sprintStart then sprintStart
-      else if currentDate > sprintInclusiveEnd then sprintInclusiveEnd 
-      else currentDate
+      if current < start then start
+      else if current > inclusiveEnd then inclusiveEnd 
+      else current
     dateIndex.format(common.DATE_DB_FORMAT)
+  getClosestValueByDateIndex: (object, index, startIndex) ->
+
+    if object[index]?
+
+      object[index]
+    else
+
+      sortedKeys = Object.keys(object).sort()
+      filteredKeys = sortedKeys.filter (key) -> 
+
+        index > key >= startIndex
+      if filteredKeys.length > 0 
+
+        object[filteredKeys.pop()]
+      else
+
+        object.initial
   set: (key, value, index) =>
 
     if index? then @[@type][key][index] = value
@@ -91,121 +37,235 @@ class TaskModel extends Model
 
 class TaskViewModel extends ViewModel
 
-  constructor: (@model, ractiveTemplate) ->
+  _replaceStory: (story) =>
 
-    @view = new TaskView ractiveTemplate, @model
-    super(@view, @model)
-    @socketio = new TaskSocketIO @view, @model
+    _.chain(story).pick('title', 'sprint_id').each (value, key) =>
 
-    $('#summary, #description, #initial_estimation, #remaining_time, #time_spent').each (index, element) => 
+      @story.readonly[key] value
 
-      @_setConfirmedValue(element)
-    $('#initial_estimation, #remaining_time, #time_spent').data 'validation', (value) -> 
+  _replaceSprint: (sprint) =>
 
-      value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
+    _.chain(sprint).pick('title', 'start', 'length').each (value, key) =>
 
-    @_initPopupSelectors()
-    @_initDatePickers 
+      @sprint.readonly[key] value
 
-      minDate: new Date @model.sprint.start
-      maxDate: new Date ((new Date @model.sprint.start).getTime() + ((@model.sprint.length - 1) * common.MS_TO_DAYS_FACTOR))
-  _selectDate: (dateText, inst) =>
+  _createIndexedComputed: (read, write, owner) ->
 
-    super(dateText, inst)
-    dateSelector = $(inst.input).parents('.date-selector')
-    id = dateSelector.attr('id')
-    @view.set id, dateText
-  _setConfirmedValue: (node) ->
+    # Create a throttled observable and a writable computed. In the write fn there is a immediate
+    # regex validation, the hasError observable property is set accordingly. Then the throttled
+    # observable is updated, which triggers a subscribe fn to be called. In that fn the actual
+    # write fn is called when the hasError observable property is false. 
 
-    key = node.id 
-    if key.match /^remaining_time$|^time_spent$/
+    throttled = ko.observable().extend({throttle: common.KEYUP_UPDATE_DELAY})   
+    indexed = ko.computed
 
-      valueObject = @model.get key
-      newObject = {}
-      for i of valueObject
+      read: read
+      write: (value) ->
 
-        newObject[i] = valueObject[i]
-      $(node).data 'confirmed_value', newObject
-    else
+        indexed.hasError(value.toString().search(common.TIME_REGEX) != 0)
+        throttled(value)
+      owner: owner
+    indexed.hasError = ko.observable()
+    throttled.subscribe (value) ->
 
-      super node
-  _isConfirmedValue: (node) ->
+      if !indexed.hasError()
 
-    key = node.id
-    value = @view.get "task.#{key}"
-    confirmedValue = $(node).data('confirmed_value')
-    if key.match /^remaining_time$|^time_spent$/
+        write value   
+    indexed
 
-        # ugly, but is sufficient here.
-        JSON.stringify(confirmedValue) == JSON.stringify(value) 
-    else 
+  # TODO: as mixin plz
+  showColorSelector: =>
 
-      confirmedValue == value
-  _buildUpdateCall: (node) =>
+    @modal 'color-selector'
+  selectColor: (color) =>
 
-    call = super node
+    @modal null
+    @writable.color color
 
-    key = node.id;
-    if key.match /^remaining_time$|^time_spent$/
+  showStorySelector: => 
 
-      #execute that stuff before the update call
-      =>
+    @model.getStories @model.story.sprint_id, (stories) =>
+
+      @stories _.map stories, (story) ->
+
+        {id: story._id, label: story.title}
+      @modal 'story-selector'
+  
+  selectStory: (selected) =>
+
+    @modal null
+    @writable.story_id selected.id
+    # story specific stuff
+
+  showRemainingTimeDatePicker: => 
+
+    @modal 'remaining_time-index'
+
+  constructor: (@model) ->
+
+    super(@model)   
+
+    # breadcrumbs
+
+    @breadcrumbs =
+
+      story: 
+
+        id: @model.story._id
+        readonly:
+
+          title: ko.observable @model.story.title
+        url: '/story/' + @model.story._id
+      sprint:
+
+        id: @model.sprint._id
+        readonly:
+
+          title: ko.observable @model.sprint.title
+        url: '/sprint/' + @model.sprint._id
+
+    updateModel = partial @_updateModel, 'task'
+    createObservable_ = partial @_createObservable3, updateModel, @model.task
+
+    @writable = _.reduce [
+
+      {name: 'summary', throttled: true}
+      {name: 'description', throttled: true}
+      {name: 'color'}
+      {name: 'story_id'}
+      {name: 'initial_estimation', throttled: true, time: true}
+      {name: 'remaining_time'}
+      {name: 'time_spent'}
+    ], (object, property) ->
+
+      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+    , {}
+
+    # story_id
+
+    @stories = ko.observable()
+
+    @writable.story_id.subscribe (value) =>
+
+      @model.getStory value, @_replaceStory, @_showError
+
+    @story = 
+
+      computed: 
+
+        id: ko.computed => 
+
+          @writable.story_id()
+      readonly:
       
-        index = $("##{key}_index .selected").data 'date'
-        value = parseFloat $(node).val(), 10
-        @model.set key, value, index
-        call()
-    else call
-  openSelectorPopup: (ractiveEvent, id) =>
+        title: ko.observable @model.story.title
+        sprint_id: ko.observable @model.story.sprint_id
 
-    switch id
+    # sprint specific observables
+
+    @sprint = do =>
+
+      start = ko.observable @model.sprint.start
+      length = ko.observable @model.sprint.length
+
+      computed:
+
+        id: ko.computed =>
+
+          @story.readonly.sprint_id()
+        range: ko.computed =>
+
+          @model.buildSprintRange start(), length()
+      readonly:
+
+        title: ko.observable @model.sprint.title
+        start: start
+        length: length
+
+    # In case the sprint changes we might have to reset indexes, so they do not point at out-of-sprint dates.
+    @sprint.computed.range.subscribe (range) =>
+
+      _.each [@timeSpentIndex, @remainingTimeIndex], (indexObservable) =>
+
+        index = indexObservable()
+        if index < range.start || index > range.end
+
+          newIndex = @model.getDateIndex @sprint.start(), @sprint.length()
+          indexObservable newIndex
+
+    # shared write for indexed properties (remaining_time & time_spent)
+    writeIndexed = (property, observableObject, observableIndex, value) =>
+
+      # we need to clone the obj, b/c otherwise the observable would not be updated
+      oldObject = observableObject()
+      object = _.clone oldObject
+      object[observableIndex()] = parseFloat value, 10
+      if !_.isEqual(oldObject, object)
       
-      when 'story-selector' then @model.getStories @model.story.sprint_id, (data) =>
+        observableObject(object)   
+        @model.task[property] = object
+        @model.update @model.task, property, 'task', null, (message) =>
 
-        @view.set 'stories', data
-        @_showPopup(id)
-      else @_showPopup(id)
-  selectPopupItem: (ractiveEvent, args) =>
+          @model.task[property] = oldObject
+          observableObject(oldObject)
+          @modal 'error-dialog'
+          @errorMessage message
 
-    super ractiveEvent, args
+    formatDateIndex = (dateIndex) -> 
 
-    switch args.selector_id
+      moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
 
-      when 'color-selector' 
+    initialDateIndex = @model.getDateIndex @sprint.readonly.start(), @sprint.readonly.length()
 
-        undoValue = @view.get 'color'
-        @view.set 'task.color', args.value
-        @model.update 'color'
+    # remaining_time   
 
-          ,(data) => 
+    @remainingTimeIndex = ko.observable initialDateIndex
+    @remainingTimeIndexFormatted = ko.computed =>
 
-            @view.set 'task._rev', data.rev
-          ,(message) =>
+      formatDateIndex @remainingTimeIndex()
 
-            @view.set 'task.color', undoValue
-            #TODO: show error
-      when 'story-selector' 
+    readRemainingTime = =>
 
-        undoValue = @view.get 'task.story_id'
-        @view.set 'task.story_id', args.value
-        @model.update 'story_id'
+      @model.getClosestValueByDateIndex @writable.remaining_time(), @remainingTimeIndex(), @sprint.computed.range().start
+    @indexedRemainingTime = @_createIndexedComputed readRemainingTime, partial(writeIndexed, 'remaining_time', @writable.remaining_time, @remainingTimeIndex), @
 
-          ,(data) => 
+    # time_spent
 
-            @view.set 'task._rev', data.rev
-            @model.getStory data.value, (data) => 
+    @timeSpentIndex = ko.observable initialDateIndex
+    @timeSpentIndexFormatted = ko.computed =>    
 
-              @view.set 'story', data
-          ,(message) =>
+      formatDateIndex @timeSpentIndex()
 
-            @view.set 'task.story_id', undoValue
-            # TODO: show error
-  handleButton: (ractiveEvent, action) => 
+    @showTimeSpentDatePicker = => @modal 'time_spent-index'
 
-    super ractiveEvent, action
+    readTimeSpent = =>
 
-    switch action
+      value = @writable.time_spent()[@timeSpentIndex()]
+      if value? then value else 0
+    @indexedTimeSpent = @_createIndexedComputed readTimeSpent, partial(writeIndexed, 'time_spent', @writable.time_spent, @timeSpentIndex), @
 
-      when 'task_remove' 
+    # rt specific initializations
 
-        @showError 'Move along. This functionality is not implemented yet.'
+    notifications = []
+    observables = _.extend {}, @writable, @readonly
+    notifications.push @_createUpdateNotification(@model.task, observables)
+    notifications.push sprintNotification = @_createUpdateNotification(@model.sprint, @sprint.readonly)
+    notifications.push storyNotification = @_createUpdateNotification(@model.story, @story.readonly)
+    notifications.push @_createUpdateNotification(_.pick(@model.story, '_id'), @breadcrumbs.story.readonly)
+    notifications.push @_createUpdateNotification(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
+    
+    socket = new SocketIO()
+    socket.connect (sessionid) =>
+
+      replace = (notification, getFn, replaceFn, value) =>
+
+        @model[getFn].call(null, value, replaceFn)
+        socket.unregisterNotifications notification
+        notification.id = value
+        socket.registerNotifications notification
+
+      @story.readonly.sprint_id.subscribe partial(replace, sprintNotification, 'getSprint', @_replaceSprint)
+      @writable.story_id.subscribe partial(replace, storyNotification, 'getStory', @_replaceStory)
+
+      @model.sessionid = sessionid
+      socket.registerNotifications notifications

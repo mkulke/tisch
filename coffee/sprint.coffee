@@ -1,132 +1,193 @@
-class SprintSocketIO extends SocketIO
+class SprintModel extends ParentModel
 
-  messageHandler: (data) =>
+  getRemainingTime: (storyId, successCb) =>
 
-class SprintView extends View
+    $.ajaxq 'client',
 
-  _buildRactiveData: =>
+      url: "/remaining_time_calculation/#{storyId}"
+      type: 'GET'
+      dataType: 'json'
+      success: (data, textStatus, jqXHR) ->
 
-    children: @model.children.objects
-    sprint: @model.sprint
-    COLORS: common.COLORS
-    constants: common.constants
-    error_message: "Dummy message"
-    confirm_message: "Dummy message"
-    remaining_time: @model.calculations.remaining_time
-    format_date: (displayDate) -> 
+        if data != null
+        
+          successCb? data
+  getRemainingTimes: (storyIds, successCb) =>
 
-      moment(displayDate).format(common.DATE_DISPLAY_FORMAT)
-    calculate_end_date: (start, length) ->
+    gets = []
+    remainingTimes = {}
+    _.each storyIds, (storyId) =>
 
-      startDate = new Date(start)
-      new Date(startDate.getTime() + (length * common.MS_TO_DAYS_FACTOR))
+      gets.push $.ajaxq 'client',
 
-class SprintModel extends Model
+        url: "/remaining_time_calculation/#{storyId}"
+        type: 'GET'
+        dataType: 'json'
+        success: (data, textStatus, jqXHR) ->
+
+          remainingTimes[storyId] = data
+    $.when.apply($, gets).then ->
+
+      successCb? remainingTimes
 
   type: 'sprint'
-  constructor: (stories, @sprint, @calculations) ->
+  constructor: (@stories, @sprint, @calculations) ->
 
-  	@children = {type: 'story', objects: stories}
+class SprintViewModel extends ParentViewModel
 
-class SprintViewModel extends ChildViewModel
+  _createObservables: (story) =>
 
-  constructor: (@model, ractiveTemplate) ->
+    updateModel = partial @_updateModel, 'story'
+    createObservable_ = partial @_createObservable3, updateModel, story
 
-    @view = new SprintView ractiveTemplate, @model
-    super(@view, @model)
-    @socketio = new SprintSocketIO @view, @model
+    id: story._id
+    url: '/story/' + story._id
+    js: story
+    computed:
 
-    $('#title, #description, [id^="title-"], [id^="description-"]').each (index, element) => @_setConfirmedValue element
+      remaining_time: ko.computed =>
 
-    @_initPopupSelectors()
-    @_initDatePickers()
-    $('#length .content').datepicker 'option', 'minDate', new Date(@model.sprint.start)
-  _selectDate: (dateText, inst) =>
+        @readonly.remainingTimeCalculations()[story._id]
+    readonly:
 
-    # TODO: unit test
+      color: ko.observable story.color      
+    writable: _.reduce [
 
-    super(dateText, inst)
+      {name: 'title', throttled: true}
+      {name: 'description', throttled: true}
+      {name: 'priority'}
+    ], (object, property) ->
 
-    dateSelector = $(inst.input).parents('.date-selector')
-    newDate = new Date(dateText)
-    id = dateSelector.attr('id')
+      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+    , {}
 
-    switch id
+  showColorSelector: =>
 
-      when 'start_date'
+    @modal 'color-selector'
 
-        undoValue = @view.get 'sprint.start'
-        @view.set 'sprint.start', newDate.toString()
-        @model.update 'start'
+  selectColor: (color) =>
 
-          ,(data) => 
+    @modal null
+    @writable.color color
 
-            @view.set 'sprint._rev', data.rev
-            $('#length .content').datepicker 'option', 'minDate', new Date(data.value)
-          ,(message) =>
+  showStartDatePicker: => 
 
-            @view.set 'sprint.start', undoValue
-            #TODO show error
-      when 'length'
-        undoValue = @view.get 'sprint.length'
-        newLength = (newDate - new Date(@view.get 'sprint.start')) / common.MS_TO_DAYS_FACTOR
-        @view.set 'sprint.length', newLength
-        @model.update 'length'
+    @modal 'start-selector'
 
-          ,(data) =>
+  showLengthDatePicker: => 
 
-            @view.set 'sprint._rev', data.rev
-          ,(message) =>
+    @modal 'length-selector'
 
-            @view.set 'sprint.length', undoValue
-            #TODO: show error
-  selectPopupItem: (ractiveEvent, args) =>
+  addStory: =>
 
-    super ractiveEvent, args
+    @model.createStory @model.sprint._id, partial(@_addChild_, @stories), @showErrorDialog
+  
+  removeStory: (observables) =>
 
-    switch args.selector_id
+    # TODO: i18n
+    @_afterConfirm 'Are you sure? The story and the tasks assigned to it will be permanently removed.', =>
 
-      when 'color-selector' 
+      story = observables.js
+      @model.removeStory story, =>
 
-        undoValue = @view.get 'sprint.color'
-        @view.set 'sprint.color', args.value
-        @model.update 'color'
+        @stories.remove (item) =>
 
-          ,(data) => @view.set 'sprint._rev', data.rev
-          ,(message) => 
-          
-            @view.set 'sprint.color', undoValue
-            #TODO: error output
-  handleButton: (ractiveEvent, action) => 
+          item.id == story._id
+        , @showErrorDialog
 
-    super ractiveEvent, action
+  constructor: (@model) ->
 
-    switch action
+    super(@model)
 
-      when 'sprint_remove'
+    # observables
 
-        @model.removeSprint @model._id, (=>), (message) => @showError message
-      when 'story_add' 
+    updateModel = partial @_updateModel, 'sprint'
+    createObservable_ = partial @_createObservable3, updateModel, @model.sprint
 
-        @model.createStory @model.get('_id')
-          ,(data) => 
+    @writable = _.reduce [
 
-            @model.children.objects.push data
-            $("#title-#{data._id}, #description-#{data._id}").each (index, element) => @_setConfirmedValue element
-          ,(message) => 
+      {name: 'title', throttled: true}
+      {name: 'description', throttled: true}
+      {name: 'color'}
+      {name: 'start'}
+      {name: 'length'}
+    ], (object, property) ->
 
-            @showError message
-      when 'story_open' then window.location.href = "/story/#{ractiveEvent.context._id}"
-      when 'story_remove' 
+      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+    , {}
 
-        @onConfirm = => 
+    @computed = do =>
 
-          @model.removeStory ractiveEvent.context
-            , (id) => 
+      lengthDate = ko.computed
 
-              @model.children.objects.splice ractiveEvent.index.i, 1
-            ,(message) => 
+        read: =>
 
-              @showError message
-        @showConfirm common.constants.en_US.CONFIRM_STORY_REMOVAL ractiveEvent.context.title
-      when 'confirm_confirm' then @onConfirm()
+          moment(@writable.start()).add('days', @writable.length() - 1).toDate()
+        write: (value) =>
+
+          start = moment @writable.start()
+          # since @start() as 'XXXX-XX-XXT00:00:00.000Z' is parsed w/o timezone offset, and value
+          # is 'XXXX-XX-XX' has the timezone offset, we need to use moment.utc here to calculate
+          # the delta here.
+          end = moment.utc value
+          @writable.length moment.duration(end - start).days() + 1
+        owner: @
+      startDate: ko.computed
+
+        read: =>
+
+          new Date(@writable.start())
+        write: (value) =>
+
+          # the datepicker binding returns a xxxx-xx-xx string, we need a Date, tho.
+          @writable.start new moment(value).toDate()
+        owner: @
+      startFormatted: ko.computed =>
+
+        moment(@writable.start()).format(common.DATE_DISPLAY_FORMAT)
+      endFormatted: ko.computed =>
+
+        moment(lengthDate()).format(common.DATE_DISPLAY_FORMAT)
+      lengthDate: lengthDate   
+
+    @readonly =
+
+      remainingTimeCalculations: ko.observable @model.calculations.remaining_time
+
+    # calculations
+
+    # TODO: if sprint range changes, update calculations (if necessary)
+
+    updateStats = (value) =>
+
+      @model.getRemainingTimes _.pluck(@stories(), 'id'), (calculations) =>
+
+        @readonly.remainingTimeCalculations calculations
+
+    @writable.start.subscribe updateStats
+    @writable.length.subscribe updateStats
+
+    # stories
+
+    @stories = ko.observableArray _.map @model.stories, @_createObservables
+    _.chain(@stories()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority_, @stories))
+
+    ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
+
+      priority = @model.calculatePriority_ @stories(), arg.targetIndex
+      arg.item.writable.priority priority
+
+    # rt specific initializations
+
+    notifications = []
+    observables = _.extend {}, @writable, @readonly
+    notifications.push @_createUpdateNotification(@model.sprint, observables)
+    notifications.push @_createAddNotification(@model.sprint._id, @stories)
+    notifications = notifications.concat _.chain(@stories()).map(partial(@_createChildNotifications, @stories)).flatten().value()
+    
+    socket = new SocketIO()
+    socket.connect (sessionid) =>
+
+      @stories.subscribe partial(@_adjustNotifications, socket, @stories, notifications), null, 'arrayChange'
+      @model.sessionid = sessionid
+      socket.registerNotifications notifications

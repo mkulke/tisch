@@ -1,186 +1,19 @@
-class StorySocketIO extends SocketIO
+class StoryModel extends ParentModel
 
-  _sort: (a, b) -> 
+  type: 'story'
+  constructor: (@tasks, @story, @sprint) ->
 
-    a.priority > b.priority ? -1 : 1
-  _onAdd: (data) =>
-
-    if data.story_id == @view.get 'story._id'
-
-      @model.children.objects.push(data)
-  _onRemove: (data) =>
-
-    if data.story_id == @view.get 'story._id'
-
-      children = @view.get 'children'
-      child = _.findWhere children, {_id: data.id}
-      if child? 
-
-        index = _.indexOf children, child
-        children.splice index, 1
-  _onUpdate: (data) =>
-
-    update = (path) =>
-
-      @view.set "#{path}._rev", data.rev
-      @view.set "#{path}.#{data.key}", data.value
-
-    if data.id == @view.get 'story._id' 
-
-      update 'story'
-      if data.key == 'sprint_id' 
-
-        @model.getSprint data.value, (data) => 
-
-          @view.set 'sprint', data
-    else if data.id == @view.get 'sprint._id' then update 'sprint'
-    
-    # sprints from the selector
-    sprintIndex = index for sprint, index in @view.get 'sprints' when sprint._id == data.id
-    if sprintIndex? then update "sprints[#{sprintIndex}]"
-
-    # tasks
-    taskIndex = index for task, index in @view.get 'children' when task._id == data.id
-    if taskIndex? 
-
-      before = (child.priority for child in @view.get('children'))
-      console.log "before: #{before}"
-
-      update "children[#{taskIndex}]"
-      if data.key == 'priority'
-
-        @view.get('children').sort(@_sort)
-        @view.update('children')
-
-      after = (child.priority for child in @view.get('children'))
-      console.log "after: #{after}"
-
-    # breadcrumbs
-    if (@view.get 'breadcrumbs.sprint.id') == data.id && data.key == 'title' 
-
-      @view.set 'breadcrumbs.sprint.title', data.value
-
-  ###messageHandler: (data) =>
-
-    #if data.message == 'update'
-        
-      #TODO: tasks
-      if @view.get('story')._id == data.recipient
-
-        @view.set "story._rev", data.data.rev
-        @view.set "story.#{data.data.key}", data.data.value
-        if data.data.key == 'sprint_id' 
-
-          @model.getSprint data.data.value, (data) => 
-
-            @view.set 'sprint', data
-      else if @view.get('sprint')._id == data.recipient
-
-        @view.set "sprint._rev", data.data.rev
-        @view.set "sprint.#{data.data.key}", data.data.value
-      else
-
-        index = i for child, i in @view.get('children') when child._id == data.recipient
-
-        if index?
-
-          @view.set "children.#{index}._rev", data.data.rev
-          @view.set "children.#{index}.#{data.data.key}", data.data.value
-          if data.data.key == 'priority' then @view.get('children').sort (a, b) -> a.priority > b.priority ? -1 : 1###
-
-class StoryView extends View
-
-  _buildRactiveData: =>
-
-    breadcrumbs: 
-
-      sprint: title: @model.sprint.title, id: @model.sprint._id
-    children: @model.children.objects
-    story: @model.story
-    COLORS: common.COLORS
-    constants: common.constants
-    sprint: @model.sprint
-    sprints: [@model.sprint]
-    error_message: "Dummy message"
-    confirm_message: "Dummy message"
-    buildRemainingTime: @buildRemainingTime
-    buildTimeSpent: @buildTimeSpent
-    buildSprintRange: @model.buildSprintRange
-    sortChildren: (children) ->
-
-      children = children.slice()
-      children.sort (a, b) ->
-
-        a.priority > b.priority ? -1 : 1
-    countTasks: (tasks) -> 
-
-      (key for key, value of tasks).length
-    calculateRemainingTime: (tasks, range, buildFunction) ->
-
-      _.reduce tasks, (count, task) -> 
-
-        count + (buildFunction task.remaining_time, range)
-      , 0
-    buildAllTimeSpent: (tasks, range, buildFunction) ->
-
-      _.reduce tasks, (count, task) -> 
-
-        count + (buildFunction task.time_spent, range)
-      ,0
-    ###buildTSMatrix: (tasks, range) ->
-
-      timeSpent = tasks.reduce (object, task) ->
-
-        for key, value of task.time_spent when range.start <= key < range.end
-
-          if object[key]? then object[key] += value
-          else if value != 0 then object[key] = value
-        object
-      , {}
-      ({date: key, time_spent: value} for key, value of timeSpent)
-    buildRTMatrix: (tasks, range) ->
-
-      testo = (remainingTime, index) ->
-
-        if remainingTime[index]? then remainingTime[index]
-        else
-
-          # in this case check for the next date w/ a value *before*, but *within* the sprint
-          value = remainingTime.initial
-
-          indexDate = moment(index)
-          while indexDate.subtract('days', 1) >= range.start
-
-            if remainingTime[indexDate.format(common.DATE_DB_FORMAT)]?
-
-              value = remainingTime[indexDate.format(common.DATE_DB_FORMAT)]
-              break
-          value
-
-      indices = tasks.reduce (object, task) ->
-
-        object[index] = true for index of task.remaining_time when range.start <= index < range.end
-        object
-      , {}
-
-      remainingTime = {}
-      for index of indices
-
-        remainingTime[index] = tasks.reduce (count, task) ->
-
-          count += testo task.remaining_time, index
-        , 0
-      ({date: key, remaining_time: value} for key, value of remainingTime)###
   buildTimeSpent: (timeSpent, range) ->
 
-    spentTimes = (value for key, value of timeSpent when range.start <= key < range.end)
+    spentTimes = (value for key, value of timeSpent when range.start <= key <= range.end)
     spentTimes.reduce (count, spentTime) ->
 
       count + spentTime
     ,0
+
   buildRemainingTime: (remainingTime, range) ->
 
-    dates = (key for key of remainingTime when range.start <= key < range.end).sort()
+    dates = (key for key of remainingTime when range.start <= key <= range.end).sort()
 
     if dates.length == 0
 
@@ -188,175 +21,310 @@ class StoryView extends View
     else
 
       latest = dates[dates.length - 1]
-      remainingTime[latest]
+      remainingTime[latest] 
 
-class StoryModel extends Model
+  _collectIndices: (range, indices, property) =>
 
-  type: 'story'
-  constructor: (tasks, @story, @sprint) ->
+    inRange = (value) ->
 
-  	@children = {type: 'task', objects: tasks}
+      range.start <= value <= range.end
 
-  buildSprintRange: (sprint) ->
+    _.chain(property).keys().filter(inRange).union(indices).sort().value()    
 
-    start = moment sprint.start
-    end = moment(start).add 'days', sprint.length
-    start: start.format(common.DATE_DB_FORMAT), end: end.format(common.DATE_DB_FORMAT)
-  buildTimeSpentChartData: (tasks, range) ->
+  buildTimeSpentChartData: (timesSpent, range) ->
 
-    initial = {}
-    timeSpent = _.reduce tasks, (object, task) ->
+    # This functions collect the dates from all time_spent objects while discarding 
+    # the out-of-sprint values. Then for every found date all task values for that
+    # date are accumulated. Finally, if no 1st sprint day value was found and it is
+    # not empty, it is prepended with a zero value.
 
-      #x = ({date: key, value} for key, value of task.time_spent)
-      #y = _filter x (z) -> range.start <= z.date < range.end
-      for key, value of task.time_spent when range.start <= key < range.end
+    add = (index, memo, timeSpent) ->
 
-        if object[key]? then object[key] += value
-        else if value > 0 then object[key] = value
-      object
-    , initial
+      time = timeSpent[index]
+      if time? 
 
-    if !_.isEmpty(timeSpent) && !timeSpent[range.start] then timeSpent[range.start] = 0
+        memo + time
+      else
 
-    data = ({date: key, value: value} for key, value of timeSpent).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
+        memo
 
-    # make it cumulative
-    counter = 0
-    _.map data, (object) ->
+    toD3 = (index) ->
 
-      {date: object.date, value: counter += object.value}
-  buildRemainingTimeChartData: (story, tasks, range) ->
+      {date: index, value: _.reduce timesSpent, partial(add, index), 0}
 
-    indices = _.map tasks, (task) ->
+    nullValue = (object) ->
 
-      (index for index of task.remaining_time when range.start <= index < range.end)
-    indices = _.flatten indices
-    indices = _.uniq indices
+      object.value == 0
 
-    remainingTimes = _.reduce indices, (object, index) =>
+    cumulate = (data, datum) ->
 
-      object[index] = _.reduce tasks, (count, task) =>
+      if data.length > 0
 
-        count += @_getClosestValueByDateIndex task.remaining_time, index, range.start
-      , 0
-      object
-    , {}        
-    if !remainingTimes[range.start] then remainingTimes[range.start] = story.estimation
+        clone = _.clone(datum)
+        clone.value += _.last(data).value
+        data.push clone
+      else
 
-    ({date: key, value} for key, value of remainingTimes).sort (a, b) -> moment(a.date).unix() - moment(b.date).unix()
+        data.push datum
+      data
 
-class StoryViewModel extends ChildViewModel
+    prepend = (data) ->
 
-  constructor: (@model, ractiveTemplate) ->
+      if !_.isEmpty(data) && _.first(data).date != range.start
 
-    @view = new StoryView ractiveTemplate, @model
-    super(@view, @model)
-    @socketio = new StorySocketIO @view, @model
+        data.unshift {date: range.start, value: 0}
 
-    $('#title, #description, #estimation, [id^="summary-"], [id^="description-"]').each (index, element) => @_setConfirmedValue element
-    $('#estimation').data 'validation', (value) -> value.search(/^\d{1,2}(\.\d{1,2}){0,1}$/) == 0
+    _.chain(timesSpent).reduce(partial(@_collectIndices, range), []).map(toD3).reject(nullValue).reduce(cumulate, []).tap(prepend).value()
 
-    @_initPopupSelectors()
-    @chart = new Chart ['reference', 'remainingTime', 'timeSpent']
-  selectPopupItem: (ractiveEvent, args) =>
+  buildRemainingTimeChartData: (estimation, remainingTimes, range) ->
 
-    super ractiveEvent, args
+    # This functions collect the dates from all remaining_time objects while discarding 
+    # the out-of-sprint values. Then for every found date a value is fetched/calculated
+    # for each task, the results are accumulated. Finally, if no 1st sprint day value was 
+    # found, it is prepended with the stories estimation. 
 
-    switch args.selector_id
+    getAndAdd = (index, count, remainingTime) =>
 
-      when 'color-selector' 
+      count += @getClosestValueByDateIndex remainingTime, index, range.start
 
-        undoValue = @view.get 'story.color'
-        @view.set 'story.color', args.value
-        @model.update 'color'
+    toD3 = (index) ->
 
-          ,(data) => @view.set 'story._rev', data.rev
-          ,(message) => 
-          
-            @view.set 'story.color', undoValue
-            #TODO: error output
-      when 'sprint-selector' 
+      {date: index, value: _.reduce remainingTimes, partial(getAndAdd, index), 0}
 
-        undoValue = @view.get 'story.sprint_id'
-        @view.set 'story.sprint_id', args.value
-        @model.update 'sprint_id'
+    prepend = (data) ->
 
-          ,(data) => 
+      if _.first(data)?.date != range.start
 
-            @view.set 'story._rev', data.rev
-            @model.getSprint data.value, (data) => 
+        data.unshift {date: range.start, value: estimation}
 
-              @view.set 'sprint', data
-          ,(message) =>
+    _.chain(remainingTimes).reduce(partial(@_collectIndices, range), []).map(toD3).tap(prepend).value()
 
-            @view.set 'story.sprint_id', undoValue
-            #TODO: error output
-  openSelectorPopup: (ractiveEvent, id) =>
+class StoryViewModel extends ParentViewModel
 
-	  switch id
-	    
-	    when 'sprint-selector' then @model.getSprints (data) =>
+  _createObservables: (task) =>
 
-	      @view.set 'sprints', data
-	      @_showPopup(id)
-	    else @_showPopup(id)
-  hideStats: =>
+    updateModel = partial @_updateModel, 'task'
+    createObservable_ = partial @_createObservable3, updateModel, task
 
-    @_hideModal 'stats'
-  showStats: => 
+    id: task._id
+    url: '/task/' + task._id
+    js: task
+    computed:
 
-    range = @model.buildSprintRange @model.sprint
-    remainingTime = @model.buildRemainingTimeChartData @model.story, @model.children.objects, range
-    timeSpent = @model.buildTimeSpentChartData @model.children.objects, range
+      remaining_time: ko.computed =>
 
+        @model.buildRemainingTime task.remaining_time, @sprint.computed.range()
+    readonly:
+
+      color: ko.observable task.color
+      remaining_time: ko.observable task.remaining_time
+      time_spent: ko.observable task.time_spent    
+    writable: _.reduce [
+
+      {name: 'summary', throttled: true}
+      {name: 'description', throttled: true}
+      {name: 'priority'}
+    ], (object, property) ->
+
+      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+    , {}
+
+  _replaceSprint: (sprint) =>
+
+    _.chain(sprint).pick('title', 'start', 'length').each (value, key) =>
+
+      @sprint.readonly[key] value
+
+  showColorSelector: =>
+
+    @modal 'color-selector'
+  
+  selectColor: (color) =>
+
+    @modal null
+    @writable.color color
+
+  sprints: ko.observable()
+
+  showSprintSelector: => 
+
+    @model.getSprints (sprints) =>
+
+      @sprints _.map sprints, (sprint) ->
+
+        {id: sprint._id, label: sprint.title}
+      @modal 'sprint-selector'
+    
+  selectSprint: (selected) =>
+
+    @modal null
+    @model.getSprint selected.id, (sprint) =>
+
+      @writable.sprint_id sprint._id
+      @_replaceSprint sprint
+    , @_showError
+  
+  addTask: =>
+
+    @model.createTask @model.story._id, partial(@_addChild_, @tasks), @showErrorDialog
+
+  removeTask: (observables) =>
+
+    # TODO: i18n
+    @_afterConfirm 'Are you sure? The task will be permanently removed.', =>
+
+      task = observables.js
+      @model.removeTask task, =>
+
+        @tasks.remove (item) =>
+
+          item.id == task._id
+        , @showErrorDialog
+
+  showStats: =>
+
+    @modal 'stats-dialog'
+
+  closeStats: =>
+
+    @modal null
+
+  _refreshChart: =>
+
+    # TODO: chart render issues when sprint range is modified.
     @chart.refresh 
 
-      remainingTime: remainingTime
-      timeSpent: timeSpent
+      'remaining-time': @stats.computed.remainingTimeChartData()
+      'time-spent': @stats.computed.timeSpentChartData()
       reference: [
 
-        {date: range.start, value: @model.story.estimation}
-        {date: moment(range.end).subtract('days', 1).format(common.DATE_DB_FORMAT), value: 0}
+        {date: @sprint.computed.range().start, value: @writable.estimation()}
+        {date: moment(@sprint.computed.range().end).format(common.DATE_DB_FORMAT), value: 0}
       ]
-    @_showModal 'stats'
-  handleButton: (ractiveEvent, action) => 
 
-    super ractiveEvent, action
+  constructor: (@model) ->
 
-    switch action
+    super(@model)
 
-      # TODO: confirm
-      when 'story_remove'
+    # breadcrumbs
 
-        @showError 'Not implemented yet!'
-        #@model.removeStory @model.story, (=>), (message) => @showError message
-      when 'task_add' 
+    @breadcrumbs =
 
-        @model.createTask @model.get('_id')
-          ,(data) => 
+      sprint: 
 
-            @model.children.objects.push data
-            $("#summary-#{data._id}, #description-#{data._id}").each (index, element) => @_setConfirmedValue element
-          ,(message) => 
+        id: @model.sprint._id
+        readonly:
 
-            @showError message
-      when 'task_open' then window.location.href = "/task/#{ractiveEvent.context._id}"
-      when 'task_remove' 
+          title: ko.observable @model.sprint.title
+        url: '/sprint/' + @model.sprint._id
 
-        @onConfirm = => 
+    # observables
 
-          @model.removeTask ractiveEvent.context
-            , (id) => 
+    updateModel = partial(@_updateModel, 'story');
+    createObservable_ = partial @_createObservable3, updateModel, @model.story
 
-              @view.get('children').splice ractiveEvent.index.i, 1
-            ,(message) => 
+    @writable = _.reduce [
 
-              @showError message
-        @showConfirm common.constants.en_US.CONFIRM_TASK_REMOVAL ractiveEvent.context.summary
-      when 'confirm_confirm' then @onConfirm()
-      when 'show_stats' 
+      {name: 'title', throttled: true}
+      {name: 'description', throttled: true}
+      {name: 'color'}
+      {name: 'sprint_id'}
+      {name: 'estimation', throttled: true, time: true}
+    ], (object, property) ->
 
-        @showStats()
-      when 'stats_close' 
+      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+    , {}
 
-        @hideStats()
+    # sprint specific stuff
+
+    @sprint = do =>
+
+      start = ko.observable @model.sprint.start
+      length = ko.observable @model.sprint.length
+
+      computed:
+
+        id: ko.computed =>
+
+          @writable.sprint_id
+        range: ko.computed =>
+
+          @model.buildSprintRange start(), length()
+      readonly:
+
+        title: ko.observable @model.sprint.title
+        start: start
+        length: length
+
+    # tasks
+
+    @tasks = ko.observableArray _.map @model.tasks, @_createObservables
+    _.chain(@tasks()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority_, @tasks))
+
+    ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
+
+      priority = @model.calculatePriority_ @tasks(), arg.targetIndex
+      arg.item.writable.priority priority
+
+    # stats
+
+    @stats = 
+
+      computed:
+
+        allRemainingTime: ko.computed =>
+
+          _.reduce @tasks(), (count, task) =>
+
+            count + @model.buildRemainingTime task.readonly.remaining_time(), @sprint.computed.range()
+          , 0      
+        allTimeSpent: ko.computed =>
+
+          _.reduce @tasks(), (count, task) => 
+
+            count + @model.buildTimeSpent task.readonly.time_spent(), @sprint.computed.range()
+          ,0
+        remainingTimeChartData: ko.computed =>
+
+          remainingTimes = _.chain(@tasks()).pluck('readonly').pluck('remaining_time').invoke('call').value()
+          @model.buildRemainingTimeChartData @writable.estimation(), remainingTimes, @sprint.computed.range()
+
+        timeSpentChartData: ko.computed =>
+
+          timesSpent = _.chain(@tasks()).pluck('readonly').pluck('time_spent').invoke('call').value()
+          @model.buildTimeSpentChartData timesSpent, @sprint.computed.range()
+
+    @chart = new Chart ['reference', 'remaining-time', 'time-spent']
+    @_refreshChart()
+
+    @stats.computed.remainingTimeChartData.subscribe (value) =>
+
+      @_refreshChart()
+    @stats.computed.timeSpentChartData.subscribe (value) =>
+
+      @_refreshChart()      
+
+    # realtime specific initializations
+
+    notifications = []
+    observables = _.extend {}, @writable, @readonly
+    notifications.push @_createUpdateNotification(@model.story, observables)
+    notifications.push @_createAddNotification(@model.story._id, @tasks)
+    notifications.push sprintNotification = @_createUpdateNotification(@model.sprint, @sprint.readonly)
+    notifications.push @_createUpdateNotification(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
+    notifications = notifications.concat _.chain(@tasks()).map(partial(@_createChildNotifications, @tasks)).flatten().value()
+    
+    socket = new SocketIO()
+    socket.connect (sessionid) =>
+
+      @tasks.subscribe partial(@_adjustNotifications, socket, @tasks, notifications), null, 'arrayChange'
+
+      @writable.sprint_id.subscribe (value) =>
+
+        @model.getSprint value, @_replaceSprint
+        socket.unregisterNotifications sprintNotification
+        sprintNotification.id = value
+        socket.registerNotifications sprintNotification
+        
+      @model.sessionid = sessionid
+      socket.registerNotifications notifications

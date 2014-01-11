@@ -1,0 +1,104 @@
+html
+	head
+		title Story details
+		link(rel='stylesheet', href='/shared.css', type='text/css')
+		include shared
+		script(type='text/javascript', src='/knockout-sortable.min.js')
+		script(type='text/javascript', src='/d3.min.js')
+		script(type='text/javascript', src='/story.coffee.js')
+	body(data-bind="event: {keyup: cancelPopup}")
+		#container
+			#breadcrumb-bar
+				a(href="/").breadcrumb.index Index
+				a(data-bind="attr: {href: breadcrumbs.sprint.url}, text: breadcrumbs.sprint.readonly.title").breadcrumb.sprint
+				span(data-bind="text: writable.title").breadcrumb.story.selected
+				img(src="/logo_30.png").logo
+			#content
+				form
+					p
+						input(data-bind="value: writable.title, valueUpdate: ['afterkeydown','propertychange','input']", name="title", autocomplete="off")#title.identifier
+					p
+						textarea(data-bind="value: writable.description, valueUpdate: ['afterkeydown','propertychange','input']", name="description")#description
+					.attribute
+						span.label
+							=messages.en.COLOR+':'
+						span#color-selector.popup-selector
+							button(data-bind="click: showColorSelector, css: writable.color", name="color")
+								span(data-bind="css: writable.color").selected
+							div(data-bind="foreach: common.COLORS, visible: modal() == 'color-selector'").content
+								div(data-bind="click: $parent.selectColor, css: $data + ' box-' + $index()").color.hoverable
+					.attribute
+						span.label
+							=messages.en.SPRINT+':'
+						span#sprint-selector.popup-selector.line-selector
+							button(data-bind="click: showSprintSelector, text: sprint.readonly.title", name="sprint_id").selected
+							div(data-bind="foreach: sprints, visible: modal() == 'sprint-selector'").content
+								div(data-bind="click: $parent.selectSprint, text: label").line
+					.attribute
+						span.label
+							=messages.en.ESTIMATION+':'
+						input(data-bind="value: writable.estimation, valueUpdate: ['afterkeydown','propertychange','input']", name="estimation", autocomplete="off")
+						span(data-bind="visible: writable.estimation.hasError").error-popup
+							.content.error
+								=messages.en.VALID_TIME_MESSAGE
+					ul(data-bind="sortable: tasks")#well
+						li.panel
+							div(data-bind="css: $data.readonly.color() + ' header hoverable'")
+								input(data-bind="value: $data.writable.summary, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'summary-' + $index()}", autocomplete="off")
+								.stats
+									div(data-bind="if: $data.computed.remaining_time() === 0")
+										img(src="/done_white_30.png")
+									div(data-bind="ifnot: $data.computed.remaining_time() === 0")
+										img(src="/clock_white_30.png")
+										div(data-bind="text: $data.computed.remaining_time()").text
+							textarea(data-bind="value: $data.writable.description, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'description-' + $index()}").body
+							.button-bar
+								.buttons
+									a(data-bind="attr: {href: $data.url}").button.open
+										=messages.en.OPEN
+									input(data-bind="click: $parent.removeTask.bind($data)", type='button', value=messages.en.REMOVE).button.remove
+			#button-bar
+				form.buttons
+					input(data-bind="click: showStats", type='button', value=messages.en.SHOW_STATS, name="show_stats").button.stats
+					input(data-bind="click: addTask", type='button', value=messages.en.ADD_TASK, name="add-task").button.add
+					input(type='button', value=messages.en.REMOVE, name="remove").button.remove
+		div(data-bind="visible: modal() == 'error-dialog'")#error-dialog
+			div(data-bind="text: errorMessage()").message.error
+			.popup-buttons
+				form.buttons
+					input(data-bind="click: confirmError", type="button", value=messages.en.OK).button.confirm
+		div(data-bind="visible: modal() == 'confirm-dialog'")#confirm-dialog
+			div(data-bind="text: confirmMessage()").message.warning
+			.popup-buttons
+				form.buttons
+					input(data-bind="click: cancel", type="button", value=messages.en.CANCEL).button.cancel
+					input(data-bind="click: confirm", type="button", value=messages.en.CONFIRM).button.confirm
+		div(data-bind="visible: modal() == 'stats-dialog'")#stats-dialog
+			.content
+				.textbox
+					p.stat.no-of-tasks
+						span.label
+							=messages.en.NO_OF_TASKS+':'
+						span(data-bind="text: tasks().length").value 
+					p.stat.remaining-time
+						span.indicator.blue
+						span.label
+							=messages.en.REMAINING_TIME+':'
+						span(data-bind="text: stats.computed.allRemainingTime()").value
+					p.stat.time-spent
+						span.indicator.red
+						span.label
+							=messages.en.TIME_SPENT+':'
+						span(data-bind="text: stats.computed.allTimeSpent()").value
+				.chartbox
+					#chart
+			.popup-buttons
+				form.buttons
+					input(data-bind="click: closeStats", type="button", value=messages.en.CLOSE).button.close
+		div(data-bind="visible: modal() != null")#overlay
+		script(type='text/javascript')
+			
+			var model, viewModel;
+			model = new StoryModel(!{JSON.stringify(tasks)}, !{JSON.stringify(story)}, !{JSON.stringify(sprint)});
+			viewModel = new StoryViewModel(model);
+			ko.applyBindings(viewModel);
