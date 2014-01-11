@@ -41,56 +41,13 @@ class TaskViewModel extends ViewModel
 
     _.chain(story).pick('title', 'sprint_id').each (value, key) =>
 
-      @story[key] value
+      @story.readonly[key] value
 
   _replaceSprint: (sprint) =>
 
     _.chain(sprint).pick('title', 'start', 'length').each (value, key) =>
 
-      @sprint[key] value
-
-  _createTaskNotification: ->
-
-    properties: _.chain(@model.task).keys().reject((a) -> a[0] == '_').value()
-    handler: (data) =>
-
-      @model.task._rev = data.rev
-      @model.task[data.key] = data.value
-      @[data.key]?(data.value)
-      if data.key == 'story_id'
-
-        @model.getStory @writables.story_id(), @_replaceStory
-
-  _createStoryNotification: ->
-
-    id: @writables.story_id()
-    properties: ['title', 'sprint_id']
-    handler: (data) =>
-
-      @story[data.key] data.value
-      if data.key == 'sprint_id'
-
-        @model.getSprint @story.sprint_id(), @_replaceSprint
-
-  _createSprintNotification: ->
-
-    id: @story.sprint_id()
-    properties: ['start', 'length']
-    handler: (data) =>
-
-      @sprint[data.key] data.value
-
-  _createBreadcrumbNotifications: ->
-    
-    buildNotification = (breadcrumb) ->
-
-      id: breadcrumb.id
-      properties: ['title']
-      handler: (data) ->
-
-        breadcrumb.label data.value
-
-    [buildNotification(@breadcrumbs.story), buildNotification(@breadcrumbs.sprint)]
+      @sprint.readonly[key] value
 
   _createIndexedComputed: (read, write, owner) ->
 
@@ -116,102 +73,117 @@ class TaskViewModel extends ViewModel
         write value   
     indexed
 
+  # TODO: as mixin plz
+  showColorSelector: =>
+
+    @modal 'color-selector'
+  selectColor: (color) =>
+
+    @modal null
+    @writable.color color
+
+  showStorySelector: => 
+
+    @model.getStories @model.story.sprint_id, (stories) =>
+
+      @stories _.map stories, (story) ->
+
+        {id: story._id, label: story.title}
+      @modal 'story-selector'
+  
+  selectStory: (selected) =>
+
+    @modal null
+    @writable.story_id selected.id
+    # story specific stuff
+
+  showRemainingTimeDatePicker: => 
+
+    @modal 'remaining_time-index'
+
   constructor: (@model) ->
 
     super(@model)   
+
+    # breadcrumbs
 
     @breadcrumbs =
 
       story: 
 
         id: @model.story._id
-        label: ko.observable @model.story.title
+        readonly:
+
+          title: ko.observable @model.story.title
         url: '/story/' + @model.story._id
       sprint:
 
         id: @model.sprint._id
-        label: ko.observable @model.sprint.title
+        readonly:
+
+          title: ko.observable @model.sprint.title
         url: '/sprint/' + @model.sprint._id
 
     updateModel = partial @_updateModel, 'task'
     createObservable_ = partial @_createObservable3, updateModel, @model.task
 
-    @writables = _.reduce [
+    @writable = _.reduce [
 
       {name: 'summary', throttled: true}
       {name: 'description', throttled: true}
       {name: 'color'}
       {name: 'story_id'}
       {name: 'initial_estimation', throttled: true, time: true}
+      {name: 'remaining_time'}
+      {name: 'time_spent'}
     ], (object, property) ->
 
       object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
     , {}
 
-    # TODO: as mixin plz
-    @showColorSelector = =>
-
-      @modal 'color-selector'
-    @selectColor = (color) =>
-
-      @modal null
-      @writables.color color
-
     # story_id
 
     @stories = ko.observable()
 
-    @writables.story_id.subscribe (value) =>
+    @writable.story_id.subscribe (value) =>
 
       @model.getStory value, @_replaceStory, @_showError
 
-    @showStorySelector = -> 
-
-      @model.getStories @model.story.sprint_id, (stories) =>
-
-        @stories _.map stories, (story) ->
-
-          {id: story._id, label: story.title}
-        @modal 'story-selector'
-    
-    @selectStory = (selected) =>
-
-      @modal null
-      @writables.story_id selected.id
-    # story specific stuff
-
     @story = 
 
-      _id: ko.computed => 
+      computed: 
 
-        @writables.story_id()
-      title: ko.observable @model.story.title
-      sprint_id: ko.observable @model.story.sprint_id
+        id: ko.computed => 
 
-    # initial_estimation
-
-    #@initial_estimation = @_createThrottledObservable(@model.task, 'initial_estimation', updateModel, true)
-    #@  .extend({matches: common.TIME_REGEX})
+          @writable.story_id()
+      readonly:
+      
+        title: ko.observable @model.story.title
+        sprint_id: ko.observable @model.story.sprint_id
 
     # sprint specific observables
 
-    @sprint = 
+    @sprint = do =>
 
-      _id: ko.computed =>
+      start = ko.observable @model.sprint.start
+      length = ko.observable @model.sprint.length
 
-        @story.sprint_id()
-      title: ko.observable @model.sprint.title
-      start: ko.observable @model.sprint.start
-      length: ko.observable @model.sprint.length
+      computed:
 
-    @sprintRange = ko.computed =>
+        id: ko.computed =>
 
-      @model.buildSprintRange @sprint.start(), @sprint.length()
+          @story.readonly.sprint_id()
+        range: ko.computed =>
 
-    initialDateIndex = @model.getDateIndex @sprint.start(), @sprint.length()
+          @model.buildSprintRange start(), length()
+      readonly:
+
+        title: ko.observable @model.sprint.title
+        start: start
+        length: length
 
     # In case the sprint changes we might have to reset indexes, so they do not point at out-of-sprint dates.
-    @sprintRange.subscribe (range) =>
+    @sprint.computed.range.subscribe (range) =>
 
       _.each [@timeSpentIndex, @remainingTimeIndex], (indexObservable) =>
 
@@ -243,23 +215,19 @@ class TaskViewModel extends ViewModel
 
       moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
 
+    initialDateIndex = @model.getDateIndex @sprint.readonly.start(), @sprint.readonly.length()
+
     # remaining_time   
-
-    @showRemainingTimeDatePicker = => 
-
-      @modal 'remaining_time-index'
 
     @remainingTimeIndex = ko.observable initialDateIndex
     @remainingTimeIndexFormatted = ko.computed =>
 
       formatDateIndex @remainingTimeIndex()
 
-    @remaining_time = ko.observable @model.task.remaining_time
-
     readRemainingTime = =>
 
-      @model.getClosestValueByDateIndex @remaining_time(), @remainingTimeIndex(), @sprintRange().start
-    @indexedRemainingTime = @_createIndexedComputed readRemainingTime, partial(writeIndexed, 'remaining_time', @remaining_time, @remainingTimeIndex), @
+      @model.getClosestValueByDateIndex @writable.remaining_time(), @remainingTimeIndex(), @sprint.computed.range().start
+    @indexedRemainingTime = @_createIndexedComputed readRemainingTime, partial(writeIndexed, 'remaining_time', @writable.remaining_time, @remainingTimeIndex), @
 
     # time_spent
 
@@ -270,45 +238,34 @@ class TaskViewModel extends ViewModel
 
     @showTimeSpentDatePicker = => @modal 'time_spent-index'
 
-    @time_spent = ko.observable @model.task.time_spent
-
     readTimeSpent = =>
 
-      value = @time_spent()[@timeSpentIndex()]
+      value = @writable.time_spent()[@timeSpentIndex()]
       if value? then value else 0
-    @indexedTimeSpent = @_createIndexedComputed readTimeSpent, partial(writeIndexed, 'time_spent', @time_spent, @timeSpentIndex), @
+    @indexedTimeSpent = @_createIndexedComputed readTimeSpent, partial(writeIndexed, 'time_spent', @writable.time_spent, @timeSpentIndex), @
 
-    # realtime specific initializations
+    # rt specific initializations
 
     notifications = []
-    defaults = 
-
-      method: 'POST'
-      id: @model.task._id
-
-    notifications.push @_createTaskNotification()
-
-    notifications.push storyNotification = @_createStoryNotification()
-
-    notifications.push sprintNotification = @_createSprintNotification()
-
-    recreateNotification = (notification, createFn, value) =>
-
-       if value != notification.id
-
-        socket.unregisterNotifications notification
-        notification.id = value
-        socket.registerNotifications notification
-    @story._id.subscribe partial recreateNotification, storyNotification, @_createStoryNotification
-    @sprint._id.subscribe partial recreateNotification, sprintNotification, @_createSprintNotification
-
-    #notifications = notifications.concat @_createBreadcrumbNotifications()
-    notifications = notifications.concat @_createBreadcrumbNotifications()
-    _.each notifications, curry2(_.defaults)(defaults)
-
+    observables = _.extend {}, @writable, @readonly
+    notifications.push @_createUpdateNotification(@model.task, observables)
+    notifications.push sprintNotification = @_createUpdateNotification(@model.sprint, @sprint.readonly)
+    notifications.push storyNotification = @_createUpdateNotification(@model.story, @story.readonly)
+    notifications.push @_createUpdateNotification(_.pick(@model.story, '_id'), @breadcrumbs.story.readonly)
+    notifications.push @_createUpdateNotification(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
+    
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
-      @model.sessionid = sessionid
-      socket.registerNotifications notifications    
+      replace = (notification, getFn, replaceFn, value) =>
 
+        @model[getFn].call(null, value, replaceFn)
+        socket.unregisterNotifications notification
+        notification.id = value
+        socket.registerNotifications notification
+
+      @story.readonly.sprint_id.subscribe partial(replace, sprintNotification, 'getSprint', @_replaceSprint)
+      @writable.story_id.subscribe partial(replace, storyNotification, 'getStory', @_replaceStory)
+
+      @model.sessionid = sessionid
+      socket.registerNotifications notifications

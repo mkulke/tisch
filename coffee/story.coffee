@@ -131,7 +131,7 @@ class StoryViewModel extends ParentViewModel
 
   _replaceSprint: (sprint) =>
 
-    for key, value of _.chain(sprint).pick('title', 'start', 'length').value()
+    _.chain(sprint).pick('title', 'start', 'length').each (value, key) =>
 
       @sprint.readonly[key] value
 
@@ -310,22 +310,21 @@ class StoryViewModel extends ParentViewModel
     observables = _.extend {}, @writable, @readonly
     notifications.push @_createUpdateNotification(@model.story, observables)
     notifications.push @_createAddNotification(@model.story._id, @tasks)
-
     notifications.push sprintNotification = @_createUpdateNotification(@model.sprint, @sprint.readonly)
-    @writable.sprint_id.subscribe (value) =>
-
-      @model.getSprint value, @_replaceSprint
-      socket.unregisterNotifications sprintNotification
-      sprintNotification.id = value
-      socket.registerNotifications sprintNotification
-
     notifications.push @_createUpdateNotification(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
-
     notifications = notifications.concat _.chain(@tasks()).map(partial(@_createChildNotifications, @tasks)).flatten().value()
     
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
       @tasks.subscribe partial(@_adjustNotifications, socket, @tasks, notifications), null, 'arrayChange'
+
+      @writable.sprint_id.subscribe (value) =>
+
+        @model.getSprint value, @_replaceSprint
+        socket.unregisterNotifications sprintNotification
+        sprintNotification.id = value
+        socket.registerNotifications sprintNotification
+        
       @model.sessionid = sessionid
       socket.registerNotifications notifications

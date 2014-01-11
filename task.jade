@@ -7,36 +7,36 @@ html
 		#container
 			#breadcrumb-bar
 				a(href="/").breadcrumb.index Index
-				a(data-bind="attr: {href: breadcrumbs.sprint.url}, text: breadcrumbs.sprint.label()").breadcrumb.sprint
-				a(data-bind="attr: {href: breadcrumbs.story.url}, text: breadcrumbs.story.label()").breadcrumb.story
-				span(data-bind="text: writables.summary").breadcrumb.task.selected
+				a(data-bind="attr: {href: breadcrumbs.sprint.url}, text: breadcrumbs.sprint.readonly.title()").breadcrumb.sprint
+				a(data-bind="attr: {href: breadcrumbs.story.url}, text: breadcrumbs.story.readonly.title()").breadcrumb.story
+				span(data-bind="text: writable.summary").breadcrumb.task.selected
 				img(src="/logo_30.png").logo
 			#content
 				form
 					p
-						input(data-bind="value: writables.summary, valueUpdate: ['afterkeydown','propertychange','input']", name="summary", autocomplete="off")#summary.identifier
+						input(data-bind="value: writable.summary, valueUpdate: ['afterkeydown','propertychange','input']", name="summary", autocomplete="off")#summary.identifier
 					p
-						textarea(data-bind="value: writables.description, valueUpdate: ['afterkeydown','propertychange','input']", name="description")#description
+						textarea(data-bind="value: writable.description, valueUpdate: ['afterkeydown','propertychange','input']", name="description")#description
 					.attribute
 						span.label
 							=messages.en.COLOR+':'
 						span#color-selector.popup-selector
-							button(data-bind="click: showColorSelector, css: writables.color", name="color")
-								span(data-bind="css: writables.color").selected
+							button(data-bind="click: showColorSelector, css: writable.color", name="color")
+								span(data-bind="css: writable.color").selected
 							div(data-bind="foreach: common.COLORS, visible: modal() == 'color-selector'").content
 								div(data-bind="click: $parent.selectColor, css: $data + ' box-' + $index()").color.hoverable							
 					.attribute
 						span.label
 							=messages.en.STORY+':'
 						span#story-selector.popup-selector.line-selector
-							button(data-bind="click: showStorySelector, text: story.title()", name="story_id").selected
+							button(data-bind="click: showStorySelector, text: story.readonly.title()", name="story_id").selected
 							div(data-bind="foreach: stories, visible: modal() == 'story-selector'").content
 								div(data-bind="click: $parent.selectStory, text: label").line
 					.attribute
 						span.label
 							=messages.en.INITIAL_ESTIMATION+':'
-						input(data-bind="value: writables.initial_estimation, valueUpdate: ['afterkeydown','propertychange','input']", name="initial_estimation", autocomplete="off")
-						span(data-bind="visible: writables.initial_estimation.hasError").error-popup
+						input(data-bind="value: writable.initial_estimation, valueUpdate: ['afterkeydown','propertychange','input']", name="initial_estimation", autocomplete="off")
+						span(data-bind="visible: writable.initial_estimation.hasError").error-popup
 							.content.error
 								=messages.en.VALID_TIME_MESSAGE
 					.attribute
@@ -45,7 +45,7 @@ html
 						span#remaining_time-index.popup-selector.date-selector
 							|(
 							button(data-bind="click: showRemainingTimeDatePicker, text: remainingTimeIndexFormatted()", name="remaining_time-index").selected
-							div(data-bind="datepicker: remainingTimeIndex, datepickerMin: sprintRange().start, datepickerMax: sprintRange().end, visible: modal() == 'remaining_time-index'").content
+							div(data-bind="datepicker: remainingTimeIndex, datepickerMin: sprint.computed.range().start, datepickerMax: sprint.computed.range().end, visible: modal() == 'remaining_time-index'").content
 							|):&nbsp;
 						input(data-bind="value: indexedRemainingTime, valueUpdate: ['afterkeydown','propertychange','input']", name="remaining_time", autocomplete="off")
 						span(data-bind="visible: indexedRemainingTime.hasError").error-popup
@@ -57,7 +57,7 @@ html
 						span#time_spent-index.popup-selector.date-selector
 							|(
 							button(data-bind="click: showTimeSpentDatePicker, text: timeSpentIndexFormatted()", name="time_spent-index").selected
-							div(data-bind="datepicker: timeSpentIndex, datepickerMin: sprintRange().start, datepickerMax: sprintRange().end, visible: modal() == 'time_spent-index'").content
+							div(data-bind="datepicker: timeSpentIndex, datepickerMin: sprint.computed.range().start, datepickerMax: sprint.computed.range().end, visible: modal() == 'time_spent-index'").content
 							|):&nbsp;
 						input(data-bind="value: indexedTimeSpent, valueUpdate: ['afterkeydown','propertychange','input']", name="time_spent", autocomplete="off")
 						span(data-bind="visible: indexedTimeSpent.hasError").error-popup
