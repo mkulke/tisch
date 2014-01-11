@@ -14,12 +14,12 @@ html
 						li.sprint
 							h2(data-bind="html: $parent.formatStart($data) + '&nbsp;&ndash;&nbsp;' + $parent.formatEnd($data)")
 							.panel
-								div(data-bind="css: $data.color() + ' header'")
-									input(data-bind="value: $data.title, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'title-' + $index()}")
-								textarea(data-bind="value: $data.description, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'description-' + $index()}").body
+								div(data-bind="css: $data.readonly.color() + ' header'")
+									input(data-bind="value: $data.writable.title, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'title-' + $index()}")
+								textarea(data-bind="value: $data.writable.description, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'description-' + $index()}").body
 								.button-bar
 									.buttons
-										a(data-bind="attr: {href: $data._url}").button.open
+										a(data-bind="attr: {href: $data.url}").button.open
 											=messages.en.OPEN
 										input(data-bind="click: $parent.removeSprint.bind($data)", type='button', value=messages.en.REMOVE).button.remove
 			#button-bar

@@ -4,74 +4,71 @@ class IndexModel extends Model
 
 class IndexViewModel extends ParentViewModel
 
-  _createObservablesObject: (sprint) =>
+  _createObservables: (sprint) =>
 
-    updateModel = partial(@_updateModel, 'sprint')
+    updateModel = partial @_updateModel, 'sprint'
+    createObservable_ = partial @_createObservable3, updateModel, sprint
 
-    _id: sprint._id
-    start: ko.observable sprint.start
-    length: ko.observable sprint.length
-    title: @_createThrottledObservable sprint, 'title', updateModel
-    description: @_createThrottledObservable sprint, 'description', updateModel
-    color: ko.observable sprint.color
-    _url: '/sprint/' + sprint._id
-    _js: sprint
+    id: sprint._id
+    url: '/sprint/' + sprint._id
+    js: sprint
+    readonly:
+
+      color: ko.observable sprint.color
+      start: ko.observable sprint.start
+      length: ko.observable sprint.length  
+    writable: _.reduce [
+
+      {name: 'title', throttled: true}
+      {name: 'description', throttled: true}
+    ], (object, property) ->
+
+      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+    , {}
+
+  formatStart: (sprint) ->
+
+    moment(sprint.readonly.start()).format(common.DATE_DISPLAY_FORMAT)
+  formatEnd: (sprint) ->
+
+    moment(sprint.readonly.start()).add('days', sprint.readonly.length() - 1).format(common.DATE_DISPLAY_FORMAT)
+
+  addSprint: =>
+
+    # TODO: sort correctly
+    onSuccess = (data) =>
+
+      @sprints.push @_createObservables data.new
+
+    @model.createSprint onSuccess, @showErrorDialog
+
+  removeSprint: (observables) =>
+
+    # TODO: i18n
+    @_afterConfirm 'Are you sure? The sprint, its stories and the tasks assigned to them will be permanently removed.', =>
+
+      sprint = observables.js
+      @model.removeSprint sprint, =>
+
+        @sprints.remove (item) =>
+
+          item.id == sprint._id
+        , @showErrorDialog
 
   constructor: (@model) ->
 
     super @model
 
-    # confirmation dialog specific
-
-    @confirmMessage = ko.observable()
-    @cancel = =>
-
-      @modal null
-    @confirm = ->
-
-    # sprints
-
+    @sprints = ko.observableArray _.map @model.sprints, @_createObservables
     # TODO: sort on start changes
 
-    @sprints = ko.observableArray _.map @model.sprints, @_createObservablesObject
-    
-    @formatStart = (sprint) ->
+    # rt specific initializations
 
-      moment(sprint.start()).format(common.DATE_DISPLAY_FORMAT)
-    @formatEnd = (sprint) ->
+    notifications = _.chain(@sprints()).map(partial(@_createChildNotifications, @sprints)).flatten().value()
 
-      moment(sprint.start()).add('days', sprint.length() - 1).format(common.DATE_DISPLAY_FORMAT)
+    socket = new SocketIO()
+    socket.connect (sessionid) =>
 
-    # button handlers
-
-    showErrorDialog = (message) =>
-
-      @modal 'error-dialog'
-      @errorMessage message
-
-    @addSprint = =>
-
-      # TODO: sort correctly
-      onSuccess = (data) =>
-
-        @sprints.push @_createObservablesObject data.new
-
-      @model.createSprint onSuccess, showErrorDialog
-
-    @removeSprint = (sprintObservable) =>
-
-      @modal 'confirm-dialog'
-      # TODO: i18n
-      @confirmMessage 'Are you sure? The sprint, its stories and the tasks assigned to them will be permanently removed.'
-      @confirm = =>
-
-        @modal null
-        sprint = sprintObservable._js
-        @model.removeSprint sprint
-
-          , =>
-
-            @sprints.remove (item) =>
-
-              item._id == sprint._id
-          , showErrorDialog
+      @sprints.subscribe partial(@_adjustNotifications, socket, @sprints, notifications), null, 'arrayChange'
+      @model.sessionid = sessionid
+      socket.registerNotifications notifications
