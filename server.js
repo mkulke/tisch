@@ -209,7 +209,6 @@ var notify = function(request, result) {
 
   byRequest = buildEqual('method', request.method);
   byId = buildEqual('id', result.id);
-  byParentId = buildEqual('parent_id', result.parent_id);
 
   originatingClient = function(registration) {
 

@@ -8,49 +8,49 @@ html
 		#container
 			#breadcrumb-bar
 				a(href="/").breadcrumb.index Index
-				span(data-bind="text: writables.title").breadcrumb.sprint.selected
+				span(data-bind="text: writable.title").breadcrumb.sprint.selected
 				img(src="/logo_30.png").logo
 			#content
 				form
 					p
-						input(data-bind="value: writables.title, valueUpdate: ['afterkeydown','propertychange','input']", name="title")#title.identifier
+						input(data-bind="value: writable.title, valueUpdate: ['afterkeydown','propertychange','input']", name="title")#title.identifier
 					p
-						textarea(data-bind="value: writables.description, valueUpdate: ['afterkeydown','propertychange','input']", name="description")#description
+						textarea(data-bind="value: writable.description, valueUpdate: ['afterkeydown','propertychange','input']", name="description")#description
 					.attribute
 						span.label
 							=messages.en.COLOR+':'
 						span#color-selector.popup-selector
-							button(data-bind="click: showColorSelector, css: writables.color", name="color")
-								span(data-bind="css: writables.color").selected
+							button(data-bind="click: showColorSelector, css: writable.color", name="color")
+								span(data-bind="css: writable.color").selected
 							div(data-bind="foreach: common.COLORS, visible: modal() == 'color-selector'").content
 								div(data-bind="click: $parent.selectColor, css: $data + ' box-' + $index()").color.hoverable
 					.attribute
 						span.label
 							=messages.en.START_DATE+':'
 						span#start.popup-selector.date-selector
-							button(data-bind="click: showStartDatePicker, text: startFormatted()", name="start").selected
-							div(data-bind="datepicker: startDate, visible: modal() == 'start-selector'").content
+							button(data-bind="click: showStartDatePicker, text: computed.startFormatted()", name="start").selected
+							div(data-bind="datepicker: computed.startDate, visible: modal() == 'start-selector'").content
 					.attribute
 						span.label
 							=messages.en.END_DATE+':'
 						span#length.popup-selector.date-selector
-							button(data-bind="click: showLengthDatePicker, text: endFormatted()", name="length").selected
-							div(data-bind="datepicker: lengthDate, datepickerMin: startDate(), visible: modal() == 'length-selector'").content
+							button(data-bind="click: showLengthDatePicker, text: computed.endFormatted()", name="length").selected
+							div(data-bind="datepicker: computed.lengthDate, datepickerMin: computed.startDate(), visible: modal() == 'length-selector'").content
 					ul(data-bind="sortable: stories")#well
 						li.panel
-							div(data-bind="css: $data.color() + ' header hoverable'")
-								input(data-bind="value: $data.title, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'title-' + $index()}")
+							div(data-bind="css: $data.readonly.color() + ' header hoverable'")
+								input(data-bind="value: $data.writable.title, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'title-' + $index()}")
 								.stats
-										div(data-bind="if: $data._remaining_time() !== undefined")
-											div(data-bind="ifnot: $data._remaining_time() > 0")
+										div(data-bind="if: $data.computed.remaining_time() !== undefined")
+											div(data-bind="ifnot: $data.computed.remaining_time() > 0")
 												img(src="/done_white_30.png")
-											div(data-bind="if: $data._remaining_time() > 0")
+											div(data-bind="if: $data.computed.remaining_time() > 0")
 												img(src="/clock_white_30.png")
-												div(data-bind="text: parseFloat($data._remaining_time().toFixed(2))").text
-							textarea(data-bind="value: $data.description, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'description-' + $index()}").body
+												div(data-bind="text: parseFloat($data.computed.remaining_time().toFixed(2))").text
+							textarea(data-bind="value: $data.writable.description, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'description-' + $index()}").body
 							.button-bar
 								.buttons
-									a(data-bind="attr: {href: $data._url}").button.open
+									a(data-bind="attr: {href: $data.url}").button.open
 										=messages.en.OPEN
 									input(data-bind="click: $parent.removeStory.bind($data)", type='button', value=messages.en.REMOVE).button.remove	
 			#button-bar

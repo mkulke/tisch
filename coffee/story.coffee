@@ -106,7 +106,20 @@ class StoryViewModel extends ParentViewModel
     updateModel = partial @_updateModel, 'task'
     createObservable_ = partial @_createObservable3, updateModel, task
 
-    writables = _.reduce [
+    id: task._id
+    url: '/task/' + task._id
+    js: task
+    computed:
+
+      remaining_time: ko.computed =>
+
+        @model.buildRemainingTime task.remaining_time, @sprint.computed.range()
+    readonly:
+
+      color: ko.observable task.color
+      remaining_time: ko.observable task.remaining_time
+      time_spent: ko.observable task.time_spent    
+    writable: _.reduce [
 
       {name: 'summary', throttled: true}
       {name: 'description', throttled: true}
@@ -115,103 +128,83 @@ class StoryViewModel extends ParentViewModel
 
       object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
     , {}
-    
-    _id: task._id
-    summary: writables.summary
-    description: writables.description
-    color: ko.observable task.color
-    priority: writables.priority
-    remaining_time: ko.observable task.remaining_time
-    time_spent: ko.observable task.time_spent
-    _url: '/task/' + task._id
-    _js: task
-    _remaining_time: ko.computed =>
-
-      # TODO: verify the correct remaining_time object is used! (it should, tho)
-      @model.buildRemainingTime task.remaining_time, @sprintRange()
-
-  _createStoryNotifications: ->
-
-    update =
-
-      properties: _.chain(@model.story).keys().reject((a) -> a[0] == '_').value()
-      handler: (data) =>
-
-        @model.story._rev = data.rev
-        @model.story[data.key] = data.value
-        @[data.key]?(data.value)
-        if data.key == 'sprint_id'
-
-          @model.getSprint @sprint_id(), @_replaceSprint
-    add = 
-
-      method: 'PUT'
-      handler: partial @_addChild, @tasks
-
-    [update, add]
-
-  _createTaskNotifications: (observablesObject) =>
-
-    update = 
-
-      id: observablesObject._id
-      properties: ['summary', 'description', 'color', 'priority']
-      handler: (data) =>
-
-        debugger;
-        task = observablesObject._js
-        task._rev = data.rev
-        task[data.key] = data.value
-        observablesObject[data.key] data.value
-
-    remove = 
-
-      method: 'DELETE'
-      id: observablesObject._id
-      handler: =>
-
-        @tasks.remove (item) ->
-
-          item._id == observablesObject._id
-
-    [update, remove]
-
-  _createSprintNotification: ->
-
-    id: @sprint_id()
-    properties: ['title', 'start', 'length']
-    handler: (data) =>
-
-      @sprint[data.key] data.value
-
-  _createBreadcrumbNotification: ->
-
-    id: @breadcrumbs.sprint.id
-    properties: ['title']
-    handler: (data) ->
-
-      @breadcrumbs.sprint.label data.value
 
   _replaceSprint: (sprint) =>
 
     for key, value of _.chain(sprint).pick('title', 'start', 'length').value()
 
-      @sprint[key] value
+      @sprint.readonly[key] value
+
+  showColorSelector: =>
+
+    @modal 'color-selector'
+  
+  selectColor: (color) =>
+
+    @modal null
+    @writable.color color
+
+  sprints: ko.observable()
+
+  showSprintSelector: => 
+
+    @model.getSprints (sprints) =>
+
+      @sprints _.map sprints, (sprint) ->
+
+        {id: sprint._id, label: sprint.title}
+      @modal 'sprint-selector'
+    
+  selectSprint: (selected) =>
+
+    @modal null
+    @model.getSprint selected.id, (sprint) =>
+
+      @writable.sprint_id sprint._id
+      @_replaceSprint sprint
+    , @_showError
+  
+  addTask: =>
+
+    @model.createTask @model.story._id, partial(@_addChild_, @tasks), @showErrorDialog
+
+  removeTask: (observables) =>
+
+    # TODO: i18n
+    @_afterConfirm 'Are you sure? The task will be permanently removed.', =>
+
+      task = observables.js
+      @model.removeTask task, =>
+
+        @tasks.remove (item) =>
+
+          item.id == task._id
+        , @showErrorDialog
+
+  showStats: =>
+
+    @modal 'stats-dialog'
+
+  closeStats: =>
+
+    @modal null
+
+  _refreshChart: =>
+
+    # TODO: chart render issues when sprint range is modified.
+    @chart.refresh 
+
+      'remaining-time': @stats.computed.remainingTimeChartData()
+      'time-spent': @stats.computed.timeSpentChartData()
+      reference: [
+
+        {date: @sprint.computed.range().start, value: @writable.estimation()}
+        {date: moment(@sprint.computed.range().end).format(common.DATE_DB_FORMAT), value: 0}
+      ]
 
   constructor: (@model) ->
 
     super(@model)
-
-    # TODO: use mixins
-    # set global options for jquery ui sortable
-
-    ko.bindingHandlers.sortable.options = 
-
-      tolerance: 'pointer'
-      delay: 150
-      cursor: 'move'
-      containment: 'ul#well'
-      handle: '.header'
 
     # breadcrumbs
 
@@ -220,227 +213,119 @@ class StoryViewModel extends ParentViewModel
       sprint: 
 
         id: @model.sprint._id
-        label: ko.observable @model.sprint.title
+        readonly:
+
+          title: ko.observable @model.sprint.title
         url: '/sprint/' + @model.sprint._id
 
-    # test
+    # observables
 
     updateModel = partial(@_updateModel, 'story');
-    updateChildModel = partial(@_updateModel, 'task');
+    createObservable_ = partial @_createObservable3, updateModel, @model.story
 
-    # title
+    @writable = _.reduce [
 
-    @title = @_createThrottledObservable @model.story, 'title', updateModel
+      {name: 'title', throttled: true}
+      {name: 'description', throttled: true}
+      {name: 'color'}
+      {name: 'sprint_id'}
+      {name: 'estimation', throttled: true, time: true}
+    ], (object, property) ->
 
-    # description
-
-    @description = @_createThrottledObservable @model.story, 'description', updateModel
-
-    # color
-
-    @color = @_createObservable @model.story, 'color', updateModel
-    @showColorSelector = =>
-
-      @modal 'color-selector'
-    @selectColor = (color) =>
-
-      @modal null
-      @color color
-
-    # sprint_id
-
-    @sprints = ko.observable()
-
-    @sprint_id = @_createObservable @model.story, 'sprint_id', updateModel
-
-    @showSprintSelector = => 
-
-      @model.getSprints (sprints) =>
-
-        @sprints _.map sprints, (sprint) ->
-
-          {id: sprint._id, label: sprint.title}
-        @modal 'sprint-selector'
-    
-    @selectSprint = (selected) =>
-
-      @modal null
-      @model.getSprint selected.id
-
-        , (sprint) =>
-
-          @sprint_id sprint._id
-          @_replaceSprint sprint
-        , @_showError
+      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+    , {}
 
     # sprint specific stuff
 
-    @sprint = 
+    @sprint = do =>
 
-      _id: ko.computed =>
+      start = ko.observable @model.sprint.start
+      length = ko.observable @model.sprint.length
 
-        @sprint_id()
-      title: ko.observable @model.sprint.title
-      start: ko.observable @model.sprint.start
-      length: ko.observable @model.sprint.length
-    @sprintRange = ko.computed =>
+      computed:
 
-      @model.buildSprintRange @sprint.start(), @sprint.length()
+        id: ko.computed =>
 
-    # initial_estimation
+          @writable.sprint_id
+        range: ko.computed =>
 
-    @estimation = @_createThrottledObservable(@model.story, 'estimation', updateModel, true)
-      .extend({matches: common.TIME_REGEX})
+          @model.buildSprintRange start(), length()
+      readonly:
+
+        title: ko.observable @model.sprint.title
+        start: start
+        length: length
 
     # tasks
 
     @tasks = ko.observableArray _.map @model.tasks, @_createObservables
-    _.chain(@tasks()).pluck('priority').invoke('subscribe', partial(@_sortByPriority, @tasks))
+    _.chain(@tasks()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority_, @tasks))
 
     ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
 
-      priority = @model.calculatePriority @tasks(), arg.sourceIndex, arg.targetIndex
-      arg.item.priority priority
-
-    # confirmation dialog specific
-
-    @confirmMessage = ko.observable()
-    @cancel = =>
-
-      @modal null
-
-    # button handlers
-
-    showErrorDialog = (message) =>
-
-      @modal 'error-dialog'
-      @errorMessage message
-
-    @addTask = =>
-
-      @model.createTask @model.story._id, partial(@_addChild, @tasks), showErrorDialog
-
-    @removeTask = (taskObservable) =>
-
-      @modal 'confirm-dialog'
-      # TODO: i18n
-      @confirmMessage 'Are you sure? The task will be permanently removed.'
-      @confirm = =>
-
-        @modal null
-        task = taskObservable._js
-        @model.removeTask task
-
-          , =>
-
-            @tasks.remove (item) =>
-
-              item._id == task._id
-          , showErrorDialog
+      priority = @model.calculatePriority_ @tasks(), arg.targetIndex
+      arg.item.writable.priority priority
 
     # stats
 
-    @allRemainingTime = ko.computed =>
+    @stats = 
 
-      _.reduce @tasks(), (count, task) =>
+      computed:
 
-        count + @model.buildRemainingTime task.remaining_time(), @sprintRange()
-      , 0      
+        allRemainingTime: ko.computed =>
 
-    @allTimeSpent = ko.computed =>
+          _.reduce @tasks(), (count, task) =>
 
-      _.reduce @tasks(), (count, task) => 
+            count + @model.buildRemainingTime task.readonly.remaining_time(), @sprint.computed.range()
+          , 0      
+        allTimeSpent: ko.computed =>
 
-        count + @model.buildTimeSpent task.time_spent(), @sprintRange()
-      ,0
+          _.reduce @tasks(), (count, task) => 
 
-    @remainingTimeChartData = ko.computed =>
+            count + @model.buildTimeSpent task.readonly.time_spent(), @sprint.computed.range()
+          ,0
+        remainingTimeChartData: ko.computed =>
 
-      remainingTimes = _.map @tasks(), (task) ->
+          remainingTimes = _.chain(@tasks()).pluck('readonly').pluck('remaining_time').invoke('call').value()
+          @model.buildRemainingTimeChartData @writable.estimation(), remainingTimes, @sprint.computed.range()
 
-        task.remaining_time()
-      @model.buildRemainingTimeChartData @estimation(), remainingTimes, @sprintRange()
+        timeSpentChartData: ko.computed =>
 
-    @timeSpentChartData = ko.computed =>
+          timesSpent = _.chain(@tasks()).pluck('readonly').pluck('time_spent').invoke('call').value()
+          @model.buildTimeSpentChartData timesSpent, @sprint.computed.range()
 
-      timesSpent = _.map @tasks(), (task) ->
+    @chart = new Chart ['reference', 'remaining-time', 'time-spent']
+    @_refreshChart()
 
-        task.time_spent()
-      @model.buildTimeSpentChartData timesSpent, @sprintRange()
+    @stats.computed.remainingTimeChartData.subscribe (value) =>
 
-    chart = new Chart ['reference', 'remaining-time', 'time-spent']
-    refreshChart = =>
+      @_refreshChart()
+    @stats.computed.timeSpentChartData.subscribe (value) =>
 
-      # TODO: chart render issues when sprint range is modified.
-      chart.refresh 
+      @_refreshChart()      
 
-        'remaining-time': @remainingTimeChartData()
-        'time-spent': @timeSpentChartData()
-        reference: [
-
-          {date: @sprintRange().start, value: @estimation()}
-          {date: moment(@sprintRange().end).format(common.DATE_DB_FORMAT), value: 0}
-        ]
-    refreshChart()
-    @remainingTimeChartData.subscribe (value) =>
-
-      refreshChart()
-    @timeSpentChartData.subscribe (value) =>
-
-      refreshChart()      
-
-    @showStats = =>
-
-      @modal 'stats-dialog'
-
-    @closeStats = =>
-
-      @modal null
-
-   # realtime specific initializations
+    # realtime specific initializations
 
     notifications = []
-    defaults = 
+    observables = _.extend {}, @writable, @readonly
+    notifications.push @_createUpdateNotification(@model.story, observables)
+    notifications.push @_createAddNotification(@model.story._id, @tasks)
 
-      method: 'POST'
-      id: @model.story._id
+    notifications.push sprintNotification = @_createUpdateNotification(@model.sprint, @sprint.readonly)
+    @writable.sprint_id.subscribe (value) =>
 
-    notifications = notifications.concat @_createStoryNotifications()
+      @model.getSprint value, @_replaceSprint
+      socket.unregisterNotifications sprintNotification
+      sprintNotification.id = value
+      socket.registerNotifications sprintNotification
 
-    notifications.push sprintNotification = @_createSprintNotification()
+    notifications.push @_createUpdateNotification(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
 
-    @sprint_id.subscribe (value) ->
-
-      if value != sprintNotification
-
-        socket.unregisterNotifications sprintNotification
-        sprintNotification.id = value
-        socket.registerNotifications sprintNotification
-
-    notifications.push @_createBreadcrumbNotification()
-
-    notifications = notifications.concat _.chain(@tasks()).map(@_createTaskNotifications).flatten().value()
-
-    _.each notifications, curry2(_.defaults)(defaults)
-
-    @tasks.subscribe (changes) =>
-
-      for change in changes
-
-        if change.status == 'added'
-
-          taskObservable = @tasks()[change.index]
-          taskNotifications = @_createTaskNotifications taskObservable, change.index
-          _.each notifications, curry2(_.defaults)(defaults)
-          socket.registerNotifications taskNotifications
-          notifications = notifications.concat taskNotifications
-        else if change.status == 'deleted'
-
-          socket.unregisterNotifications _.where(notifications, {id: change.value._id})
-    , null, 'arrayChange'
-
+    notifications = notifications.concat _.chain(@tasks()).map(partial(@_createChildNotifications, @tasks)).flatten().value()
+    
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
+      @tasks.subscribe partial(@_adjustNotifications, socket, @tasks, notifications), null, 'arrayChange'
       @model.sessionid = sessionid
-      socket.registerNotifications notifications 
+      socket.registerNotifications notifications

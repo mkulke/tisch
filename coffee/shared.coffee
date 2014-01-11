@@ -324,12 +324,7 @@ class Model
   getTasks: partial getMultiple, 'task'
   getStories: partial getMultiple, 'story'
   getSprints: partial getMultiple, 'sprint', null
-  ###updateChild: (index, key, successCb, errorCb) => 
 
-    @_update @children.objects[index], key, @children.type, successCb, errorCb###
-  ###update: (key, successCb, errorCb) => 
-
-    @_update @[@type], key, @type, successCb, errorCb###
   update: (object, key, type, successCb, errorCb) =>
 
     getRev = ->
@@ -384,6 +379,34 @@ class ParentModel extends Model
 
   # TODO: unit-test
 
+  calculatePriority_: (objects, index) =>
+
+    if index == 0 then prevPrio = 0
+    else prevPrio = objects[index - 1].writable.priority()
+
+    last = objects.length - 1
+    if index == last 
+
+      Math.ceil objects[index - 1].writable.priority() + 1
+    else
+
+      nextPrio = objects[index + 1].writable.priority()
+      (nextPrio - prevPrio) / 2 + prevPrio
+
+  calculatePriority: (objects, originalIndex, index) =>
+
+    if index == 0 then prevPrio = 0
+    else prevPrio = objects[index - 1].priority()
+
+    last = objects.length - 1
+    if index == last 
+
+      Math.ceil objects[index - 1].priority() + 1
+    else
+
+      nextPrio = objects[index + 1].priority()
+      (nextPrio - prevPrio) / 2 + prevPrio
+
   calculatePriority: (objects, originalIndex, index) =>
 
     if index == 0 then prevPrio = 0
@@ -401,54 +424,6 @@ class ParentModel extends Model
 class ViewModel
 
   # knockout specific method
-
-  _createObservable: (object, property, updateModel) ->
-
-    observable = ko.observable object[property]
-    observable.subscribe (value) ->
-
-      if !observable.hasError && object[property] != value
-      
-        updateModel observable, object, property, value 
-    observable
-  _createThrottledObservable: (object, property, updateModel, numeric) ->
-
-    instantaneousProperty = ko.observable(object[property])
-    observable = ko.computed(instantaneousProperty).extend({throttle: common.KEYUP_UPDATE_DELAY})
-    observable.subscribe (value) ->
-
-      if !instantaneousProperty.hasError? || !instantaneousProperty.hasError() 
-
-        value = if numeric? then parseFloat value, 10 else value
-        if object[property] != value
-
-          updateModel observable, object, property, value
-    instantaneousProperty
-
-  _createObservable2: (property, type, options = {}) =>
-
-    updateModel = partial(@_updateModel, type);
-    object = @model[type];
-
-    instantaneousProperty = ko.observable(object[property])
-
-    if options.throttled == true
-
-      observable = ko.computed(instantaneousProperty).extend({throttle: common.KEYUP_UPDATE_DELAY})
-      observable.subscribe (value) ->
-
-        if (!instantaneousProperty.hasError? || !instantaneousProperty.hasError()) && object[property] != value
-
-          updateModel observable, object, property, value
-    else 
-
-      instantaneousProperty.subscribe (value) ->
-
-        if !instantaneousProperty.hasError && object[property] != value
-      
-          updateModel instantaneousProperty, object, property, value   
-
-    @[property] = instantaneousProperty
 
   _createObservable3: (updateModelFn, object, property, options = {}) ->
 
@@ -474,6 +449,20 @@ class ViewModel
       instantaneousProperty.extend({matches: common.TIME_REGEX})
     instantaneousProperty
 
+  # test, TODO: move to super class
+  _createUpdateNotification: (model, observables) ->
+
+    id: model._id
+    method: 'POST'
+    properties: _.keys(observables)
+    handler: (data) ->
+
+      key = data.key
+      value = data.value
+      model._rev = data.rev
+      model[key] = value
+      observables[key] value
+
   _updateModel: (type, observable, object, property, value) =>
 
     oldValue = object[property]
@@ -490,14 +479,34 @@ class ViewModel
     @errorMessage message
     @modal 'error-dialog'
 
+  _afterConfirm: (message, fn) =>
+
+    @confirmMessage message
+    @modal 'confirm-dialog'
+    @confirm = =>
+
+      @modal null
+      fn()
+
   cancelPopup: (data, event) =>
 
     if event.keyCode == 27 && @modal != null
 
       @modal null
+  
   confirmError: => 
 
     @modal null
+
+  showErrorDialog: (message) =>
+
+    @modal 'error-dialog'
+    @errorMessage message
+
+  cancel: =>
+
+    @modal null
+
   constructor: (@model) ->
 
     ko.extenders.matches = (target, regex) ->
@@ -577,22 +586,68 @@ class ViewModel
         $('#content').css 'height', 'auto'
 
     @errorMessage = ko.observable()
+    @confirmMessage = ko.observable()
 
 class ParentViewModel extends ViewModel
 
-  _sortByPriority: (array) ->
+  _sortByPriority_: (array) ->
 
     array.sort (a, b) ->
 
-      a.priority() - b.priority()
+      a.writable.priority() - b.writable.priority()
 
-  # this is a template for rt/ajax callbacks
-  _addChild: (array, data) =>
-      
+  _addChild_: (array, data) =>
+    
     observables = @_createObservables data.new
-    observables.priority.subscribe partial(@_sortByPriority, array)
+    observables.writable.priority.subscribe partial(@_sortByPriority_, array)
     array.push observables
+
+  _createAddNotification: (parentId, children) ->
+
+    id: parentId
+    method: 'PUT'
+    handler: partial @_addChild_, children    
+
+  _createRemoveNotification: (id, children) ->
+
+    method: 'DELETE'
+    id: id
+    handler: =>
+
+      children.remove (item) ->
+
+        item.id == id 
+
+  _createChildNotifications: (children, observables) =>
+
+    [@_createUpdateNotification(observables.js, _.extend({}, observables.writable, observables.readonly)), 
+    @_createRemoveNotification(observables.id, children)]
+
+  _adjustNotifications: (socket, children, notifications, changes) =>
+
+    _.each changes, (change) =>
+
+      if change.status == 'added'
+
+        observables = children()[change.index]
+        newNotifications = @_createChildNotifications children, observables
+        socket.registerNotifications newNotifications
+        notifications = notifications.concat newNotifications
+      else if change.status == 'deleted'
+
+        socket.unregisterNotifications _.where(notifications, {id: change.value.id})
 
   constructor: (@model) ->
 
     super @model
+
+    # TODO: use mixins
+    # set global options for jquery ui sortable
+
+    ko.bindingHandlers.sortable?.options = 
+
+      tolerance: 'pointer'
+      delay: 150
+      cursor: 'move'
+      containment: 'ul#well'
+      handle: '.header'

@@ -40,7 +40,18 @@ class SprintViewModel extends ParentViewModel
     updateModel = partial @_updateModel, 'story'
     createObservable_ = partial @_createObservable3, updateModel, story
 
-    writables = _.reduce [
+    id: story._id
+    url: '/story/' + story._id
+    js: story
+    computed:
+
+      remaining_time: ko.computed =>
+
+        @readonly.remainingTimeCalculations()[story._id]
+    readonly:
+
+      color: ko.observable story.color      
+    writable: _.reduce [
 
       {name: 'title', throttled: true}
       {name: 'description', throttled: true}
@@ -49,89 +60,51 @@ class SprintViewModel extends ParentViewModel
 
       object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
     , {}
-    
-    _id: story._id
-    title: writables.title
-    description: writables.description
-    color: ko.observable story.color
-    priority: writables.priority
-    _remaining_time: ko.computed =>
 
-      @remainingTimeCalculations()[story._id]
-    _url: '/story/' + story._id
-    _js: story
+  showColorSelector: =>
 
-  _createSprintNotifications: ->
+    @modal 'color-selector'
 
-    update =
+  selectColor: (color) =>
 
-      properties: _.chain(@model.sprint).keys().reject((a) -> a[0] == '_').value()
-      handler: (data) =>
+    @modal null
+    @writable.color color
 
-        @model.sprint._rev = data.rev
-        @model.sprint[data.key] = data.value
-        @[data.key]?(data.value)
-    add = 
+  showStartDatePicker: => 
 
-      method: 'PUT'
-      handler: partial @_addChild, @stories
+    @modal 'start-selector'
 
-    [update, add]
+  showLengthDatePicker: => 
 
-  _createStoryNotifications: (observablesObject) =>
+    @modal 'length-selector'
 
-    update = 
+  addStory: =>
 
-      id: observablesObject._id
-      properties: ['title', 'description', 'color', 'priority']
-      handler: (data) =>
+    @model.createStory @model.sprint._id, partial(@_addChild_, @stories), @showErrorDialog
+  
+  removeStory: (observables) =>
 
-        story = observablesObject._js
-        story._rev = data.rev
-        story[data.key] = data.value
-        observablesObject[data.key] data.value
+    # TODO: i18n
+    @_afterConfirm 'Are you sure? The story and the tasks assigned to it will be permanently removed.', =>
 
-    remove = 
+      story = observables.js
+      @model.removeStory story, =>
 
-      method: 'DELETE'
-      id: observablesObject._id
-      handler: =>
+        @stories.remove (item) =>
 
-        @stories.remove (item) ->
-
-          item._id == observablesObject._id
-
-    [update, remove]
+          item.id == story._id
+        , @showErrorDialog
 
   constructor: (@model) ->
 
     super(@model)
 
-    # TODO: use mixins
-    # set global options for jquery ui sortable
-
-    ko.bindingHandlers.sortable.options = 
-
-      tolerance: 'pointer'
-      delay: 150
-      cursor: 'move'
-      containment: 'ul#well'
-      handle: '.header'
-
-    # confirmation dialog specific
-
-    @confirmMessage = ko.observable()
-    @cancel = =>
-
-      @modal null
-    @confirm = ->
-
-    # test
+    # observables
 
     updateModel = partial @_updateModel, 'sprint'
     createObservable_ = partial @_createObservable3, updateModel, @model.sprint
 
-    @writables = _.reduce [
+    @writable = _.reduce [
 
       {name: 'title', throttled: true}
       {name: 'description', throttled: true}
@@ -143,142 +116,78 @@ class SprintViewModel extends ParentViewModel
       object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
     , {}
 
-    @showColorSelector = =>
+    @computed = do =>
 
-      @modal 'color-selector'
-    @selectColor = (color) =>
+      lengthDate = ko.computed
 
-      @modal null
-      @writables.color color
+        read: =>
 
-    # start
+          moment(@writable.start()).add('days', @writable.length() - 1).toDate()
+        write: (value) =>
 
-    @showStartDatePicker = => 
+          start = moment @writable.start()
+          # since @start() as 'XXXX-XX-XXT00:00:00.000Z' is parsed w/o timezone offset, and value
+          # is 'XXXX-XX-XX' has the timezone offset, we need to use moment.utc here to calculate
+          # the delta here.
+          end = moment.utc value
+          @writable.length moment.duration(end - start).days() + 1
+        owner: @
+      startDate: ko.computed
 
-      @modal 'start-selector'
+        read: =>
 
-    @startDate = ko.computed
+          new Date(@writable.start())
+        write: (value) =>
 
-      read: =>
+          # the datepicker binding returns a xxxx-xx-xx string, we need a Date, tho.
+          @writable.start new moment(value).toDate()
+        owner: @
+      startFormatted: ko.computed =>
 
-        new Date(@writables.start())
-      write: (value) =>
+        moment(@writable.start()).format(common.DATE_DISPLAY_FORMAT)
+      endFormatted: ko.computed =>
 
-        # the datepicker binding returns a xxxx-xx-xx string, we need a Date, tho.
-        @writables.start new moment(value).toDate()
-      owner: @
-    @startFormatted = ko.computed =>
+        moment(lengthDate()).format(common.DATE_DISPLAY_FORMAT)
+      lengthDate: lengthDate   
 
-      moment(@writables.start()).format(common.DATE_DISPLAY_FORMAT)
+    @readonly =
 
-    # length
-
-    @showLengthDatePicker = => 
-
-      @modal 'length-selector'
-    @lengthDate = ko.computed
-
-      read: =>
-
-        moment(@writables.start()).add('days', @writables.length() - 1).toDate()
-      write: (value) =>
-
-        start = moment @writables.start()
-        # since @start() as 'XXXX-XX-XXT00:00:00.000Z' is parsed w/o timezone offset, and value
-        # is 'XXXX-XX-XX' has the timezone offset, we need to use moment.utc here to calculate
-        # the delta here.
-        end = moment.utc value
-        @writables.length moment.duration(end - start).days() + 1
-    @endFormatted = ko.computed =>
-
-      moment(@lengthDate()).format(common.DATE_DISPLAY_FORMAT)
+      remainingTimeCalculations: ko.observable @model.calculations.remaining_time
 
     # calculations
 
-    @remainingTimeCalculations = ko.observable @model.calculations.remaining_time
+    # TODO: if sprint range changes, update calculations (if necessary)
 
-    updateStats = =>
+    updateStats = (value) =>
 
-      ids = _.pluck @stories(), '_id'
-      @model.getRemainingTimes ids, (calculations) =>
+      @model.getRemainingTimes _.pluck(@stories(), 'id'), (calculations) =>
 
-        @remainingTimeCalculations calculations
+        @readonly.remainingTimeCalculations calculations
 
-    @writables.start.subscribe updateStats
-    @writables.length.subscribe updateStats
-
-    # TODO: if sprint range changes, update calculations
+    @writable.start.subscribe updateStats
+    @writable.length.subscribe updateStats
 
     # stories
 
     @stories = ko.observableArray _.map @model.stories, @_createObservables
-    _.chain(@stories()).pluck('priority').invoke('subscribe', partial(@_sortByPriority, @stories))
+    _.chain(@stories()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority_, @stories))
 
     ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
 
-      priority = @model.calculatePriority @stories(), arg.sourceIndex, arg.targetIndex
-      arg.item.priority priority
-
-    # button handlers
-
-    showErrorDialog = (message) =>
-
-      @modal 'error-dialog'
-      @errorMessage message
-
-    @addStory = =>
-
-      @model.createStory @model.sprint._id, partial(@_addChild, @stories), showErrorDialog
-
-    @removeStory = (storyObservable) =>
-
-      @modal 'confirm-dialog'
-      # TODO: i18n
-      @confirmMessage 'Are you sure? The story and the tasks assigned to it will be permanently removed.'
-      @confirm = =>
-
-        @modal null
-        story = storyObservable._js
-        @model.removeStory story
-
-          , =>
-
-            @stories.remove (item) =>
-
-              item._id == story._id
-          , showErrorDialog
+      priority = @model.calculatePriority_ @stories(), arg.targetIndex
+      arg.item.writable.priority priority
 
     # rt specific initializations
 
-    defaults = 
-
-      method: 'POST'
-      id: @model.sprint._id
-
-    notifications = @_createSprintNotifications()
-
-    notifications = notifications.concat _.chain(@stories()).map(@_createStoryNotifications).flatten().value()
-
-    _.each notifications, curry2(_.defaults)(defaults)
+    notifications = []
+    observables = _.extend {}, @writable, @readonly
+    notifications.push @_createUpdateNotification(@model.sprint, observables)
+    notifications.push @_createAddNotification(@model.sprint._id, @stories)
+    notifications = notifications.concat _.chain(@stories()).map(partial(@_createChildNotifications, @stories)).flatten().value()
     
-    @stories.subscribe (changes) =>
-
-      for change in changes
-
-        if change.status == 'added'
-
-          observable = @stories()[change.index]
-          storyNotifications = @_createStoryNotifications observable, change.index
-          _.each notifications, curry2(_.defaults)(defaults)
-          socket.registerNotifications storyNotifications
-          notifications = notifications.concat storyNotifications
-        if change.status == 'deleted'
-
-          socket.unregisterNotifications _.where(notifications, {id: change.value._id})
-    , null, 'arrayChange'
-
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
+      @stories.subscribe partial(@_adjustNotifications, socket, @stories, notifications), null, 'arrayChange'
       @model.sessionid = sessionid
-      socket.registerNotifications notifications 
+      socket.registerNotifications notifications
