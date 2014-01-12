@@ -2,12 +2,12 @@ class IndexModel extends Model
 
   constructor: (@sprints) ->
 
-class IndexViewModel extends ParentViewModel
+class IndexViewModel extends ViewModel
 
   _createObservables: (sprint) =>
 
     updateModel = partial @_updateModel, 'sprint'
-    createObservable_ = partial @_createObservable3, updateModel, sprint
+    createObservable = partial @_createObservable, updateModel, sprint
 
     id: sprint._id
     url: '/sprint/' + sprint._id
@@ -23,7 +23,7 @@ class IndexViewModel extends ParentViewModel
       {name: 'description', throttled: true}
     ], (object, property) ->
 
-      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+      object[property.name] = createObservable property.name, _.omit(property, 'name'); object
     , {}
 
   formatStart: (sprint) ->
@@ -59,16 +59,20 @@ class IndexViewModel extends ParentViewModel
 
     super @model
 
+    _.bindAll @, _.functions(parentMixin)...
+
     @sprints = ko.observableArray _.map @model.sprints, @_createObservables
     # TODO: sort on start changes
 
     # rt specific initializations
 
-    notifications = _.chain(@sprints()).map(partial(@_createChildNotifications, @sprints)).flatten().value()
+    wires = _.chain(@sprints()).map(partial(@_createChildWires, @sprints)).flatten().value()
 
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
-      @sprints.subscribe partial(@_adjustNotifications, socket, @sprints, notifications), null, 'arrayChange'
+      @sprints.subscribe partial(@_adjustWires, socket, @sprints, wires), null, 'arrayChange'
       @model.sessionid = sessionid
-      socket.registerNotifications notifications
+      socket.registerWires wires
+
+_.extend IndexViewModel.prototype, parentMixin

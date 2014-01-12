@@ -125,7 +125,7 @@ class TaskViewModel extends ViewModel
         url: '/sprint/' + @model.sprint._id
 
     updateModel = partial @_updateModel, 'task'
-    createObservable_ = partial @_createObservable3, updateModel, @model.task
+    createObservable = partial @_createObservable, updateModel, @model.task
 
     @writable = _.reduce [
 
@@ -138,7 +138,7 @@ class TaskViewModel extends ViewModel
       {name: 'time_spent'}
     ], (object, property) ->
 
-      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+      object[property.name] = createObservable property.name, _.omit(property, 'name'); object
     , {}
 
     # story_id
@@ -246,26 +246,26 @@ class TaskViewModel extends ViewModel
 
     # rt specific initializations
 
-    notifications = []
+    wires = []
     observables = _.extend {}, @writable, @readonly
-    notifications.push @_createUpdateNotification(@model.task, observables)
-    notifications.push sprintNotification = @_createUpdateNotification(@model.sprint, @sprint.readonly)
-    notifications.push storyNotification = @_createUpdateNotification(@model.story, @story.readonly)
-    notifications.push @_createUpdateNotification(_.pick(@model.story, '_id'), @breadcrumbs.story.readonly)
-    notifications.push @_createUpdateNotification(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
+    wires.push @_createUpdateWire(@model.task, observables)
+    wires.push sprintWire = @_createUpdateWire(@model.sprint, @sprint.readonly)
+    wires.push storyWire = @_createUpdateWire(@model.story, @story.readonly)
+    wires.push @_createUpdateWire(_.pick(@model.story, '_id'), @breadcrumbs.story.readonly)
+    wires.push @_createUpdateWire(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
     
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
-      replace = (notification, getFn, replaceFn, value) =>
+      replace = (wire, getFn, replaceFn, value) =>
 
         @model[getFn].call(null, value, replaceFn)
-        socket.unregisterNotifications notification
-        notification.id = value
-        socket.registerNotifications notification
+        socket.unregisterWires wire
+        wire.id = value
+        socket.registerWires wire
 
-      @story.readonly.sprint_id.subscribe partial(replace, sprintNotification, 'getSprint', @_replaceSprint)
-      @writable.story_id.subscribe partial(replace, storyNotification, 'getStory', @_replaceStory)
+      @story.readonly.sprint_id.subscribe partial(replace, sprintWire, 'getSprint', @_replaceSprint)
+      @writable.story_id.subscribe partial(replace, storyWire, 'getStory', @_replaceStory)
 
       @model.sessionid = sessionid
-      socket.registerNotifications notifications
+      socket.registerWires wires

@@ -93,22 +93,22 @@ class SocketIO
 
   _registrations: []
 
-  registerNotifications: arrayify (notifications) ->
+  registerWires: arrayify (wires) ->
 
-    registrations = _.map notifications, (notification) ->
+    registrations = _.map wires, (wire) ->
 
-      _.extend notification, {index: _.uniqueId()}
-      server: _.omit notification, 'handler'
-      client: {index: notification.index, handler: notification.handler} 
+      _.extend wire, {index: _.uniqueId()}
+      server: _.omit wire, 'handler'
+      client: {index: wire.index, handler: wire.handler} 
     @server.emit 'register', _.pluck registrations, 'server'
     @_registrations = @_registrations.concat _.pluck registrations, 'client'
 
-  unregisterNotifications: arrayify (notifications) ->
+  unregisterWires: arrayify (wires) ->
 
-    indices = _.pluck notifications, 'index'
-    unregistered = (notification) ->
+    indices = _.pluck wires, 'index'
+    unregistered = (wire) ->
 
-      _.contains indices, notification.index
+      _.contains indices, wire.index
     @_registrations = _.reject @_registrations, unregistered
     @server.emit 'unregister', indices
 
@@ -375,57 +375,9 @@ class Model
     end = moment(start).add 'days', sprintLength - 1
     start: start.format(common.DATE_DB_FORMAT), end: end.format(common.DATE_DB_FORMAT)
 
-class ParentModel extends Model
-
-  # TODO: unit-test
-
-  calculatePriority_: (objects, index) =>
-
-    if index == 0 then prevPrio = 0
-    else prevPrio = objects[index - 1].writable.priority()
-
-    last = objects.length - 1
-    if index == last 
-
-      Math.ceil objects[index - 1].writable.priority() + 1
-    else
-
-      nextPrio = objects[index + 1].writable.priority()
-      (nextPrio - prevPrio) / 2 + prevPrio
-
-  calculatePriority: (objects, originalIndex, index) =>
-
-    if index == 0 then prevPrio = 0
-    else prevPrio = objects[index - 1].priority()
-
-    last = objects.length - 1
-    if index == last 
-
-      Math.ceil objects[index - 1].priority() + 1
-    else
-
-      nextPrio = objects[index + 1].priority()
-      (nextPrio - prevPrio) / 2 + prevPrio
-
-  calculatePriority: (objects, originalIndex, index) =>
-
-    if index == 0 then prevPrio = 0
-    else prevPrio = objects[index - 1].priority()
-
-    last = objects.length - 1
-    if index == last 
-
-      Math.ceil objects[index - 1].priority() + 1
-    else
-
-      nextPrio = objects[index + 1].priority()
-      (nextPrio - prevPrio) / 2 + prevPrio
-
 class ViewModel
 
-  # knockout specific method
-
-  _createObservable3: (updateModelFn, object, property, options = {}) ->
+  _createObservable: (updateModelFn, object, property, options = {}) ->
 
     instantaneousProperty = ko.observable(object[property])
 
@@ -450,7 +402,7 @@ class ViewModel
     instantaneousProperty
 
   # test, TODO: move to super class
-  _createUpdateNotification: (model, observables) ->
+  _createUpdateWire: (model, observables) ->
 
     id: model._id
     method: 'POST'
@@ -587,67 +539,3 @@ class ViewModel
 
     @errorMessage = ko.observable()
     @confirmMessage = ko.observable()
-
-class ParentViewModel extends ViewModel
-
-  _sortByPriority_: (array) ->
-
-    array.sort (a, b) ->
-
-      a.writable.priority() - b.writable.priority()
-
-  _addChild_: (array, data) =>
-    
-    observables = @_createObservables data.new
-    observables.writable.priority.subscribe partial(@_sortByPriority_, array)
-    array.push observables
-
-  _createAddNotification: (parentId, children) ->
-
-    id: parentId
-    method: 'PUT'
-    handler: partial @_addChild_, children    
-
-  _createRemoveNotification: (id, children) ->
-
-    method: 'DELETE'
-    id: id
-    handler: =>
-
-      children.remove (item) ->
-
-        item.id == id 
-
-  _createChildNotifications: (children, observables) =>
-
-    [@_createUpdateNotification(observables.js, _.extend({}, observables.writable, observables.readonly)), 
-    @_createRemoveNotification(observables.id, children)]
-
-  _adjustNotifications: (socket, children, notifications, changes) =>
-
-    _.each changes, (change) =>
-
-      if change.status == 'added'
-
-        observables = children()[change.index]
-        newNotifications = @_createChildNotifications children, observables
-        socket.registerNotifications newNotifications
-        notifications = notifications.concat newNotifications
-      else if change.status == 'deleted'
-
-        socket.unregisterNotifications _.where(notifications, {id: change.value.id})
-
-  constructor: (@model) ->
-
-    super @model
-
-    # TODO: use mixins
-    # set global options for jquery ui sortable
-
-    ko.bindingHandlers.sortable?.options = 
-
-      tolerance: 'pointer'
-      delay: 150
-      cursor: 'move'
-      containment: 'ul#well'
-      handle: '.header'

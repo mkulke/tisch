@@ -1,4 +1,4 @@
-class StoryModel extends ParentModel
+class StoryModel extends Model
 
   type: 'story'
   constructor: (@tasks, @story, @sprint) ->
@@ -99,12 +99,12 @@ class StoryModel extends ParentModel
 
     _.chain(remainingTimes).reduce(partial(@_collectIndices, range), []).map(toD3).tap(prepend).value()
 
-class StoryViewModel extends ParentViewModel
+class StoryViewModel extends ViewModel
 
   _createObservables: (task) =>
 
     updateModel = partial @_updateModel, 'task'
-    createObservable_ = partial @_createObservable3, updateModel, task
+    createObservable = partial @_createObservable, updateModel, task
 
     id: task._id
     url: '/task/' + task._id
@@ -126,7 +126,7 @@ class StoryViewModel extends ParentViewModel
       {name: 'priority'}
     ], (object, property) ->
 
-      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+      object[property.name] = createObservable property.name, _.omit(property, 'name'); object
     , {}
 
   _replaceSprint: (sprint) =>
@@ -166,7 +166,7 @@ class StoryViewModel extends ParentViewModel
   
   addTask: =>
 
-    @model.createTask @model.story._id, partial(@_addChild_, @tasks), @showErrorDialog
+    @model.createTask @model.story._id, partial(@_addChild, @tasks), @showErrorDialog
 
   removeTask: (observables) =>
 
@@ -206,6 +206,8 @@ class StoryViewModel extends ParentViewModel
 
     super(@model)
 
+    _.bindAll @, _.functions(parentMixin)..., _.functions(sortableMixin)...
+
     # breadcrumbs
 
     @breadcrumbs =
@@ -221,7 +223,7 @@ class StoryViewModel extends ParentViewModel
     # observables
 
     updateModel = partial(@_updateModel, 'story');
-    createObservable_ = partial @_createObservable3, updateModel, @model.story
+    createObservable = partial @_createObservable, updateModel, @model.story
 
     @writable = _.reduce [
 
@@ -232,7 +234,7 @@ class StoryViewModel extends ParentViewModel
       {name: 'estimation', throttled: true, time: true}
     ], (object, property) ->
 
-      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+      object[property.name] = createObservable property.name, _.omit(property, 'name'); object
     , {}
 
     # sprint specific stuff
@@ -259,12 +261,8 @@ class StoryViewModel extends ParentViewModel
     # tasks
 
     @tasks = ko.observableArray _.map @model.tasks, @_createObservables
-    _.chain(@tasks()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority_, @tasks))
-
-    ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
-
-      priority = @model.calculatePriority_ @tasks(), arg.targetIndex
-      arg.item.writable.priority priority
+    _.chain(@tasks()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority, @tasks))
+    @_setupSortable @tasks()
 
     # stats
 
@@ -306,25 +304,28 @@ class StoryViewModel extends ParentViewModel
 
     # realtime specific initializations
 
-    notifications = []
+    wires = []
     observables = _.extend {}, @writable, @readonly
-    notifications.push @_createUpdateNotification(@model.story, observables)
-    notifications.push @_createAddNotification(@model.story._id, @tasks)
-    notifications.push sprintNotification = @_createUpdateNotification(@model.sprint, @sprint.readonly)
-    notifications.push @_createUpdateNotification(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
-    notifications = notifications.concat _.chain(@tasks()).map(partial(@_createChildNotifications, @tasks)).flatten().value()
+    wires.push @_createUpdateWire(@model.story, observables)
+    wires.push @_createAddWire(@model.story._id, @tasks)
+    wires.push sprintWire = @_createUpdateWire(@model.sprint, @sprint.readonly)
+    wires.push @_createUpdateWire(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
+    wires = wires.concat _.chain(@tasks()).map(partial(@_createChildWires, @tasks)).flatten().value()
     
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
-      @tasks.subscribe partial(@_adjustNotifications, socket, @tasks, notifications), null, 'arrayChange'
+      @tasks.subscribe partial(@_adjustWires, socket, @tasks, wires), null, 'arrayChange'
 
       @writable.sprint_id.subscribe (value) =>
 
         @model.getSprint value, @_replaceSprint
-        socket.unregisterNotifications sprintNotification
-        sprintNotification.id = value
-        socket.registerNotifications sprintNotification
+        socket.unregisterWires sprintWire
+        sprintWires.id = value
+        socket.registerWires sprintWire
         
       @model.sessionid = sessionid
-      socket.registerNotifications notifications
+      socket.registerWires wires
+
+_.extend StoryViewModel.prototype, parentMixin
+_.extend StoryViewModel.prototype, sortableMixin

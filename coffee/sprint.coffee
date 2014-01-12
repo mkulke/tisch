@@ -1,4 +1,4 @@
-class SprintModel extends ParentModel
+class SprintModel extends Model
 
   getRemainingTime: (storyId, successCb) =>
 
@@ -33,12 +33,12 @@ class SprintModel extends ParentModel
   type: 'sprint'
   constructor: (@stories, @sprint, @calculations) ->
 
-class SprintViewModel extends ParentViewModel
+class SprintViewModel extends ViewModel
 
   _createObservables: (story) =>
 
     updateModel = partial @_updateModel, 'story'
-    createObservable_ = partial @_createObservable3, updateModel, story
+    createObservable = partial @_createObservable, updateModel, story
 
     id: story._id
     url: '/story/' + story._id
@@ -58,7 +58,7 @@ class SprintViewModel extends ParentViewModel
       {name: 'priority'}
     ], (object, property) ->
 
-      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+      object[property.name] = createObservable property.name, _.omit(property, 'name'); object
     , {}
 
   showColorSelector: =>
@@ -80,7 +80,7 @@ class SprintViewModel extends ParentViewModel
 
   addStory: =>
 
-    @model.createStory @model.sprint._id, partial(@_addChild_, @stories), @showErrorDialog
+    @model.createStory @model.sprint._id, partial(@_addChild, @stories), @showErrorDialog
   
   removeStory: (observables) =>
 
@@ -99,10 +99,12 @@ class SprintViewModel extends ParentViewModel
 
     super(@model)
 
+    _.bindAll @, _.functions(parentMixin)..., _.functions(sortableMixin)...
+
     # observables
 
     updateModel = partial @_updateModel, 'sprint'
-    createObservable_ = partial @_createObservable3, updateModel, @model.sprint
+    createObservable = partial @_createObservable, updateModel, @model.sprint
 
     @writable = _.reduce [
 
@@ -113,7 +115,7 @@ class SprintViewModel extends ParentViewModel
       {name: 'length'}
     ], (object, property) ->
 
-      object[property.name] = createObservable_ property.name, _.omit(property, 'name'); object
+      object[property.name] = createObservable property.name, _.omit(property, 'name'); object
     , {}
 
     @computed = do =>
@@ -170,24 +172,23 @@ class SprintViewModel extends ParentViewModel
     # stories
 
     @stories = ko.observableArray _.map @model.stories, @_createObservables
-    _.chain(@stories()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority_, @stories))
-
-    ko.bindingHandlers.sortable.afterMove = (arg, event, ui) =>
-
-      priority = @model.calculatePriority_ @stories(), arg.targetIndex
-      arg.item.writable.priority priority
+    _.chain(@stories()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority, @stories))
+    @_setupSortable @stories()
 
     # rt specific initializations
 
-    notifications = []
+    wires = []
     observables = _.extend {}, @writable, @readonly
-    notifications.push @_createUpdateNotification(@model.sprint, observables)
-    notifications.push @_createAddNotification(@model.sprint._id, @stories)
-    notifications = notifications.concat _.chain(@stories()).map(partial(@_createChildNotifications, @stories)).flatten().value()
+    wires.push @_createUpdateWire(@model.sprint, observables)
+    wires.push @_createAddWire(@model.sprint._id, @stories)
+    wires = wires.concat _.chain(@stories()).map(partial(@_createChildWires, @stories)).flatten().value()
     
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
-      @stories.subscribe partial(@_adjustNotifications, socket, @stories, notifications), null, 'arrayChange'
+      @stories.subscribe partial(@_adjustWires, socket, @stories, wires), null, 'arrayChange'
       @model.sessionid = sessionid
-      socket.registerNotifications notifications
+      socket.registerWires wires
+
+_.extend SprintViewModel.prototype, parentMixin
+_.extend SprintViewModel.prototype, sortableMixin
