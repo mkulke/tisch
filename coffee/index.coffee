@@ -33,12 +33,20 @@ class IndexViewModel extends ViewModel
 
     moment(sprint.readonly.start()).add('days', sprint.readonly.length() - 1).format(common.DATE_DISPLAY_FORMAT)
 
+  _sortByStart: (array) ->
+
+    array.sort (a, b) ->
+
+      moment(a.readonly.start()).unix() - moment(b.readonly.start()).unix()
+
   addSprint: =>
 
     # TODO: sort correctly
     onSuccess = (data) =>
 
-      @sprints.push @_createObservables data.new
+      observables = @_createObservables data.new
+      @sprints.push observables
+      observables.readonly.start.subscribe partial(@_sortByStart, @sprints)
 
     @model.createSprint onSuccess, @showErrorDialog
 
@@ -62,7 +70,7 @@ class IndexViewModel extends ViewModel
     _.bindAll @, _.functions(parentMixin)...
 
     @sprints = ko.observableArray _.map @model.sprints, @_createObservables
-    # TODO: sort on start changes
+    _.chain(@sprints()).pluck('readonly').pluck('start').invoke('subscribe', partial(@_sortByStart, @sprints))
 
     # rt specific initializations
 
