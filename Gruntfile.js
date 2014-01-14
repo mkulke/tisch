@@ -16,6 +16,10 @@ module.exports = function(grunt) {
 			story: {
 
 				filesSrc: ['test/functional/story.coffee.js']
+			},
+			rt: {
+
+				filesSrc: ['test/functional/rt.coffee.js']
 			}			
 		},
 		coffee: {
@@ -29,20 +33,21 @@ module.exports = function(grunt) {
 		    },
 		    files: {
 
-		      	'coffee/task.coffee.js': 'coffee/task.coffee',
-				'coffee/story.coffee.js': 'coffee/story.coffee',
-				'coffee/sprint.coffee.js': 'coffee/sprint.coffee',
-				'coffee/index.coffee.js': 'coffee/index.coffee',
-		     	'coffee/shared.coffee.js': 'coffee/shared.coffee',
-		     	'coffee/parent.coffee.js': 'coffee/parent.coffee',
-		     	'coffee/sortable.coffee.js': 'coffee/sortable.coffee',
-		     	'test/unit/sprint.coffee.js': 'test/unit/sprint.coffee',
-		      	'test/unit/task.coffee.js': 'test/unit/task.coffee',
-		      	'test/unit/story.coffee.js': 'test/unit/story.coffee',
-		      	'test/unit/shared.coffee.js': 'test/unit/shared.coffee',
-		      	'test/functional/task.coffee.js': 'test/functional/task.coffee',
-		      	'test/functional/sprint.coffee.js': 'test/functional/sprint.coffee',
-		      	'test/functional/story.coffee.js': 'test/functional/story.coffee'
+					'coffee/task.coffee.js': 'coffee/task.coffee',
+					'coffee/story.coffee.js': 'coffee/story.coffee',
+					'coffee/sprint.coffee.js': 'coffee/sprint.coffee',
+					'coffee/index.coffee.js': 'coffee/index.coffee',
+					'coffee/shared.coffee.js': 'coffee/shared.coffee',
+					'coffee/parent.coffee.js': 'coffee/parent.coffee',
+					'coffee/sortable.coffee.js': 'coffee/sortable.coffee',
+					'test/unit/sprint.coffee.js': 'test/unit/sprint.coffee',
+					'test/unit/task.coffee.js': 'test/unit/task.coffee',
+					'test/unit/story.coffee.js': 'test/unit/story.coffee',
+					'test/unit/shared.coffee.js': 'test/unit/shared.coffee',
+					'test/functional/task.coffee.js': 'test/functional/task.coffee',
+					'test/functional/sprint.coffee.js': 'test/functional/sprint.coffee',
+					'test/functional/story.coffee.js': 'test/functional/story.coffee',
+					'test/functional/rt.coffee.js': 'test/functional/rt.coffee'
 		    }
   		},
 		},
@@ -96,7 +101,8 @@ module.exports = function(grunt) {
 	grunt.registerTask('functional_task', ['shell:create_db_objects', 'ghost:task', 'shell:cleanup_db_objects']);
 	grunt.registerTask('functional_story', ['shell:create_db_objects', 'ghost:story', 'shell:cleanup_db_objects']);
 	grunt.registerTask('functional_sprint', ['shell:create_db_objects', 'ghost:sprint', 'shell:cleanup_db_objects']);
-	grunt.registerTask('functional', ['server', 'functional_task', 'functional_story', 'functional_sprint']);
+	grunt.registerTask('functional_rt', ['shell:create_db_objects', 'ghost:rt', 'shell:cleanup_db_objects']);
+	grunt.registerTask('functional', ['server', 'functional_task', 'functional_story', 'functional_sprint', 'functional_rt']);
 	//grunt.registerTask('test', ['coffee', 'server', 'ghost']);
 	grunt.registerTask('test', ['coffee', 'mocha_phantomjs', 'functional']);
 };
