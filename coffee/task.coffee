@@ -101,6 +101,16 @@ class TaskViewModel extends ViewModel
 
     @modal 'remaining_time-index'
 
+  remove: =>
+
+    # TODO: i18n
+    @_afterConfirm 'Are you sure? The task will be permanently removed.', =>
+
+      @model.removeTask @model.task, => 
+
+        window.location.href = '/story/' + @story.computed.id()
+      , @showErrorDialog
+
   constructor: (@model) ->
 
     super(@model)   
