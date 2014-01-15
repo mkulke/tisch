@@ -2,6 +2,8 @@ casper = require('casper').create()
 
 storyId = '528c961beab8b32b76efac0c'
 storyUrl = "http://localhost:8000/story/#{storyId}"
+sprintId = '52d7099a9f3c50aef93a88fe'
+sprintUrl = "http://localhost:8000/sprint/#{sprintId}"
 throttle = 500
 dragDelay = 150
 
@@ -107,7 +109,33 @@ casper.then ->
 				@test.assertField 'summary-0', 'Edited task summary', 'Task summary field correct.'
 				@test.assertField 'description-0', 'Edited task description', 'Task description field correct.'
 
+casper.then ->
+
+	@test.info 'Test sprint selector:'
+	@click "button[name='sprint_id']"
+	@waitForResource storyUrl, ->
+		
+		@test.assertVisible '#sprint-selector .content', 'Sprint popup appeared.'
+		n = @evaluate ->
+
+			$('#sprint-selector .line:contains("Test Sprint A")').index() + 1
+		@click "#sprint-selector .content .line:nth-child(#{n + 1})"
+		@test.assertNotVisible '#sprint-selector .content', 'Sprint popup disappeared.'
+		@waitForResource storyUrl, ->
+
+			@test.assertEquals @getElementInfo("button[name='sprint_id']").text, 'Test Sprint B', 'Sprint button correct.'
+
+casper.then ->
+
+	@test.info 'Click remove button.'
+	@click "#button-bar .button.remove"
+	@test.assertVisible '#confirm-dialog', 'Confirmation dialog appeared.'
+	@click '#confirm-dialog input.button.confirm'
+	@waitForResource sprintUrl, ->
+
+		@test.assertField 'title', 'Test Sprint B', 'Client redirected to parent Sprint.'
+
 casper.run ->
 
-	@test.done 27
+	@test.done 32
 	@test.renderResults true

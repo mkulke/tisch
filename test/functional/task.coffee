@@ -2,7 +2,7 @@ casper = require('casper').create()
 
 taskId = '528c9639eab8b32b76efac0d'
 taskUrl = "http://localhost:8000/task/#{taskId}"
-storyId = '528cc5cb42a7877322b90c2c'
+storyId = '528c95f4eab8b32b76efac0b'
 storyUrl = "http://localhost:8000/story/#{storyId}"
 throttle = 500
 
@@ -98,6 +98,7 @@ casper.then ->
 				@test.assertField 'initial_estimation', '7', 'Initial estimation field correct.'
 				@test.assertEquals @getElementInfo("button[name='color']").attributes.class, 'green', 'Color button correct.'
 				@test.assertEquals @getElementInfo("button[name='story_id']").text, 'Test Story B', 'Story button correct.'
+
 casper.then ->
 
 	@test.info 'Use illegal character in number field.'
@@ -110,7 +111,7 @@ casper.then ->
 
 	@test.info 'Click remove button.'
 	@click "#button-bar .button.remove"
-	@test.assertVisible '#confirm-dialog', 'Confirmation dialog appeared'
+	@test.assertVisible '#confirm-dialog', 'Confirmation dialog appeared.'
 	@click '#confirm-dialog input.button.confirm'	
 	@waitForResource storyUrl, ->
  	

@@ -2,7 +2,7 @@ db.sprint.remove({"_meta.test": true});
 db.story.remove({"_meta.test": true});
 db.task.remove({"_meta.test": true});
 
-var sprint = {
+var sprintA = {
 
 	_id: ObjectId("528c95f4eab8b32b76efac0b"),
 	_rev: 0,
@@ -16,7 +16,23 @@ var sprint = {
 		test: true
 	}
 };
-db.sprint.insert(sprint);
+db.sprint.insert(sprintA);
+
+var sprintB = {
+
+	_id: ObjectId("52d7099a9f3c50aef93a88fe"),
+	_rev: 0,
+	description: "Sprint B description",
+	start: ISODate("2013-01-15"),
+	length: 14,
+	color: "red",
+	title: "Test Sprint B",
+	_meta: {
+
+		test: true
+	}
+};
+db.sprint.insert(sprintB);
 
 var storyA = {
 

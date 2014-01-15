@@ -131,7 +131,9 @@ class StoryViewModel extends ViewModel
 
   _replaceSprint: (sprint) =>
 
-    _.chain(sprint).pick('title', 'start', 'length').each (value, key) =>
+    # cannot use each b/c of length & underscore
+    object = _.pick sprint, 'title', 'start', 'length'
+    for key, value of object
 
       @sprint.readonly[key] value
 
@@ -180,6 +182,16 @@ class StoryViewModel extends ViewModel
 
           item.id == task._id
         , @showErrorDialog
+
+  remove: =>
+
+    # TODO: i18n
+    @_afterConfirm 'Are you sure? The story and its tasks will be permanently removed.', =>
+
+      @model.removeStory @model.story, => 
+
+        window.location.replace '/sprint/' + @sprint.computed.id()
+      , @showErrorDialog
 
   showStats: =>
 
@@ -248,7 +260,7 @@ class StoryViewModel extends ViewModel
 
         id: ko.computed =>
 
-          @writable.sprint_id
+          @writable.sprint_id()
         range: ko.computed =>
 
           @model.buildSprintRange start(), length()
@@ -321,7 +333,7 @@ class StoryViewModel extends ViewModel
 
         @model.getSprint value, @_replaceSprint
         socket.unregisterWires sprintWire
-        sprintWires.id = value
+        sprintWire.id = value
         socket.registerWires sprintWire
         
       @model.sessionid = sessionid

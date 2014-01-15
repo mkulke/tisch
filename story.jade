@@ -63,7 +63,7 @@ html
 				form.buttons
 					input(data-bind="click: showStats", type='button', value=messages.en.SHOW_STATS, name="show_stats").button.stats
 					input(data-bind="click: addTask", type='button', value=messages.en.ADD_TASK, name="add-task").button.add
-					input(type='button', value=messages.en.REMOVE, name="remove").button.remove
+					input(data-bind="click: remove", type='button', value=messages.en.REMOVE, name="remove").button.remove
 		div(data-bind="visible: modal() == 'error-dialog'")#error-dialog
 			div(data-bind="text: errorMessage()").message.error
 			.popup-buttons

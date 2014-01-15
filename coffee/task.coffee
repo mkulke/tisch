@@ -108,7 +108,7 @@ class TaskViewModel extends ViewModel
 
       @model.removeTask @model.task, => 
 
-        window.location.href = '/story/' + @story.computed.id()
+        window.location.replace '/story/' + @story.computed.id()
       , @showErrorDialog
 
   constructor: (@model) ->
