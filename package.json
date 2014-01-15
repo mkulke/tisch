@@ -18,7 +18,6 @@
     "assert": "0.4.x",
     "socket.io": "0.9.x",
     "q": "0.9.x",
-    "curry": "1.1.x",
     "moment": "2.2.x",
     "underscore": "1.5.x"
   },
