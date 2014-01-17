@@ -2,7 +2,7 @@ casper = require('casper').create()
 
 taskId = '528c9639eab8b32b76efac0d'
 taskUrl = "http://localhost:8000/task/#{taskId}"
-storyId = '528c95f4eab8b32b76efac0b'
+storyId = '528cc5cb42a7877322b90c2c'
 storyUrl = "http://localhost:8000/story/#{storyId}"
 throttle = 500
 
@@ -112,7 +112,7 @@ casper.then ->
 	@test.info 'Click remove button.'
 	@click "#button-bar .button.remove"
 	@test.assertVisible '#confirm-dialog', 'Confirmation dialog appeared.'
-	@click '#confirm-dialog input.button.confirm'	
+	@click '#confirm-dialog input.button.confirm'
 	@waitForResource storyUrl, ->
  	
 		@test.assertField 'title', 'Test Story B', 'Client redirected to parent Story.'
