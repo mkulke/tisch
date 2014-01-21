@@ -29,6 +29,7 @@
     "grunt-contrib-watch": "~0.5.3",
     "grunt-mocha-phantomjs": "~0.3.0",
     "grunt-shell": "~0.6.0",
-    "grunt-ghost": "~1.0.3"
+    "grunt-ghost": "~1.0.3",
+    "grunt-contrib-jshint": "~0.8.0"
   }
 }
