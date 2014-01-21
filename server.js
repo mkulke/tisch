@@ -28,7 +28,7 @@ var htmlTemplates = {
   index: index_template, 
   sprint: function(response) {
 
-    return sprint_template({sprint: response.sprint, stories: response.stories, calculations: response.calculations, messages: messages})
+    return sprint_template({sprint: response.sprint, stories: response.stories, calculations: response.calculations, messages: messages});
   },
   story: function(response) {
 
@@ -90,7 +90,7 @@ var deleteAnswer = function(respond, result) {
   var removed;
   var mapToAnswer = function(object) {
 
-    return {id: object._id.toString()}
+    return {id: object._id.toString()};
   };
 
   if (!_.isArray(result)) {
@@ -130,7 +130,7 @@ function respondWithHtml_2(response, type, result) {
 
   var template, html, headers;
   // TODO: robustness
-  template = htmlTemplates[type]
+  template = htmlTemplates[type];
   html = template(result);
   headers = {'Content-Type': 'text/html', 'Cache-control': 'no-store'};
 
@@ -297,7 +297,6 @@ function processRequest(request, response) {
         .then(function (result) {
 
           formerStoryId = result.story_id.toString();
-          debugger;
           return tischDB.updateTaskAssignment(id, request.body.value, parseInt(request.headers.rev, 10));
         });
       }
@@ -312,7 +311,7 @@ function processRequest(request, response) {
   else if ((type == 'task') && (request.method == 'PUT')) {
 
     assert.ok(request.headers.parent_id, 'parent_id header missing in request.');
-    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
+    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
 
     query = function() {
 
@@ -335,12 +334,12 @@ function processRequest(request, response) {
   else if ((type == 'task') && (request.method == 'DELETE')) {
   
     assert.ok(request.headers.rev, 'rev header missing in request.');
-    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
+    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
 
     query = function() {
 
       var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
-      return tischDB.removeTask(filter, true);;
+      return tischDB.removeTask(filter, true);
     };
       
     answer = partial(deleteAnswer, partial(respondWithJson_2, response));
@@ -393,7 +392,7 @@ function processRequest(request, response) {
 
     assert.ok(id, 'id url part missing.');
     assert.ok(request.headers.rev, 'rev missing in request headers.');
-    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
+    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
 
     query = function() {
 
@@ -414,7 +413,7 @@ function processRequest(request, response) {
     query = function() {
 
       assert.ok(request.headers.parent_id, 'parent_id header missing in request.');
-      assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
+      assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
 
       var data = {
       
@@ -482,7 +481,7 @@ function processRequest(request, response) {
 
             // TODO: remove literals
             startIndex = moment(sprint.start).format('YYYY-MM-DD');
-            endIndex = moment(sprint.start).add('days', sprint.length - 1).format('YYYY-MM-DD')
+            endIndex = moment(sprint.start).add('days', sprint.length - 1).format('YYYY-MM-DD');
             return tischDB.getStoriesRemainingTime(storyIds, {start: startIndex, end: endIndex});
           })
           .then(function (result) {
@@ -511,7 +510,7 @@ function processRequest(request, response) {
 
     assert.ok(id, 'id url part missing.');
     assert.ok(request.headers.rev, 'rev missing in request headers.');
-    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
+    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
 
     query = function() {
 
@@ -529,7 +528,7 @@ function processRequest(request, response) {
 
     query = function() {
 
-      assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
+      assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
 
       var data = {
       
@@ -587,7 +586,7 @@ function processRequest(request, response) {
     query = function() {
 
       return tischDB.findSprints({}, {start: 1});
-    }
+    };
     answer = function(result) {
 
       var html = index_template({sprints: result, messages: messages});
@@ -609,14 +608,14 @@ function processRequest(request, response) {
       .then(function (result) {
 
         startIndex = moment(result.start).format('YYYY-MM-DD');
-        endIndex = moment(result.start).add('days', result.length - 1).format('YYYY-MM-DD')
+        endIndex = moment(result.start).add('days', result.length - 1).format('YYYY-MM-DD');
         return tischDB.getStoriesRemainingTime([id], {start: startIndex, end: endIndex});
       })
       .then(function (result) {
 
         return (result[id] || null);
       });
-    }
+    };
     answer = function(result) {
 
       assert.notEqual(true, html, 'Remaining time calculation available only as json.');
@@ -662,7 +661,7 @@ app.start = function() {
       tischRT.listen(server);
     });
   });
-}
+};
 
 module.exports = app;
 

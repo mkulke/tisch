@@ -7,3 +7,20 @@ script(type='text/javascript', src='/moment.min.js')
 script(type='text/javascript', src='/shared.coffee.js')
 script(type='text/javascript', src='/underscore-min.js')
 script(type='text/javascript', src='/knockout-3.0.0.js')
+
+mixin errorDialog
+
+	div(data-bind="visible: modal() == 'error-dialog'")#error-dialog
+		div(data-bind="text: errorMessage()").message.error
+		.popup-buttons
+			form.buttons
+				input(data-bind="click: confirmError", type="button", value=messages.en.OK).button.confirm
+
+mixin confirmDialog
+
+		div(data-bind="visible: modal() == 'confirm-dialog'")#confirm-dialog
+			div(data-bind="text: confirmMessage()").message.warning
+			.popup-buttons
+				form.buttons
+					input(data-bind="click: cancel", type="button", value=messages.en.CANCEL).button.cancel
+					input(data-bind="click: confirm", type="button", value=messages.en.CONFIRM).button.confirm

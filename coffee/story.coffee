@@ -105,6 +105,7 @@ class StoryViewModel extends ViewModel
 
     updateModel = partial @_updateModel, 'task'
     createObservable = partial @_createObservable, updateModel, task
+    remainingTime = ko.observable task.remaining_time
 
     id: task._id
     url: '/task/' + task._id
@@ -113,11 +114,11 @@ class StoryViewModel extends ViewModel
 
       remaining_time: ko.computed =>
 
-        @model.buildRemainingTime task.remaining_time, @sprint.computed.range()
+        @model.buildRemainingTime remainingTime(), @sprint.computed.range()
     readonly:
 
       color: ko.observable task.color
-      remaining_time: ko.observable task.remaining_time
+      remaining_time: remainingTime
       time_spent: ko.observable task.time_spent    
     writable: _.reduce [
 
@@ -324,6 +325,8 @@ class StoryViewModel extends ViewModel
     wires.push @_createUpdateWire(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
     wires = wires.concat _.chain(@tasks()).map(partial(@_createChildWires, @tasks)).flatten().value()
     
+    debugger
+
     socket = new SocketIO()
     socket.connect (sessionid) =>
 

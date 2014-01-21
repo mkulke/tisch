@@ -22,7 +22,7 @@ var listen = function(server) {
 
       _.each(data, function(registration) {
 
-        _.extend(registration, {client: client})
+        _.extend(registration, {client: client});
       });
       registrations = registrations.concat(data);
       //console.log(["registrations content:", JSON.stringify(registrations)].join(" "));
@@ -34,7 +34,7 @@ var listen = function(server) {
 
       unregistered = function(registration) {
 
-        return (registration.client === client) && (_.contains(indices, registration.index))
+        return (registration.client === client) && (_.contains(indices, registration.index));
       };
       registrations = _.reject(registrations, unregistered);
     });

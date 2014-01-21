@@ -423,8 +423,7 @@ class ViewModel
 
       object[property] = oldValue
       observable(oldValue)
-      @modal 'error-dialog'
-      @errorMessage message
+      @_showError message
 
   _showError: (message) =>
 

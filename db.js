@@ -25,7 +25,8 @@ var db = function() {
 
 			if (_db === null) {
 
-				throw "Database not connected." // TODO: i18n
+        // TODO: i18n
+				throw "Database not connected.";
 			}
 			else {
 
@@ -36,7 +37,7 @@ var db = function() {
 
 			_db = _.first(arguments);
 		}
-	;}
+	};
 }();
 
 var connect = function() {
@@ -175,7 +176,7 @@ var insert = function(type, parentType, data) {
         }
         else {
 
-        	insertCb(deferred, err, result);
+          insertCb(deferred, err, result);
         }
       });
       return deferred.promise;
@@ -192,7 +193,7 @@ var insert = function(type, parentType, data) {
   }
   else {
 
-  	return optimisticLoop(type, parentType, data);
+    return optimisticLoop(type, parentType, data);
   }
 };
 
@@ -239,7 +240,7 @@ var updateAssignment = function(type, parentType, id, parentId, rev) {
     return findOne(parentType, parentId)
     .fail(function() {
 
-    	// TODO: i18n
+      // TODO: i18n
       throw "The story to which the task was assigned to does not exist.";
     })
     .then(optimisticLoop);
