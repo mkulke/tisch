@@ -84,7 +84,7 @@ var postAnswer = function(key, parentKey, respond, result) {
 
   // TODO: rubustness
   var changes = {id: result._id.toString(), rev: result._rev, key: key, value: result[key]};
-  if (parentKey != null) {
+  if (parentKey !== null) {
 
     changes.parent_id = result[parentKey].toString();
   }
@@ -92,54 +92,34 @@ var postAnswer = function(key, parentKey, respond, result) {
   return changes;
 };
 
-var _extractParentId = function(object, key) {
-
-  if (key === null) {
-
-    return 'index';  
-  }
-  else if (!(object[key] instanceof ObjectID)) {
-
-    // TODO i18n
-    throw "The " + key + " property is not an Object ID";
-  }
-  else {
-
-    return object[key].toString();
-  }
-}
-
-var deleteAnswer = function(parentKey, respond, result) {
+var deleteAnswer = function(respond, results) {
 
   var removed;
-  var mapToAnswer = function(object) {
+  var mapToAnswer = function(result) {
 
-    var id, parentId;
+    var id, parentId, parentKey, object;
+    object = result.deleted;
     id = object._id.toString();
-    parentId = _extractParentId(object, parentKey);
+    parentId = result.parent_id.toString();
     return {id: id, parent_id: parentId};
   };
 
-  if (!_.isArray(result)) {
+  if (!_.isArray(results)) {
 
-    removed = mapToAnswer(result);
+    removed = mapToAnswer(results);
   } else {
 
-    removed = _.map(result, mapToAnswer);
+    removed = _.map(results, mapToAnswer);
   }
 
   respond(removed);
   return removed;
 };
 
-var putAnswer = function(parentKey, respond, result) {
+var putAnswer = function(respond, result) {
 
-  var parentId, added;
-
-  parentId = _extractParentId(result, parentKey);
-  added = {parent_id: parentId, new: result};
-  respond(added);
-  return added;
+  respond(result);
+  return result;
 };
 
 function respondWithHtml(response, type, result) {
@@ -322,10 +302,14 @@ function processRequest(request, response) {
         story_id: ObjectID(request.headers.parent_id)
       };
 
-      return tischDB.insertTask(data);
+      return tischDB.insertTask(data)
+      .then(function(result) {
+
+        return {new: result, parent_id: result.story_id};
+      });
     };
     
-    answer = partial(putAnswer, 'story_id', partial(respondWithJson, response));
+    answer = partial(putAnswer, partial(respondWithJson, response));
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
   
@@ -335,10 +319,14 @@ function processRequest(request, response) {
     query = function() {
 
       var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
-      return tischDB.removeTask(filter, true);
+      return tischDB.removeTask(filter, true)
+      .then(function (result) {
+
+        return {deleted: result, parent_id: result.story_id};
+      });
     };
       
-    answer = partial(deleteAnswer, 'story_id', partial(respondWithJson, response));
+    answer = partial(deleteAnswer, partial(respondWithJson, response));
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
 
@@ -420,10 +408,14 @@ function processRequest(request, response) {
         sprint_id: ObjectID(request.headers.parent_id)
       };
 
-      return tischDB.insertStory(data);
+      return tischDB.insertStory(data)
+      .then(function (result) {
+
+        return {new: result, parent_id: result.sprint_id};
+      });
     };
     
-    answer = partial(putAnswer, 'sprint_id', partial(respondWithJson, response));  
+    answer = partial(putAnswer, partial(respondWithJson, response));  
   } 
   else if ((type == 'story') && (request.method == 'DELETE')) {
   
@@ -438,20 +430,23 @@ function processRequest(request, response) {
       return tischDB.removeStory(filter, true)
       .then(function(result) {
 
-        story = result;
+        story = {deleted: result, parent_id: result.sprint_id};
         filter = {story_id: ObjectID(id)};
 
         return tischDB.findAndRemoveTasks(filter);
       })
       .then(function(result) {
 
-        var removed = result;
+        var removed = _.map(result, function(object) {
+
+          return {deleted: object, parent_id: object.story_id};
+        });
         removed.push(story);
         return removed;
       });
     };  
 
-    answer = partial(deleteAnswer, 'sprint_id', partial(respondWithJson, response));
+    answer = partial(deleteAnswer, partial(respondWithJson, response));
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
 
@@ -535,10 +530,14 @@ function processRequest(request, response) {
         title: 'New Sprint'
       };
 
-      return tischDB.insertSprint(data);
+      return tischDB.insertSprint(data)
+      .then(function (result) {
+
+        return {new: result, parent_id: 'index'};
+      });
     };
 
-    answer = partial(putAnswer, null, partial(respondWithJson, response));
+    answer = partial(putAnswer, partial(respondWithJson, response));
   }
   else if ((type == 'sprint') && (request.method == 'DELETE')) {
   
@@ -553,19 +552,29 @@ function processRequest(request, response) {
       return tischDB.removeSprint(filter, true)
       .then(function(result) {
 
-        removed.push(result);
+        removed.push({deleted: result, parent_id: 'index'});
         filter = {sprint_id: ObjectID(id)};
 
         return tischDB.findAndRemoveStories(filter);
       })
       .then(function (result) {
 
-        removed = removed.concat(result);
+        removed = removed.concat(_.map(result, function (object) {
+
+          return {deleted: object, parent_id: object.sprint_id};
+        }));
 
         // remove all the stories' tasks 
         return Q.all(_.map(result, function(story) {
 
-          return tischDB.findAndRemoveTasks({story_id: story._id});
+          return tischDB.findAndRemoveTasks({story_id: story._id})
+          .then(function (result) {
+
+            return _.map(result, function (object) {
+
+              return {deleted: object, parent_id: object.story_id};
+            });
+          });
         }));
       })
       .then(function (result) {
@@ -575,7 +584,7 @@ function processRequest(request, response) {
       });
     };
 
-    answer = partial(deleteAnswer, null, partial(respondWithJson, response));
+    answer = partial(deleteAnswer, partial(respondWithJson, response));
   }
   else if ((type == 'index') && (request.method == 'GET')) {
 
