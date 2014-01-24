@@ -5,7 +5,6 @@ Create new Task => Task should appear on peer.
 Change newly created Task's priority => Task should be moved to the correct spot on peer.
 The current resource has been removed by a peer => A modal error dialog should appear.
 A peer changes the start date of a sprint => The change should be reflected in the order of sprints in the index view.
-Change remaining_time on task => The change should be reflected on the sprint view.
 
 Misc:
 
