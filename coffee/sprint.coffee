@@ -8,10 +8,8 @@ class SprintModel extends Model
       type: 'GET'
       dataType: 'json'
       success: (data, textStatus, jqXHR) ->
-
-        if data != null
         
-          successCb? data
+        successCb? data
   getRemainingTimes: (storyIds, successCb) =>
 
     gets = []
@@ -60,6 +58,52 @@ class SprintViewModel extends ViewModel
 
       object[property.name] = createObservable property.name, _.omit(property, 'name'); object
     , {}
+
+  _updateStat: (id) =>
+
+    @model.getRemainingTime id, (data) =>
+
+      object = @readonly.remainingTimeCalculations()
+      object[id] = data
+      @readonly.remainingTimeCalculations.notifySubscribers object
+
+  _updateStats: =>
+
+    @model.getRemainingTimes _.pluck(@stories(), 'id'), (calculations) =>
+
+      @readonly.remainingTimeCalculations calculations
+
+  _createGrandchildWires: (observables) =>
+
+    shared = 
+
+      handler: partial @_updateStat, observables.id
+      parent_id: observables.id
+    specifics = [
+
+      method: "POST"
+      properties: ['remaining_time']
+    ,
+      method: "PUT"
+    ,
+      method: "DELETE"
+    ]
+    grandchildWires = _.map(specifics, curry2(_.defaults)(shared))
+    grandchildWires.concat @_createChildWires @stories, observables
+
+  _adjustGrandchildWires: (socket, wires, changes) =>
+
+    _.each changes, (change) =>
+
+      if change.status == 'added'
+
+        observables = @stories()[change.index]
+        newWires = @_createGrandchildWires observables
+        socket.registerWires newWires
+        wires = wires.concat newWires
+      else if change.status == 'deleted'
+
+        socket.unregisterWires _.where(wires, {parent_id: change.value.id})
 
   showColorSelector: =>
 
@@ -160,14 +204,8 @@ class SprintViewModel extends ViewModel
 
     # TODO: if sprint range changes, update calculations (if necessary)
 
-    updateStats = (value) =>
-
-      @model.getRemainingTimes _.pluck(@stories(), 'id'), (calculations) =>
-
-        @readonly.remainingTimeCalculations calculations
-
-    @writable.start.subscribe updateStats
-    @writable.length.subscribe updateStats
+    @writable.start.subscribe @_updateStats
+    @writable.length.subscribe @_updateStats
 
     # stories
 
@@ -182,11 +220,13 @@ class SprintViewModel extends ViewModel
     wires.push @_createUpdateWire(@model.sprint, observables)
     wires.push @_createAddWire(@model.sprint._id, @stories)
     wires = wires.concat _.chain(@stories()).map(partial(@_createChildWires, @stories)).flatten().value()
-    
+      ,_.chain(@stories()).map(@_createGrandchildWires).flatten().value()
+
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
       @stories.subscribe partial(@_adjustChildWires, socket, @stories, wires), null, 'arrayChange'
+      @stories.subscribe partial(@_adjustGrandchildWires, socket, wires), null, 'arrayChange'
       @model.sessionid = sessionid
       socket.registerWires wires
 
