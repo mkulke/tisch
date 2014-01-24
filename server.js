@@ -25,7 +25,10 @@ var index_template = jade.compile(fs.readFileSync(options.filename, 'utf8'), opt
 
 var htmlTemplates = {
 
-  index: index_template, 
+  index: function(response) {
+
+    return index_template({sprints: response.sprints, messages: messages});
+  },
   sprint: function(response) {
 
     return sprint_template({sprint: response.sprint, stories: response.stories, calculations: response.calculations, messages: messages});
@@ -77,20 +80,44 @@ var complainWithJson = function(err) {
   this.end();  
 };
 
-var postAnswer = function(key, respond, result) {
+var postAnswer = function(key, parentKey, respond, result) {
 
   // TODO: rubustness
   var changes = {id: result._id.toString(), rev: result._rev, key: key, value: result[key]};
+  if (parentKey != null) {
+
+    changes.parent_id = result[parentKey].toString();
+  }
   respond(changes);
   return changes;
 };
 
-var deleteAnswer = function(respond, result) {
+var _extractParentId = function(object, key) {
+
+  if (key === null) {
+
+    return 'index';  
+  }
+  else if (!(object[key] instanceof ObjectID)) {
+
+    // TODO i18n
+    throw "The " + key + " property is not an Object ID";
+  }
+  else {
+
+    return object[key].toString();
+  }
+}
+
+var deleteAnswer = function(parentKey, respond, result) {
 
   var removed;
   var mapToAnswer = function(object) {
 
-    return {id: object._id.toString()};
+    var id, parentId;
+    id = object._id.toString();
+    parentId = _extractParentId(object, parentKey);
+    return {id: id, parent_id: parentId};
   };
 
   if (!_.isArray(result)) {
@@ -108,25 +135,14 @@ var deleteAnswer = function(respond, result) {
 var putAnswer = function(parentKey, respond, result) {
 
   var parentId, added;
-  if (parentKey === null) {
 
-    parentId = 'index';  
-  }
-  else if (!(result[parentKey] instanceof ObjectID)) {
-
-    // TODO i18n
-    throw "The " + parentKey + " property is not an Object ID";
-  }
-  else {
-
-    parentId = result[parentKey].toString();
-  }
-  added = {id: parentId, new: result};
+  parentId = _extractParentId(result, parentKey);
+  added = {parent_id: parentId, new: result};
   respond(added);
   return added;
 };
 
-function respondWithHtml_2(response, type, result) {
+function respondWithHtml(response, type, result) {
 
   var template, html, headers;
   // TODO: robustness
@@ -139,35 +155,13 @@ function respondWithHtml_2(response, type, result) {
   response.end();
 }
 
-function respondWithJson_2(response, result) {
+function respondWithJson(response, result) {
 
   // TODO: robustness      
   var headers = {'Content-Type': 'application/json'};
 
   response.writeHead(200, headers);
   response.write(JSON.stringify(result));            
-  response.end();
-}
-
-function respondWithHtml(html, response) {
-
-  assert(html);
-
-  var headers = {'Content-Type': 'text/html', 'Cache-control': 'no-store'};
-
-  response.writeHead(200, headers);
-  response.write(html);
-  response.end();
-}
-
-function respondWithJson(json, response) {
-
-  //assert(json, 'json cannot be null or undefined.');
-      
-  var headers = {'Content-Type': 'application/json'};
-
-  response.writeHead(200, headers);
-  response.write(JSON.stringify(json));            
   response.end();
 }
 
@@ -179,7 +173,7 @@ function respondOk(response) {
 
 var notify = function(request, result) {
 
-  var clientIds, clients, byGenerator, byRequest, byId, byProperties, originatingClient, toNotification;
+  var clientIds, clients, byParentId, byRequest, byId, byProperties, originatingClient, toNotification;
 
   // remove might supply an array as result (cascading delete)
   if (!result) {
@@ -209,6 +203,7 @@ var notify = function(request, result) {
 
   byRequest = buildEqual('method', request.method);
   byId = buildEqual('id', result.id);
+  byParentId = buildEqual('parent_id', result.parent_id);
 
   originatingClient = function(registration) {
 
@@ -228,6 +223,7 @@ var notify = function(request, result) {
   notifications = _.chain(tischRT.registrations())
     .filter(byRequest)
     .filter(byId)
+    .filter(byParentId)
     .filter(byProperties)
     .reject(originatingClient)
     .map(toNotification)
@@ -246,7 +242,7 @@ function processRequest(request, response) {
   var type = (pathParts.length > 1 && pathParts[1] !== "") ? unescape(pathParts[1]) : 'index';
   var id = pathParts.length > 2 ? unescape(pathParts[2]) : null;
   var html = ((request.headers.accept !== undefined) && (request.headers.accept.match(/application\/json/) !== null)) ? false : true;
-  var respond = html ? partial(respondWithHtml_2, response, type) : partial(respondWithJson_2, response);
+  var respond = html ? partial(respondWithHtml, response, type) : partial(respondWithJson, response);
 
   if ((type == 'task') && (request.method == 'GET')) {
 
@@ -306,7 +302,7 @@ function processRequest(request, response) {
       }
     };
 
-    answer = partial(postAnswer, request.body.key, partial(respondWithJson_2, response));
+    answer = partial(postAnswer, request.body.key, 'story_id', partial(respondWithJson, response));
   } 
   else if ((type == 'task') && (request.method == 'PUT')) {
 
@@ -329,7 +325,7 @@ function processRequest(request, response) {
       return tischDB.insertTask(data);
     };
     
-    answer = partial(putAnswer, 'story_id', partial(respondWithJson_2, response));
+    answer = partial(putAnswer, 'story_id', partial(respondWithJson, response));
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {
   
@@ -342,7 +338,7 @@ function processRequest(request, response) {
       return tischDB.removeTask(filter, true);
     };
       
-    answer = partial(deleteAnswer, partial(respondWithJson_2, response));
+    answer = partial(deleteAnswer, 'story_id', partial(respondWithJson, response));
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
 
@@ -406,7 +402,7 @@ function processRequest(request, response) {
       }
     };
 
-    answer = partial(postAnswer, request.body.key, partial(respondWithJson_2, response));
+    answer = partial(postAnswer, request.body.key, 'sprint_id', partial(respondWithJson, response));
   }
   else if ((type == 'story') && (request.method == 'PUT')) {
 
@@ -427,7 +423,7 @@ function processRequest(request, response) {
       return tischDB.insertStory(data);
     };
     
-    answer = partial(putAnswer, 'sprint_id', partial(respondWithJson_2, response));  
+    answer = partial(putAnswer, 'sprint_id', partial(respondWithJson, response));  
   } 
   else if ((type == 'story') && (request.method == 'DELETE')) {
   
@@ -455,7 +451,7 @@ function processRequest(request, response) {
       });
     };  
 
-    answer = partial(deleteAnswer, partial(respondWithJson_2, response));
+    answer = partial(deleteAnswer, 'sprint_id', partial(respondWithJson, response));
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
 
@@ -522,7 +518,7 @@ function processRequest(request, response) {
       return tischDB.updateSprint(id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);
     };
 
-    answer = partial(postAnswer, request.body.key, partial(respondWithJson_2, response));
+    answer = partial(postAnswer, request.body.key, null, partial(respondWithJson, response));
   }
   else if ((type == 'sprint') && (request.method == 'PUT')) {
 
@@ -542,7 +538,7 @@ function processRequest(request, response) {
       return tischDB.insertSprint(data);
     };
 
-    answer = partial(putAnswer, null, partial(respondWithJson_2, response));
+    answer = partial(putAnswer, null, partial(respondWithJson, response));
   }
   else if ((type == 'sprint') && (request.method == 'DELETE')) {
   
@@ -579,21 +575,23 @@ function processRequest(request, response) {
       });
     };
 
-    answer = partial(deleteAnswer, partial(respondWithJson_2, response));
+    answer = partial(deleteAnswer, null, partial(respondWithJson, response));
   }
   else if ((type == 'index') && (request.method == 'GET')) {
 
     query = function() {
 
-      return tischDB.findSprints({}, {start: 1});
-    };
-    answer = function(result) {
+      return tischDB.findSprints({}, {start: 1})
+      .then(function (result) {
 
-      var html = index_template({sprints: result, messages: messages});
-      respondWithHtml(html, response);
+        return {sprints: result};
+      });
     };
+    answer = respond;
   }
   else if ((type == 'remaining_time_calculation') && (request.method == 'GET')) {
+
+    assert.notEqual(true, html, 'Remaining time calculation available only as json.');
 
     // TODO: implement a per-sprint method (otherwise we have have to use 1 ajax call & db per story).
     query = function() {
@@ -616,12 +614,7 @@ function processRequest(request, response) {
         return (result[id] || null);
       });
     };
-    answer = function(result) {
-
-      assert.notEqual(true, html, 'Remaining time calculation available only as json.');
-
-      respondWithJson(result, response);
-    };
+    answer = respond;
   }
   else {
 

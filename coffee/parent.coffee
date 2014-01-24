@@ -2,7 +2,7 @@ parentMixin =
 
   _createAddWire: (parentId, children) ->
 
-    id: parentId
+    parent_id: parentId
     method: 'PUT'
     handler: partial @_addChild, children    
   _createRemoveWire: (id, children) ->
