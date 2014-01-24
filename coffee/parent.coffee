@@ -18,7 +18,7 @@ parentMixin =
 
     [@_createUpdateWire(observables.js, _.extend({}, observables.writable, observables.readonly)), 
     @_createRemoveWire(observables.id, children)]
-  _adjustWires: (socket, children, wires, changes) ->
+  _adjustChildWires: (socket, children, wires, changes) ->
 
     _.each changes, (change) =>
 

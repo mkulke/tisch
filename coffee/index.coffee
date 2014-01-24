@@ -79,7 +79,7 @@ class IndexViewModel extends ViewModel
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
-      @sprints.subscribe partial(@_adjustWires, socket, @sprints, wires), null, 'arrayChange'
+      @sprints.subscribe partial(@_adjustChildWires, socket, @sprints, wires), null, 'arrayChange'
       @model.sessionid = sessionid
       socket.registerWires wires
 

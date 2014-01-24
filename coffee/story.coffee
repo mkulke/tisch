@@ -325,12 +325,10 @@ class StoryViewModel extends ViewModel
     wires.push @_createUpdateWire(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
     wires = wires.concat _.chain(@tasks()).map(partial(@_createChildWires, @tasks)).flatten().value()
     
-    debugger
-
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
-      @tasks.subscribe partial(@_adjustWires, socket, @tasks, wires), null, 'arrayChange'
+      @tasks.subscribe partial(@_adjustChildWires, socket, @tasks, wires), null, 'arrayChange'
 
       @writable.sprint_id.subscribe (value) =>
 

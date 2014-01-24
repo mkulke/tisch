@@ -186,7 +186,7 @@ class SprintViewModel extends ViewModel
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
-      @stories.subscribe partial(@_adjustWires, socket, @stories, wires), null, 'arrayChange'
+      @stories.subscribe partial(@_adjustChildWires, socket, @stories, wires), null, 'arrayChange'
       @model.sessionid = sessionid
       socket.registerWires wires
 
