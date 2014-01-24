@@ -204,20 +204,23 @@ class TaskViewModel extends ViewModel
           indexObservable newIndex
 
     # shared write for indexed properties (remaining_time & time_spent)
-    writeIndexed = (property, observableObject, observableIndex, value) =>
+    writeIndexed = (property, observableObject, observableIndex, valueString) =>
 
-      # we need to clone the obj, b/c otherwise the observable would not be updated
-      oldObject = observableObject()
-      object = _.clone oldObject
-      object[observableIndex()] = parseFloat value, 10
-      if !_.isEqual(oldObject, object)
-      
-        observableObject(object)   
-        @model.task[property] = object
+      # we need to manually notify the subsribers, b/c the object itsself does not change
+      object = observableObject()
+      index = observableIndex()
+      oldValue = object[index]
+      value = parseFloat valueString, 10
+      if oldValue != value
+
+        @model.task[property][index] = value      
+        object[index] = value
+        observableObject.notifySubscribers(object)
         @model.update @model.task, property, 'task', null, (message) =>
 
-          @model.task[property] = oldObject
-          observableObject(oldObject)
+          @model.task[property][index] = oldValue
+          object[index] = oldValue
+          observableObject.notifySubscribers(object)
           @modal 'error-dialog'
           @errorMessage message
 
