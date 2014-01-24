@@ -6,6 +6,8 @@ throttle = 500
 dragDelay = 150
 sync = 1000
 
+taskId = '528c9639eab8b32b76efac0d'
+storyId = '528c961beab8b32b76efac0c'
 sprintId = '528c95f4eab8b32b76efac0b'
 url = (type, id) -> "http://localhost:8000/#{type}/#{id}"
 
@@ -13,22 +15,36 @@ setViewport = ->
 
 	@viewport 1024, 768
 
-createDoneFn = ->
+createLock = ->
 
-	isDone = false
-	(value) ->
+	available = false
+	acquire: ->
 
-		if value? then isDone = value
-		else isDone
+		if available
 
-casper1.done = do createDoneFn
-casper2.done = do createDoneFn
+			available = false 
+			true
+		else false
+	release: -> 
 
-waitFor = (whom, fn) -> -> @wait sync, -> @waitFor whom.done, fn
-waitFor1 = (fn) -> waitFor casper1, fn
-waitFor2 = (fn) -> waitFor casper2, fn
+		available = true
 
-imDone = -> @done true
+casper1.lock = createLock()
+casper2.lock = createLock()
+
+waitFor1 = (fn) -> 
+
+  -> 
+  	
+  	@wait sync, -> 
+
+  		@waitFor casper1.lock.acquire, fn
+
+waitFor2 = (fn) -> 
+
+	->
+		
+		@waitFor casper2.lock.acquire, fn
 
 moveChild = (from, to, url, fn) -> 
 
@@ -42,61 +58,151 @@ moveChild = (from, to, url, fn) ->
 		@mouse.up(infoTo.x + infoTo.width / 2, infoTo.y + infoTo.height / 2)
 		@waitForResource url, fn
 
-casper1.test.info "Open the index page on 2 clients."
-
 casper1.start url('sprint', sprintId), setViewport
 casper2.start url('sprint', sprintId), setViewport
 
-casper1.then ->
+pairs = [
 
-	@test.info 'Edit sprint title field on client #1:'
-	@fill '#content form', 
+	do: ->
 
-		'title': 'Edited tütle'
-	@wait throttle, ->
+		@test.info 'Edit sprint title field:'
+		@fill '#content form', 
 
-		@waitForResource url('sprint', sprintId), imDone
+			'title': 'Edited tütle'
+		@wait throttle, ->
 
-casper2.then waitFor1 ->
+			@waitForResource url('sprint', sprintId), @lock.release		
+	verify: ->
 
-	@test.assertField 'title', 'Edited tütle', 'Title field on client #2 correct.'
-	@test.info 'Move story from pos 2 to pos 1 on client #2:'
-	moveChild.call @, 2, 1, url('sprint', sprintId), imDone
+		@test.assertField 'title', 'Edited tütle', 'Title field correct.'		
+,
+	do: -> 
 
-casper1.then waitFor2 ->
+		@test.info 'Move story from pos 2 to pos 1:'
+		moveChild.call @, 2, 1, url('sprint', sprintId), @lock.release
+	verify: ->
 
-	@test.assertField 'title-0', 'Test Story B', 'Pos 1 Title field on client #1 correct.'
-	@test.info 'Create Story on client #1:'
-	@click '#button-bar input.button.add'
-	@waitForResource url('sprint', sprintId), imDone
+		@test.assertField 'title-0', 'Test Story B', 'Title field on pos 1 correct.'
+,
+	do: -> 	
 
-casper2.then waitFor1 ->
+		@test.info 'Create Story:'
+		@click '#button-bar input.button.add'
+		@waitForResource url('sprint', sprintId), @lock.release
+	verify: ->
 
-	@test.assertEval -> 
+		@test.assertEval -> 
 
-		document.querySelectorAll('ul#well li.panel').length == 3
-	,'3 Story panels visible on client #2.'
-	@test.info 'Edit description for new Story client #2:'
-	@fill '#content form', 
+			document.querySelectorAll('ul#well li.panel').length == 3
+		,'3 Story panels visible.'		
+,
+	do: ->
 
-		'description-2': 'déscription'
+		@test.info 'Edit description for new Story:'
+		@fill '#content form', 
 
-casper1.then waitFor2 ->
+			'description-2': 'déscription'
+		@wait throttle, ->
 
-	@test.assertField 'description-2', 'déscription', 'Description field for new Story on client #1 correct.'
-	@test.info 'Remove Story on client #2:'
-	@click 'ul#well li.panel:nth-of-type(3) input.button.remove'
-	@click '#confirm-dialog input.button.confirm'
-	@waitForResource url('sprint', sprintId), imDone
+			@waitForResource url('sprint', sprintId), @lock.release
+	verify: ->
 
-casper2.then waitFor1 ->
+		@test.assertField 'description-2', 'déscription', 'Description field for new Story correct.'
+,
+	do: ->
 
-	@test.assertEval ->
+		@test.info 'Remove Story:'
+		@click 'ul#well li.panel:nth-of-type(3) input.button.remove'
+		@click '#confirm-dialog input.button.confirm'
+		@waitForResource url('sprint', sprintId), @lock.release
+	verify: ->
 
-		document.querySelectorAll('ul#well li.panel').length == 2
-	, '2 Story panels visible on client #1.'
+		@test.assertEval ->
 
+			document.querySelectorAll('ul#well li.panel').length == 2
+		, '2 Story panels visible.'
+,
+	do: ->
+
+		@open(url('task', taskId)).then @lock.release
+	verify: ->
+
+		@open(url('story', storyId)).then @lock.release
+	manual_release_after_verify: true
+,
+	do: ->
+
+		@test.info 'Change a Task\'s remaining time:'
+		@fill '#content form', 
+
+			'remaining_time': '11'
+		@wait throttle, ->
+
+			@waitForResource url('task', taskId), @lock.release
+	verify: ->
+
+		@test.assertSelectorHasText '.panel:nth-child(1) .header .stats .text', '11', 'Stats text correctly updated on Story view.'
+,
+	do: ->
+
+		@lock.release()
+	verify: ->
+
+		@open(url('sprint', sprintId)).then @lock.release
+	manual_release_after_verify: true
+, 
+	do: ->
+
+		@test.info 'Change Task\'s remaining time again:'
+		@fill '#content form', 
+
+			'remaining_time': '12'
+		@wait throttle, ->
+
+			@waitForResource url('task', taskId), @lock.release
+	verify: ->
+
+		@test.assertSelectorHasText '.panel:nth-child(2) .header .stats .text', '20.5', 'Stats text correctly updated on Sprint view.'
+,
+	do: ->
+
+		@open(url('story', storyId)).then @lock.release
+	verify: ->
+,
+	do: ->
+
+		@test.info 'Create Task:'
+		@click '#button-bar input.button.add'
+		@waitForResource url('story', storyId), @lock.release
+	verify: ->
+
+		@test.assertSelectorHasText '.panel:nth-child(2) .header .stats .text', '21.5', 'Stats text correctly updated on Sprint view.'
+,
+	do: ->
+
+		@test.info 'Remove Task:'
+		@click 'ul#well li.panel:nth-of-type(3) input.button.remove'
+		@click '#confirm-dialog input.button.confirm'
+		@waitForResource url('story', storyId), @lock.release
+	verify: ->
+
+		@test.assertSelectorHasText '.panel:nth-child(2) .header .stats .text', '20.5', 'Stats text correctly updated on Sprint view.'		
+]
+
+casper2.lock.release()
+pairs.forEach (pair) -> 
+
+	casper1.then waitFor2 pair.do
+	casper2.then waitFor1 -> 
+
+		pair.verify.call @
+		if !pair.manual_release_after_verify then @lock.release()
+
+#ensure the 1st casper instance (actor) does not finish before the 2nd one (verifyer)
 casper1.then waitFor2 ->
 
 casper1.run()
-casper2.run()
+casper2.run ->
+
+	@test.done 9
+	@test.renderResults true
