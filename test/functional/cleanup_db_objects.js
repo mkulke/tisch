@@ -1,3 +1,8 @@
+sprintAId = "528c95f4eab8b32b76efac0b";
+sprintBId = "52d7099a9f3c50aef93a88fe";
+storyAId = "528c961beab8b32b76efac0c";
+storyBId = "528cc5cb42a7877322b90c2c";
+
 db.sprint.remove({"_meta.test": true});
-db.story.remove({"_meta.test": true});
-db.task.remove({"_meta.test": true});
+db.story.remove({$or: [{"_meta.test": true}, {"sprint_id": sprintAId}, {"sprint_id": sprintBId}]});
+db.task.remove({$or: [{"_meta.test": true}, {"story_id": storyAId}, {"story_id": storyBId}]});

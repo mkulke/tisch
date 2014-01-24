@@ -1,10 +1,15 @@
+sprintAId = "528c95f4eab8b32b76efac0b";
+sprintBId = "52d7099a9f3c50aef93a88fe";
+storyAId = "528c961beab8b32b76efac0c";
+storyBId = "528cc5cb42a7877322b90c2c";
+
 db.sprint.remove({"_meta.test": true});
-db.story.remove({"_meta.test": true});
-db.task.remove({"_meta.test": true});
+db.story.remove({$or: [{"_meta.test": true}, {"sprint_id": sprintAId}, {"sprint_id": sprintBId}]});
+db.task.remove({$or: [{"_meta.test": true}, {"story_id": storyAId}, {"story_id": storyBId}]});
 
 var sprintA = {
 
-	_id: ObjectId("528c95f4eab8b32b76efac0b"),
+	_id: ObjectId(sprintAId),
 	_rev: 0,
 	description: "Sprint A description",
 	start: ISODate("2013-01-01"),
@@ -20,7 +25,7 @@ db.sprint.insert(sprintA);
 
 var sprintB = {
 
-	_id: ObjectId("52d7099a9f3c50aef93a88fe"),
+	_id: ObjectId(sprintBId),
 	_rev: 0,
 	description: "Sprint B description",
 	start: ISODate("2013-01-15"),
@@ -36,13 +41,13 @@ db.sprint.insert(sprintB);
 
 var storyA = {
 
-	_id: ObjectId("528c961beab8b32b76efac0c"),
+	_id: ObjectId(storyAId),
 	_rev: 0,
 	color: "yellow",
 	description: "Story A description",
 	estimation: 5,
 	priority: 1,
-	sprint_id: ObjectId("528c95f4eab8b32b76efac0b"),
+	sprint_id: ObjectId(sprintAId),
 	title: "Test Story A",
 	_meta: {
 
@@ -53,13 +58,13 @@ db.story.insert(storyA);
 
 var storyB = {
 
-	_id: ObjectId("528cc5cb42a7877322b90c2c"),
+	_id: ObjectId(storyBId),
 	_rev: 0,
 	color: "red",
 	description: "Story B description",
 	estimation: 5,
 	priority: 2,
-	sprint_id: ObjectId("528c95f4eab8b32b76efac0b"),
+	sprint_id: ObjectId(sprintAId),
 	title: "Test Story B",
 	_meta: {
 
@@ -81,7 +86,7 @@ var taskA = {
 		initial: 1, 
 		"2013-01-05": 10
 	},
-	story_id: ObjectId("528c961beab8b32b76efac0c"),
+	story_id: ObjectId(storyAId),
 	summary: "Test Task A",
 	time_spent: {
 
@@ -111,7 +116,7 @@ var taskB = {
 		"2013-01-04": 8.5,
 		"2012-01-15": 5
 	},
-	story_id: ObjectId("528c961beab8b32b76efac0c"),
+	story_id: ObjectId(storyAId),
 	summary: "Test Task B",
 	time_spent: {
 
