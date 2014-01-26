@@ -1,0 +1,15 @@
+{
+	"templates": {
+
+		"task": {
+
+		  "description": "", 
+		  "initial_estimation": 1,
+		  "remaining_time": {"initial": 1},
+		  "time_spent": {"initial": 0}, 
+		  "summary": "New Task",
+		  "color": "blue",
+		  "story_id": null
+		}
+	}
+}
