@@ -55,9 +55,9 @@ module.exports = function(grunt) {
 
       coffee: {
 
-          files: ['coffee/*.coffee', 'test/unit/*.coffee', 'test/functional/*.coffee'],
-          tasks: 'coffee'
-        }
+        files: ['coffee/*.coffee', 'test/unit/*.coffee', 'test/functional/*.coffee'],
+        tasks: 'coffee'
+      }
     },
     mocha_phantomjs: {
 
@@ -68,19 +68,19 @@ module.exports = function(grunt) {
 
       create_db_objects: {
 
-          command: 'mongo test/functional/create_db_objects.js',
-          options: {
+        command: 'mongo test/functional/create_db_objects.js',
+        options: {
 
-              failOnError: true
-          }
+          failOnError: true
+        }
       },
       cleanup_db_objects: {
 
-          command: 'mongo test/functional/cleanup_db_objects.js',
-          options: {
-            
-              failOnError: true
-          }
+        command: 'mongo test/functional/cleanup_db_objects.js',
+        options: {
+          
+          failOnError: true
+        }
       }
     },
     jshint: {
@@ -108,6 +108,5 @@ module.exports = function(grunt) {
   grunt.registerTask('functional_sprint', ['shell:create_db_objects', 'ghost:sprint', 'shell:cleanup_db_objects']);
   grunt.registerTask('functional_rt', ['shell:create_db_objects', 'ghost:rt', 'shell:cleanup_db_objects']);
   grunt.registerTask('functional', ['server', 'functional_task', 'functional_story', 'functional_sprint', 'functional_rt']);
-  //grunt.registerTask('test', ['coffee', 'server', 'ghost']);
   grunt.registerTask('test', ['jshint', 'coffee', 'mocha_phantomjs', 'functional']);
 };
