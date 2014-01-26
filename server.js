@@ -6,6 +6,7 @@ var assert = require('assert');
 var url = require('url');
 var ObjectID = require('mongodb').ObjectID;
 var messages = require('./messages.json');
+var constants = require('./constants.json');
 var Q = require('q');
 var io = require('socket.io');
 var moment = require('moment');
@@ -45,7 +46,16 @@ var htmlTemplates = {
 
 var clients = [];
 
-function partial(fn) {
+var ensure = function(checkFn, exception, value) {
+
+  if (!checkFn(value)) {
+
+    throw exception;
+  }
+  return value;
+};
+
+var partial = function (fn) {
 
   var aps = Array.prototype.slice;
   var args = aps.call(arguments, 1);
@@ -54,7 +64,7 @@ function partial(fn) {
 
     return fn.apply(this, args.concat(aps.call(arguments)));
   };
-}
+};
 
 var curry2 = function (fn) {
 
@@ -65,7 +75,6 @@ var curry2 = function (fn) {
       return fn(arg1, arg2);
     };
   };
-}
 };
 
 var complainWithPlain = function(err) {
@@ -136,7 +145,7 @@ function respondWithHtml(response, type, result) {
   response.end();
 }
 
-function respondWithJson(response, result) {
+var respondWithJson = function(response, result) {
 
   // TODO: robustness      
   var headers = {'Content-Type': 'application/json'};
@@ -144,13 +153,13 @@ function respondWithJson(response, result) {
   response.writeHead(200, headers);
   response.write(JSON.stringify(result));            
   response.end();
-}
+};
 
-function respondOk(response) {
+var respondOk = function(response) {
 
   response.writeHead(200);
   response.end();
-}
+};
 
 var notify = function(request, result) {
 
@@ -213,49 +222,149 @@ var notify = function(request, result) {
   tischRT.notify(notifications);
 };
 
-function processRequest(request, response) {
+var taskViewQuery = function(id) {
 
-  var query, answer;
+  var task, story;
+
+  return tischDB.findSingleTask(id)
+  .then(function (result) {
+
+    task = result;
+    return tischDB.findSingleStory(task.story_id.toString());
+  })
+  .then(function (result) {
+
+    story = result;
+    return tischDB.findSingleSprint(story.sprint_id.toString());
+  })
+  .then(function (result) {
+
+    return {task: task, story: story, sprint: result};
+  });
+};
+
+var storyViewQuery = function(id) {
+
+  var story, tasks;
+
+  return tischDB.findSingleStory(id)
+  .then(function (result) {
+
+    story = result;
+    return tischDB.findTasks({story_id: story._id}, {priority: 1});
+  })
+  .then(function (result) {
+
+    tasks = result;
+    return tischDB.findSingleSprint(story.sprint_id.toString());  
+  })
+  .then(function (result) {
+
+    return {story: story, tasks: tasks, sprint: result}; 
+  });
+};
+
+var sprintViewQuery = function(id) {
+
+  var sprint, stories;
+
+  return tischDB.findSingleSprint(id)
+  .then(function (result) {
+
+    sprint = result;
+    return tischDB.findStories({sprint_id: sprint._id}, {priority: 1});
+  })
+  .then(function (result) {
+
+    stories = result;
+    storyIds = _.chain(stories).pluck('_id').invoke('toString').value();
+
+    // TODO: remove literals
+    startIndex = moment(sprint.start).format('YYYY-MM-DD');
+    endIndex = moment(sprint.start).add('days', sprint.length - 1).format('YYYY-MM-DD');
+    return tischDB.getStoriesRemainingTime(storyIds, {start: startIndex, end: endIndex});
+  })
+  .then(function (result) {
+
+    return {sprint: sprint, stories: stories, calculations: {remaining_time: result}}; 
+  });
+};
+
+var extractHeaderField = function(field, headers) {
+
+  var value = headers[field];
+  if (value === undefined) {
+
+    throw 'header field "' + field + '" missing in request';
+  }
+  return value;
+};
+
+var extractRev = _.compose(partial(ensure, _.isFinite, '"rev" header in request is malformed.'), curry2(parseInt)(10), partial(extractHeaderField, 'rev'));
+
+var extractParentId = partial(extractHeaderField, 'parent_id');
+
+// TODO: move ObjectID to db.
+var removeTaskQuery = function(id, rev) {
+
+  var filter = {_id: ObjectID(id), _rev: rev};
+  return tischDB.removeTask(filter, true)
+  .then(function (result) {
+
+    return {deleted: result, parent_id: result.story_id};
+  });
+};
+
+var addQuery = function(dbFn, data, parentKey, parentId) {
+
+  if (parentKey) {
+
+    data = _.clone(data);
+    data[parentKey] = ObjectID(parentId);
+  }
+
+  return dbFn(data)
+  .then(function(result) {
+
+    if (result[parentKey]) {
+
+      return {"new": result, parent_id: result.story_id};
+    }
+    else {
+
+      return {"new": result};
+    }
+  });
+};
+
+var processRequest = function(request, response) {
+
+  var query, answer, id;
   var url_parts = url.parse(request.url, true);
   //var query = url_parts.query;
   var pathname = url_parts.pathname;
   var pathParts = pathname.split("/");
   var type = (pathParts.length > 1 && pathParts[1] !== "") ? unescape(pathParts[1]) : 'index';
-  var id = pathParts.length > 2 ? unescape(pathParts[2]) : null;
+  var method = request.method;
+  id = pathParts.length > 2 ? unescape(pathParts[2]) : null;
   var html = ((request.headers.accept !== undefined) && (request.headers.accept.match(/application\/json/) !== null)) ? false : true;
   var respond = html ? partial(respondWithHtml, response, type) : partial(respondWithJson, response);
 
-  if ((type == 'task') && (request.method == 'GET')) {
+  if ((!html) && (method == 'GET') && (_.contains(['task', 'story', 'sprint'], type))) {
 
-    query = function() {
+    var filter = request.headers.parent_id ? {sprint_id: ObjectID(request.headers.parent_id)} : {}; 
+    var sort = {};
+    if (request.headers.sort_by) {
 
-      if (html) {
+      sort[request.headers.sort_by] = 1;
+    }
+    
+    query = (id) ? partial(tischDB.findOne, type, id) : partial(tischDB.find, type, filter, sort);
+    answer = partial(respondWithJson, response);
+  }
+  else if ((type == 'task') && (request.method == 'GET')) {
 
-        var task;
-        var story;
-
-        return tischDB.findSingleTask(id)
-        .then(function (result) {
-
-          task = result;
-          return tischDB.findSingleStory(task.story_id.toString());
-        })
-        .then(function (result) {
-
-          story = result;
-          return tischDB.findSingleSprint(story.sprint_id.toString());
-        })
-        .then(function (result) {
-
-          return {task: task, story: story, sprint: result};
-        });
-      }
-      else {
-
-        return tischDB.findSingleTask(id);
-      }
-    };
-
+    query = partial(taskViewQuery, id);
     answer = respond;
   } 
   else if ((type == 'task') && (request.method == 'POST')) {
@@ -287,93 +396,28 @@ function processRequest(request, response) {
   } 
   else if ((type == 'task') && (request.method == 'PUT')) {
 
-    assert.ok(request.headers.parent_id, 'parent_id header missing in request.');
-    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
+    // TODO: check client_uuid header for all non-get requests!
+    var parentId = extractParentId(request.headers);
 
-    query = function() {
-
-      var data = {
-  
-        description: "", 
-        initial_estimation: 1,
-        remaining_time: {initial: 1},
-        time_spent: {initial: 0}, 
-        summary: 'New Task',
-        color: 'blue',
-        story_id: ObjectID(request.headers.parent_id)
-      };
-
-      return tischDB.insertTask(data)
-      .then(function(result) {
-
-        return {new: result, parent_id: result.story_id};
-      });
-    };
+    query = partial(addQuery, tischDB.insertTask, constants.templates.task, 'story_id', parentId);
     
     answer = partial(putAnswer, partial(respondWithJson, response));
   } 
-  else if ((type == 'task') && (request.method == 'DELETE')) {
-  
-    assert.ok(request.headers.rev, 'rev header missing in request.');
-    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
-
-    query = function() {
-
-      var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
-      return tischDB.removeTask(filter, true)
-      .then(function (result) {
-
-        return {deleted: result, parent_id: result.story_id};
-      });
-    };
+  else if ((type == 'task') && (request.method == 'DELETE')) {   
       
+    var rev = extractRev(request.headers);
+
+    query = partial(removeTaskQuery, id, rev);
+
     answer = partial(deleteAnswer, partial(respondWithJson, response));
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
 
-    if (id) {
-
-      query = function() {
-
-        var story;
-        
-        if (html) {
-
-          var tasks;
-
-          return tischDB.findSingleStory(id)
-          .then(function (result) {
-
-            story = result;
-            return tischDB.findTasks({story_id: story._id}, {priority: 1});
-          })
-          .then(function (result) {
-
-            tasks = result;
-            return tischDB.findSingleSprint(story.sprint_id.toString());  
-          })
-          .then(function (result) {
-
-            return {story: story, tasks: tasks, sprint: result}; 
-          });
-        } else {
-
-          return tischDB.findSingleStory(id);
-        }
-      };
-    } else {
-
-      assert.notEqual(true, html, 'Generic story GET available only as json.');
-
-      query = function(result) {
-
-        return tischDB.findStories(request.headers.parent_id ? {sprint_id: ObjectID(request.headers.parent_id)} : {}, {title: 1});
-      };
-    }
+    query = partial(storyViewQuery, id);
 
     answer = respond;
-
-  } else if ((type == 'story') && (request.method == 'POST')) {
+  } 
+  else if ((type == 'story') && (request.method == 'POST')) {
 
     assert.ok(id, 'id url part missing.');
     assert.ok(request.headers.rev, 'rev missing in request headers.');
@@ -451,50 +495,7 @@ function processRequest(request, response) {
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
 
-    if (id) {
-      
-      query = function() {
-
-        if (html) {
-
-          var sprint;
-          var stories;
-
-          return tischDB.findSingleSprint(id)
-          .then(function (result) {
-
-            sprint = result;
-            return tischDB.findStories({sprint_id: sprint._id}, {priority: 1});
-          })
-          .then(function (result) {
-
-            stories = result;
-            storyIds = _.chain(stories).pluck('_id').invoke('toString').value();
-
-            // TODO: remove literals
-            startIndex = moment(sprint.start).format('YYYY-MM-DD');
-            endIndex = moment(sprint.start).add('days', sprint.length - 1).format('YYYY-MM-DD');
-            return tischDB.getStoriesRemainingTime(storyIds, {start: startIndex, end: endIndex});
-          })
-          .then(function (result) {
-
-            return {sprint: sprint, stories: stories, calculations: {remaining_time: result}}; 
-          });
-        }
-        else {
-
-          return tischDB.findSingleSprint(id); 
-        }
-      };
-    } else {
-
-      assert.notEqual(true, html, 'Generic sprint GET available only as json.');
-
-      query = function(result) {
-
-        return tischDB.findSprints({}, {title: 1});
-      };
-    }
+    query = partial(sprintViewQuery, id);
 
     answer = respond;
   } 
@@ -642,7 +643,7 @@ function processRequest(request, response) {
   .then(partial(notify, request))
   .fail(html ? complainWithPlain.bind(response) : complainWithJson.bind(response))
   .done();
-}
+};
 
 var app = connect()
   .use(connect.logger('dev'))

@@ -289,14 +289,16 @@ class Model
 
         #TODO: proper errmsg
         errorCb? errorThrown
-  getMultiple = (type, parentId, successCb) ->
+  getMultiple = (type, parentId, sortBy, successCb) ->
 
-    if parentId?
+    headers = {}
 
-      headers = {parent_id: parentId}
-    else
+    if parentId? 
 
-      headers = {}
+      _.extend headers, {parent_id: parentId}
+    if sortBy?
+
+      _.extend headers, {sort_by: sortBy}
 
     $.ajaxq 'client',
 
@@ -321,7 +323,7 @@ class Model
   getTask: partial get, 'task'
   getStory: partial get, 'story'
   getSprint: partial get, 'sprint'
-  getTasks: partial getMultiple, 'task'
+  #getTasks: partial getMultiple, 'task'
   getStories: partial getMultiple, 'story'
   getSprints: partial getMultiple, 'sprint', null
 

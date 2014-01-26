@@ -1,1 +1,2 @@
-- Sometimes in functional tests there is a failing GET calculations request.
+- On Firefox the chart rendering does not work.
+- When changing the sprint range, so that formerly included values are not in the range anymore, they still appear on the chart as single dots.

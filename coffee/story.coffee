@@ -151,7 +151,7 @@ class StoryViewModel extends ViewModel
 
   showSprintSelector: => 
 
-    @model.getSprints (sprints) =>
+    @model.getSprints null, (sprints) =>
 
       @sprints _.map sprints, (sprint) ->
 

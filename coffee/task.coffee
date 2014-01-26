@@ -84,7 +84,7 @@ class TaskViewModel extends ViewModel
 
   showStorySelector: => 
 
-    @model.getStories @model.story.sprint_id, (stories) =>
+    @model.getStories @model.story.sprint_id, 'title', (stories) =>
 
       @stories _.map stories, (story) ->
 

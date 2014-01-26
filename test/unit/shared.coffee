@@ -81,18 +81,16 @@ describe 'Model.getStories', ->
     @model = new Model
   after -> 
 
-    #ractive.get.restore()
-    #ractive.set.restore()
     @xhr.restore()
   it 'should issue a GET ajax request', ->
 
-    #sinon.stub ractive, 'get', -> [{_id: 'a', sprint_id: 'x'}, {_id: 'b', sprint_id: 'y'}]
-    @model.getStories 'y', ->
+    @model.getStories 'y', 'z', ->
     assert.equal @requests.length, 1
     request = @requests[0]
     assert.equal request.url, '/story'
     assert.equal request.method, 'GET'
     assert.equal request.requestHeaders.parent_id, 'y'
+    assert.equal request.requestHeaders.sort_by, 'z'
   it 'should call a success Callback', ->
 
     @requests[0].respond 200, {'Content-Type': 'application/json'}, '[{"_id":"a"},{"_id":"b"},{"_id":"c"}]'
