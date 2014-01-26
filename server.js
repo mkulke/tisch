@@ -56,16 +56,17 @@ function partial(fn) {
   };
 }
 
-function curry2(fn) {
+var curry2 = function (fn) {
 
   return function(arg2) {
 
     return function(arg1) {
 
-      fn(arg1, arg2);
+      return fn(arg1, arg2);
     };
   };
 }
+};
 
 var complainWithPlain = function(err) {
 
