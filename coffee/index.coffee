@@ -4,6 +4,12 @@ class IndexModel extends Model
 
 class IndexViewModel extends ViewModel
 
+  _addChild: (array, data) =>
+    
+    observables = @_createObservables data.new
+    observables.readonly.start.subscribe partial(@_sortByStart, array)
+    array.push observables
+
   _createObservables: (sprint) =>
 
     updateModel = partial @_updateModel, 'sprint'
@@ -75,6 +81,7 @@ class IndexViewModel extends ViewModel
     # rt specific initializations
 
     wires = _.chain(@sprints()).map(partial(@_createChildWires, @sprints)).flatten().value()
+    wires.push @_createAddWire('index', @sprints)
 
     socket = new SocketIO()
     socket.connect (sessionid) =>
