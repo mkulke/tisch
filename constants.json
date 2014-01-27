@@ -10,6 +10,22 @@
 		  "summary": "New Task",
 		  "color": "blue",
 		  "story_id": null
-		}
+		},
+		"story": {
+      
+      "description": "", 
+      "estimation": 5,
+      "color": "yellow", 
+      "title": "New Story",
+      "sprint_id": null
+    },
+    "sprint": {
+
+    	"description": "Sprint description",
+      "start": null,
+      "length": 14,
+      "color": "blue", 
+      "title": "New Sprint"
+    }
 	}
 }

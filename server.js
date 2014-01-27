@@ -107,7 +107,7 @@ var deleteAnswer = function(respond, results) {
   var removed;
   var mapToAnswer = function(result) {
 
-    var id, parentId, parentKey, object;
+    var id, parentId, object;
     object = result.deleted;
     id = object._id.toString();
     parentId = result.parent_id.toString();
@@ -163,7 +163,7 @@ var respondOk = function(response) {
 
 var notify = function(request, result) {
 
-  var clientIds, clients, byParentId, byRequest, byId, byProperties, originatingClient, toNotification;
+  var notifications, clientIds, clients, byParentId, byRequest, byId, byProperties, originatingClient, toNotification;
 
   // remove might supply an array as result (cascading delete)
   if (!result) {
@@ -220,6 +220,15 @@ var notify = function(request, result) {
     .value();
 
   tischRT.notify(notifications);
+};
+
+var indexViewQuery = function() {
+
+  return tischDB.findSprints({}, {start: 1})
+  .then(function (result) {
+
+    return {sprints: result};
+  });
 };
 
 var taskViewQuery = function(id) {
@@ -326,9 +335,9 @@ var addQuery = function(dbFn, data, parentKey, parentId) {
   return dbFn(data)
   .then(function(result) {
 
-    if (result[parentKey]) {
+    if (parentId) {
 
-      return {"new": result, parent_id: result.story_id};
+      return {"new": result, parent_id: parentId};
     }
     else {
 
@@ -339,7 +348,7 @@ var addQuery = function(dbFn, data, parentKey, parentId) {
 
 var processRequest = function(request, response) {
 
-  var query, answer, id;
+  var query, answer, id, parentId, rev;
   var url_parts = url.parse(request.url, true);
   //var query = url_parts.query;
   var pathname = url_parts.pathname;
@@ -350,6 +359,7 @@ var processRequest = function(request, response) {
   var html = ((request.headers.accept !== undefined) && (request.headers.accept.match(/application\/json/) !== null)) ? false : true;
   var respond = html ? partial(respondWithHtml, response, type) : partial(respondWithJson, response);
 
+  // simple json get requests
   if ((!html) && (method == 'GET') && (_.contains(['task', 'story', 'sprint'], type))) {
 
     var filter = request.headers.parent_id ? {sprint_id: ObjectID(request.headers.parent_id)} : {}; 
@@ -397,24 +407,21 @@ var processRequest = function(request, response) {
   else if ((type == 'task') && (request.method == 'PUT')) {
 
     // TODO: check client_uuid header for all non-get requests!
-    var parentId = extractParentId(request.headers);
+    parentId = extractParentId(request.headers);
 
-    query = partial(addQuery, tischDB.insertTask, constants.templates.task, 'story_id', parentId);
-    
+    query = partial(addQuery, tischDB.insertTask, constants.templates.task, 'story_id', parentId);  
     answer = partial(putAnswer, partial(respondWithJson, response));
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {   
       
-    var rev = extractRev(request.headers);
+    rev = extractRev(request.headers);
 
     query = partial(removeTaskQuery, id, rev);
-
     answer = partial(deleteAnswer, partial(respondWithJson, response));
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
 
     query = partial(storyViewQuery, id);
-
     answer = respond;
   } 
   else if ((type == 'story') && (request.method == 'POST')) {
@@ -439,38 +446,19 @@ var processRequest = function(request, response) {
   }
   else if ((type == 'story') && (request.method == 'PUT')) {
 
-    query = function() {
+    parentId = extractParentId(request.headers);
 
-      assert.ok(request.headers.parent_id, 'parent_id header missing in request.');
-      assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
-
-      var data = {
-      
-        description: "", 
-        estimation: 5,
-        color: 'yellow', 
-        title: 'New Story',
-        sprint_id: ObjectID(request.headers.parent_id)
-      };
-
-      return tischDB.insertStory(data)
-      .then(function (result) {
-
-        return {new: result, parent_id: result.sprint_id};
-      });
-    };
-    
-    answer = partial(putAnswer, partial(respondWithJson, response));  
+    query = partial(addQuery, tischDB.insertStory, constants.templates.story, 'sprint_id', parentId);
+    answer = partial(putAnswer, partial(respondWithJson, response));
   } 
   else if ((type == 'story') && (request.method == 'DELETE')) {
-  
-    assert.ok(request.headers.rev, 'rev missing in request headers.');
-    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
+
+    rev = extractRev(request.headers);
 
     query = function() {
 
       var story;
-      var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
+      var filter = {_id: ObjectID(id), _rev: rev};
 
       return tischDB.removeStory(filter, true)
       .then(function(result) {
@@ -496,7 +484,6 @@ var processRequest = function(request, response) {
   else if ((type == 'sprint') && (request.method == 'GET')) {
 
     query = partial(sprintViewQuery, id);
-
     answer = respond;
   } 
   else if ((type == 'sprint') && (request.method == 'POST')) {
@@ -519,36 +506,19 @@ var processRequest = function(request, response) {
   }
   else if ((type == 'sprint') && (request.method == 'PUT')) {
 
-    query = function() {
+    var data = _.clone(constants.templates.sprint);
+    data.start = moment().millisecond(0).second(0).minute(0).hour(0).toDate();
 
-      assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
-
-      var data = {
-      
-        description: 'Sprint description',
-        start: moment().millisecond(0).second(0).minute(0).hour(0).toDate(),
-        length: 14,
-        color: 'blue', 
-        title: 'New Sprint'
-      };
-
-      return tischDB.insertSprint(data)
-      .then(function (result) {
-
-        return {new: result, parent_id: 'index'};
-      });
-    };
-
+    query = partial(addQuery, tischDB.insertSprint, data, null, 'index');
     answer = partial(putAnswer, partial(respondWithJson, response));
   }
   else if ((type == 'sprint') && (request.method == 'DELETE')) {
   
-    assert.ok(request.headers.rev, 'rev missing in request headers.');
-    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
+    rev = extractRev(request.headers);
 
     query = function() {
 
-      var filter = {_id: ObjectID(id), _rev: parseInt(request.headers.rev, 10)};
+      var filter = {_id: ObjectID(id), _rev: rev};
       var removed = [];
 
       return tischDB.removeSprint(filter, true)
@@ -590,14 +560,7 @@ var processRequest = function(request, response) {
   }
   else if ((type == 'index') && (request.method == 'GET')) {
 
-    query = function() {
-
-      return tischDB.findSprints({}, {start: 1})
-      .then(function (result) {
-
-        return {sprints: result};
-      });
-    };
+    query = indexViewQuery;
     answer = respond;
   }
   else if ((type == 'remaining_time_calculation') && (request.method == 'GET')) {
