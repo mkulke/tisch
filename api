@@ -1,0 +1,24 @@
+_ID_ is a string of 24 alphanumeric chars.
+_PROP_ is a string describing a property 1-24 chars.
+_REV_ is a positive revision number of the object.
+_CALC_ is a string describing a calculation, options are "remaining_time" (for stories).
+_DATE_ is a string in YYYY-MM-DD format.
+
+The GET requests return HTML by default, unless 'application/json' is found in the 'accept' header.
+
+GET /task/_ID_ -> retrieves task
+GET /task -> retrieves all tasks in an array, only as json, optional headers: parent_id:_ID_, sort_by:_PROP_
+PUT /task -> adds a new task and returns it as {new: newTask, parent_id: _ID_}, only as json, mandatory headers: parent_id:_ID_
+DELETE /task/_ID_ -> deletes the task and returns {deleted: task, parent_id: _ID_}, only as json, mandatory headers: rev:_REV_
+POST /task/_ID_ -> modifies the task with the value in the request body, only as json, mandatory headers: id:_ID_, rev:_REV_, property:_PROPERTY_
+GET /story/_ID_ -> retrieves story
+GET /story -> retrieves all stories in an array, only as json, optional headers: parent_id:_ID_, sort_by:_PROP_
+PUT /story -> adds a new story and returns it as {new: newStory, parent_id: _ID_}, only as json, mandatory headers: parent_id:_ID_ 
+DELETE /story/_ID_ -> deletes the story and its task children then returns [{deleted: story, parent_id: _ID_}, {deleted: task1, parent_id: _ID_}], only as json, mandatory headers: rev:_REV_
+POST /story/_ID_ -> modifies the story with the value in the request body, only as json, mandatory headers: id:_ID_, rev:_REV_, property:_PROPERTY_
+GET /sprint/{id} -> retrieves sprint
+GET /sprint -> retrieves all sprints, only as json, sort_by:_PROP_
+PUT /sprint -> adds a new sprint and returns it as {new: newSprint, parent_id: 'index'}, only as json
+DELETE /sprint/_ID_ -> deletes the sprint, its story children, it's task grandchildren, then returns [{deleted: sprint, parent_id: 'index'}, {deleted: story, parent_id: _ID_}, {deleted: task, parent_id: _ID_}], only as json, mandatory headers: rev:_REV_
+POST /sprint/_ID_ -> modifies the sprint with the value in the request body, only as json, mandatory headers: id:_ID_, rev:_REV_, property:_PROPERTY_
+GET /calculation/_ID_ -> retrieves the result of a calculation (as of now: remaining_time for stories), only as json, mandatory queries: start:_DATE_, end:_DATE_
