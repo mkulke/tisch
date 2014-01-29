@@ -2,11 +2,17 @@ class SprintModel extends Model
 
   getRemainingTime: (storyId, successCb) =>
 
+    # TODO: move constants
+
     $.ajaxq 'client',
 
-      url: "/remaining_time_calculation/#{storyId}"
+      url: "/calculation/#{storyId}?"
       type: 'GET'
       dataType: 'json'
+      data: 
+
+        start: moment(@sprint.start).format('YYYY-MM-DD')
+        end: moment(@sprint.start).add('days', @sprint.length - 1).format('YYYY-MM-DD')
       success: (data, textStatus, jqXHR) ->
         
         successCb? data
@@ -16,14 +22,10 @@ class SprintModel extends Model
     remainingTimes = {}
     _.each storyIds, (storyId) =>
 
-      gets.push $.ajaxq 'client',
+      @getRemainingTime storyId, (data) ->
 
-        url: "/remaining_time_calculation/#{storyId}"
-        type: 'GET'
-        dataType: 'json'
-        success: (data, textStatus, jqXHR) ->
-
-          remainingTimes[storyId] = data
+        remainingTimes[storyId] = data
+      
     $.when.apply($, gets).then ->
 
       successCb? remainingTimes
@@ -48,7 +50,8 @@ class SprintViewModel extends ViewModel
         @readonly.remainingTimeCalculations()[story._id]
     readonly:
 
-      color: ko.observable story.color      
+      color: ko.observable story.color
+      sprint_id: ko.observable story.sprint_id  
     writable: _.reduce [
 
       {name: 'title', throttled: true}
@@ -211,12 +214,15 @@ class SprintViewModel extends ViewModel
 
     @stories = ko.observableArray _.map @model.stories, @_createObservables
     _.chain(@stories()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority, @stories))
+    @_subscribeToAssignmentChanges @stories, 'sprint_id'
     @_setupSortable @stories()
 
     # rt specific initializations
 
     wires = []
     observables = _.extend {}, @writable, @readonly
+
+    wires.push @_createAssignmentWire(@model.sprint._id, @stories, 'sprint_id', @model.getStory)
     wires.push @_createUpdateWire(@model.sprint, observables)
     wires.push @_createAddWire(@model.sprint._id, @stories)
     wires = wires.concat _.chain(@stories()).map(partial(@_createChildWires, @stories)).flatten().value()

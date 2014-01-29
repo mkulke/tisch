@@ -6,7 +6,7 @@ class IndexViewModel extends ViewModel
 
   _addChild: (array, data) =>
     
-    observables = @_createObservables data.new
+    observables = @_createObservables data
     observables.readonly.start.subscribe partial(@_sortByStart, array)
     array.push observables
 

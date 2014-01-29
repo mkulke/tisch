@@ -348,9 +348,9 @@ var addQuery = function(dbFn, data, parentKey, parentId) {
 
 var processRequest = function(request, response) {
 
-  var query, answer, id, parentId, rev;
+  var query, answer, id, parentId, rev, property;
   var url_parts = url.parse(request.url, true);
-  //var query = url_parts.query;
+  var urlQuery = url_parts.query;
   var pathname = url_parts.pathname;
   var pathParts = pathname.split("/");
   var type = (pathParts.length > 1 && pathParts[1] !== "") ? unescape(pathParts[1]) : 'index';
@@ -362,7 +362,19 @@ var processRequest = function(request, response) {
   // simple json get requests
   if ((!html) && (method == 'GET') && (_.contains(['task', 'story', 'sprint'], type))) {
 
-    var filter = request.headers.parent_id ? {sprint_id: ObjectID(request.headers.parent_id)} : {}; 
+    var filter = {};
+    if (request.headers.parent_id) {
+
+      if (type == 'task') {
+
+        filter.story_id = ObjectID(request.headers.parent_id);
+      }
+      else if (type == 'story') {
+
+        filter.sprint_id = ObjectID(request.headers.parent_id); 
+      }
+    }
+
     var sort = {};
     if (request.headers.sort_by) {
 
@@ -379,29 +391,9 @@ var processRequest = function(request, response) {
   } 
   else if ((type == 'task') && (request.method == 'POST')) {
 
-    assert.ok(id, 'id url part missing.');
-    assert.ok(request.headers.rev, 'rev missing in request headers.');
-    //assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.')
+    rev = extractRev(request.headers);
 
-    var formerStoryId;
-
-    query = function() {
-
-      if (request.body.key == 'story_id') {
-
-        return tischDB.findSingleTask(id)
-        .then(function (result) {
-
-          formerStoryId = result.story_id.toString();
-          return tischDB.updateTaskAssignment(id, request.body.value, parseInt(request.headers.rev, 10));
-        });
-      }
-      else {
-
-        return tischDB.updateTask(id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);
-      }
-    };
-
+    query = (request.body.key == 'story_id') ? partial(tischDB.updateTaskAssignment, id, request.body.value, rev) : partial(tischDB.updateTask, id, rev, request.body.key, request.body.value);
     answer = partial(postAnswer, request.body.key, 'story_id', partial(respondWithJson, response));
   } 
   else if ((type == 'task') && (request.method == 'PUT')) {
@@ -426,22 +418,9 @@ var processRequest = function(request, response) {
   } 
   else if ((type == 'story') && (request.method == 'POST')) {
 
-    assert.ok(id, 'id url part missing.');
-    assert.ok(request.headers.rev, 'rev missing in request headers.');
-    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
+    rev = extractRev(request.headers);
 
-    query = function() {
-
-      if (request.body.key == 'sprint_id') {
-
-        return tischDB.updateStoryAssignment(id, request.body.value, parseInt(request.headers.rev, 10));
-      }
-      else {
-
-        return tischDB.updateStory(id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);  
-      }
-    };
-
+    query = (request.body.key == 'sprint_id') ? partial(tischDB.updateStoryAssignment, id, request.body.value, rev) : partial(tischDB.updateStory, id, rev, request.body.key, request.body.value);
     answer = partial(postAnswer, request.body.key, 'sprint_id', partial(respondWithJson, response));
   }
   else if ((type == 'story') && (request.method == 'PUT')) {
@@ -488,20 +467,14 @@ var processRequest = function(request, response) {
   } 
   else if ((type == 'sprint') && (request.method == 'POST')) {
 
-    assert.ok(id, 'id url part missing.');
-    assert.ok(request.headers.rev, 'rev missing in request headers.');
-    assert.ok(request.headers.client_uuid, 'client_uuid missing in request headers.');
+    rev = extractRev(request.headers);
 
-    query = function() {
+    if (request.body.key == 'start') {
 
-      if (request.body.key == 'start') {
+      request.body.value = new Date(request.body.value);
+    } 
 
-        request.body.value = new Date(request.body.value);
-      } 
-
-      return tischDB.updateSprint(id, parseInt(request.headers.rev, 10), request.body.key, request.body.value);
-    };
-
+    query = partial(tischDB.updateSprint, id, rev, request.body.key, request.body.value);
     answer = partial(postAnswer, request.body.key, null, partial(respondWithJson, response));
   }
   else if ((type == 'sprint') && (request.method == 'PUT')) {
@@ -563,26 +536,14 @@ var processRequest = function(request, response) {
     query = indexViewQuery;
     answer = respond;
   }
-  else if ((type == 'remaining_time_calculation') && (request.method == 'GET')) {
+  else if ((type == 'calculation') && (request.method == 'GET')) {
 
-    assert.notEqual(true, html, 'Remaining time calculation available only as json.');
+    // TODO: which calculation?
+    // TODO: robustness, check for start & end query
 
-    // TODO: implement a per-sprint method (otherwise we have have to use 1 ajax call & db per story).
     query = function() {
 
-      assert.ok(id, 'Story id is missing in the request\'s url');
-
-      return tischDB.findSingleStory(id)
-      .then(function (result) {
-
-        return tischDB.findSingleSprint(result.sprint_id.toString());
-      })
-      .then(function (result) {
-
-        startIndex = moment(result.start).format('YYYY-MM-DD');
-        endIndex = moment(result.start).add('days', result.length - 1).format('YYYY-MM-DD');
-        return tischDB.getStoriesRemainingTime([id], {start: startIndex, end: endIndex});
-      })
+      return tischDB.getStoriesRemainingTime([id], {start: urlQuery.start, end: urlQuery.end})
       .then(function (result) {
 
         return (result[id] || null);

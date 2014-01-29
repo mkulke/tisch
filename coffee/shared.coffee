@@ -269,7 +269,7 @@ class Model
       headers: headers
       success: (data, textStatus, jqXHR) -> 
 
-        successCb? data
+        successCb? data.new
       error: (jqXHR, textStatus, errorThrown) -> 
 
         # TODO: proper err msg
@@ -337,7 +337,7 @@ class Model
 
       url: "/#{type}/#{object._id}"
       type: 'POST'
-      headers: {client_uuid: common.uuid, sessionid: @sessionid} # TODO get rid of common.uuid
+      headers: {property: key, sessionid: @sessionid}
       contentType: 'application/json'
       dataType: 'json'
       data: JSON.stringify {key: key, value: object[key]}
@@ -352,6 +352,7 @@ class Model
 
         # TODO: i18n
         errorCb? (if errorThrown == "" then 'Error: Unknown communications problem with server.' else errorThrown)
+
   getClosestValueByDateIndex: (object, index, startIndex) ->
 
     if object[index]?

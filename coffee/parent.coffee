@@ -1,23 +1,52 @@
 parentMixin =
 
+  _removeChild: (children, id) ->
+
+    children.remove (item) ->
+
+      item.id == id
+
   _createAddWire: (parentId, children) ->
 
     parent_id: parentId
     method: 'PUT'
-    handler: partial @_addChild, children
+    handler: _.compose(partial(@_addChild, children), curry2(_.result)('new'))
+
   _createRemoveWire: (id, children) ->
 
     method: 'DELETE'
     id: id
-    handler: =>
+    handler: partial @_removeChild, children, id
 
-      children.remove (item) ->
+  _createAssignmentWire: (parentId, children, property, getFn) ->
 
-        item.id == id 
+    parent_id: parentId
+    properties: [property]
+    method: 'POST'
+    handler: _.compose(curry2(getFn)(partial(@_addChild, children)), curry2(_.result)('id'))
+
+  _subscribeToAssignmentChanges: (children, property) ->
+
+    removeChild = partial @_removeChild, children
+
+    _.each children, (observables) ->
+
+      observables.readonly[property].subscribe partial(removeChild, observables.id)
+    subscribeToNewChild = (changes) => 
+
+      _.each changes, (change) =>
+
+        if change.status == 'added'
+
+          observables = children()[change.index]
+          observables.readonly[property].subscribe partial(removeChild, observables.id)
+    children.subscribe subscribeToNewChild, null, 'arrayChange'
+
   _createChildWires: (children, observables) ->
 
     [@_createUpdateWire(observables.js, _.extend({}, observables.writable, observables.readonly)), 
     @_createRemoveWire(observables.id, children)]
+
   _adjustChildWires: (socket, children, wires, changes) ->
 
     _.each changes, (change) =>

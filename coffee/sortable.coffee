@@ -2,7 +2,7 @@ sortableMixin =
 
   _addChild: (array, data) ->
     
-    observables = @_createObservables data.new
+    observables = @_createObservables data
     observables.writable.priority.subscribe partial(@_sortByPriority, array)
     array.push observables
 
