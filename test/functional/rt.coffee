@@ -145,6 +145,36 @@ pairs = [
 ,
 	do: ->
 
+		@test.info 'Deassign Task:'
+		@click "button[name='story_id']"
+		@waitForResource url('task', taskId), ->
+	
+			@click '#story-selector .content .line:nth-child(2)'
+			@waitForResource url('task', taskId), @lock.release
+	verify: ->
+
+		@test.assertEval ->
+
+			document.querySelectorAll('ul#well li.panel').length == 1
+		, '1 Task panels visible.'
+,
+	do: ->
+
+		@test.info 'Assign Task:'
+		@click "button[name='story_id']"
+		@waitForResource url('task', taskId), ->
+		
+			@click '#story-selector .content .line:nth-child(1)'
+			@waitForResource url('task', taskId), @lock.release
+	verify: ->
+
+		@test.assertEval ->
+
+			document.querySelectorAll('ul#well li.panel').length == 2
+		, '2 Task panels visible.'
+,
+	do: ->
+
 		@lock.release()
 	verify: ->
 
@@ -186,7 +216,7 @@ pairs = [
 		@waitForResource url('story', storyId), @lock.release
 	verify: ->
 
-		@test.assertSelectorHasText '.panel:nth-child(2) .header .stats .text', '20.5', 'Stats text correctly updated on Sprint view.'		
+		@test.assertSelectorHasText '.panel:nth-child(2) .header .stats .text', '20.5', 'Stats text correctly updated on Sprint view.'
 ]
 
 casper2.lock.release()
@@ -204,5 +234,5 @@ casper1.then waitFor2 ->
 casper1.run()
 casper2.run ->
 
-	@test.done 9
+	@test.done 11
 	@test.renderResults true
