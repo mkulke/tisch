@@ -29,7 +29,7 @@ parentMixin =
 
     removeChild = partial @_removeChild, children
 
-    _.each children, (observables) ->
+    _.each children(), (observables) ->
 
       observables.readonly[property].subscribe partial(removeChild, observables.id)
     subscribeToNewChild = (changes) => 
