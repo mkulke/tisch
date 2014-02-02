@@ -26,17 +26,8 @@ html
 			#button-bar
 				form.buttons
 					input(data-bind="click: addSprint", type='button', value=messages.en.ADD_SPRINT).button.add
-		div(data-bind="visible: modal() == 'error-dialog'")#error-dialog
-			div(data-bind="text: errorMessage()").message.error
-			.popup-buttons
-				form.buttons
-					input(data-bind="click: confirmError", type="button", value=messages.en.OK).button.confirm
-		div(data-bind="visible: modal() == 'confirm-dialog'")#confirm-dialog
-			div(data-bind="text: confirmMessage()").message.warning
-			.popup-buttons
-				form.buttons
-					input(data-bind="click: cancel", type="button", value=messages.en.CANCEL).button.cancel
-					input(data-bind="click: confirm", type="button", value=messages.en.CONFIRM).button.confirm
+		+errorDialog()
+		+confirmDialog()
 		div(data-bind="visible: modal() != null")#overlay
 		script(type='text/javascript')
 			

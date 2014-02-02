@@ -1,6 +1,6 @@
 class SprintModel extends Model
 
-  getRemainingTime: (storyId, successCb) =>
+  _getCalculation: (calculation, storyId, successCb) =>
 
     # TODO: move constants
 
@@ -13,25 +13,33 @@ class SprintModel extends Model
 
         start: moment(@sprint.start).format('YYYY-MM-DD')
         end: moment(@sprint.start).add('days', @sprint.length - 1).format('YYYY-MM-DD')
+        func: calculation
       success: (data, textStatus, jqXHR) ->
         
         successCb? data
-  getRemainingTimes: (storyIds, successCb) =>
+
+  _getCalculations: (fn, storyIds, successCb) =>
 
     gets = []
-    remainingTimes = {}
-    _.each storyIds, (storyId) =>
+    result = {}
+    _.each storyIds, (storyId) ->
 
-      @getRemainingTime storyId, (data) ->
+      gets.push fn storyId, (data) ->
 
-        remainingTimes[storyId] = data
-      
+        result[storyId] = data
     $.when.apply($, gets).then ->
 
-      successCb? remainingTimes
+      successCb? result
 
   type: 'sprint'
   constructor: (@stories, @sprint, @calculations) ->
+
+    @getTimeSpent = partial @_getCalculation, 'time_spent_for_story'
+    @getTimesSpent = partial @_getCalculations, @getTimeSpent
+    @getRemainingTime = partial @_getCalculation, 'remaining_time_for_story'
+    @getRemainingTimes = partial @_getCalculations, @getRemainingTime
+    @getTaskCount = partial @_getCalculation, 'task_count_for_story'
+    @getTaskCounts = partial @_getCalculations, @getTaskCount
 
 class SprintViewModel extends ViewModel
 
@@ -64,17 +72,23 @@ class SprintViewModel extends ViewModel
 
   _updateStat: (id) =>
 
-    @model.getRemainingTime id, (data) =>
+    update = (observable, data) =>
 
-      object = @readonly.remainingTimeCalculations()
+      object = observable()
       object[id] = data
-      @readonly.remainingTimeCalculations.notifySubscribers object
+      observable.notifySubscribers object
+
+    @model.getRemainingTime id, partial(update, @readonly.remainingTimeCalculations)
+    @model.getTimeSpent id, partial(update, @readonly.timeSpentCalculations)   
+    @model.getTaskCount id, partial(update, @readonly.taskCountCalculations)   
 
   _updateStats: =>
 
-    @model.getRemainingTimes _.pluck(@stories(), 'id'), (calculations) =>
+    ids = _.pluck(@stories(), 'id')
 
-      @readonly.remainingTimeCalculations calculations
+    @model.getRemainingTimes ids, @readonly.remainingTimeCalculations
+    @model.getTimesSpent ids, @readonly.timeSpentCalculations
+    @model.getTaskCounts ids, @readonly.taskCountCalculations
 
   _createGrandchildWires: (observables) =>
 
@@ -85,7 +99,11 @@ class SprintViewModel extends ViewModel
     specifics = [
 
       method: "POST"
-      properties: ['remaining_time']
+      properties: ['remaining_time', 'time_spent']
+    ,
+      method: "POST"
+      properties: ["story_id"]
+      handler: @_updateStats
     ,
       method: "PUT"
     ,
@@ -142,6 +160,14 @@ class SprintViewModel extends ViewModel
           item.id == story._id
         , @showErrorDialog
 
+  showStats: =>
+
+    @modal 'stats-dialog'
+
+  closeStats: =>
+
+    @modal null
+
   constructor: (@model) ->
 
     super(@model)
@@ -165,7 +191,20 @@ class SprintViewModel extends ViewModel
       object[property.name] = createObservable property.name, _.omit(property, 'name'); object
     , {}
 
+    @readonly =
+
+      remainingTimeCalculations: ko.observable @model.calculations.remaining_time
+      timeSpentCalculations: ko.observable @model.calculations.time_spent
+      taskCountCalculations: ko.observable @model.calculations.task_count
+
     @computed = do =>
+
+      sum = (observable) =>
+
+        _.reduce(observable(), (memo, value) ->
+
+          add memo, value
+        , 0)
 
       lengthDate = ko.computed
 
@@ -197,15 +236,10 @@ class SprintViewModel extends ViewModel
       endFormatted: ko.computed =>
 
         moment(lengthDate()).format(common.DATE_DISPLAY_FORMAT)
-      lengthDate: lengthDate   
-
-    @readonly =
-
-      remainingTimeCalculations: ko.observable @model.calculations.remaining_time
-
-    # calculations
-
-    # TODO: if sprint range changes, update calculations (if necessary)
+      lengthDate: lengthDate
+      remainingTime: ko.computed partial(sum, @readonly.remainingTimeCalculations) 
+      timeSpent: ko.computed partial(sum, @readonly.timeSpentCalculations)
+      taskCount: ko.computed partial(sum, @readonly.taskCountCalculations)
 
     @writable.start.subscribe @_updateStats
     @writable.length.subscribe @_updateStats

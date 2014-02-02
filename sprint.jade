@@ -57,19 +57,35 @@ html
 									input(data-bind="click: $parent.removeStory.bind($data)", type='button', value=messages.en.REMOVE).button.remove	
 			#button-bar
 				form.buttons
+					input(data-bind="click: showStats", type='button', value=messages.en.SHOW_STATS, name="show_stats").button.stats
 					input(data-bind="click: addStory", type='button', value=messages.en.ADD_STORY, name="add-story").button.add
 					input(type='button', value=messages.en.REMOVE, name="remove").button.remove
-		div(data-bind="visible: modal() == 'error-dialog'")#error-dialog
-			div(data-bind="text: errorMessage()").message.error
+		+errorDialog()
+		+confirmDialog()
+		div(data-bind="visible: modal() == 'stats-dialog'")#stats-dialog
+			.content
+				.textbox
+					p.stat.no-of-stories
+						span.label
+							=messages.en.NO_OF_STORIES+':'
+						span(data-bind="text: stories().length").value
+					p.stat.no-of-tasks
+						span.label
+							=messages.en.NO_OF_TASKS+':'
+						span(data-bind="text: computed.taskCount").value 
+					p.stat.remaining-time
+						span.label
+							=messages.en.REMAINING_TIME+':'
+						span(data-bind="text: computed.remainingTime").value
+					p.stat.time-spent
+						span.label
+							=messages.en.TIME_SPENT+':'
+						span(data-bind="text: computed.timeSpent").value
+				.chartbox
+					#chart
 			.popup-buttons
 				form.buttons
-					input(data-bind="click: confirmError", type="button", value=messages.en.OK).button.confirm
-		div(data-bind="visible: modal() == 'confirm-dialog'")#confirm-dialog
-			div(data-bind="text: confirmMessage()").message.warning
-			.popup-buttons
-				form.buttons
-					input(data-bind="click: cancel", type="button", value=messages.en.CANCEL).button.cancel
-					input(data-bind="click: confirm", type="button", value=messages.en.CONFIRM).button.confirm
+					input(data-bind="click: closeStats", type="button", value=messages.en.CLOSE).button.close
 		div(data-bind="visible: modal() != null")#overlay
 		script(type='text/javascript')
 

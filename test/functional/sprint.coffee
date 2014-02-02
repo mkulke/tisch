@@ -102,6 +102,18 @@ casper.then ->
 
 casper.then ->
 
+	@test.info 'Open stats dialog and verify contents:'
+	@click '#button-bar .button.stats'
+	@test.assertVisible '#stats-dialog', 'Stats dialog appeared.'
+	@test.assertEquals @getHTML('#stats-dialog .stat.no-of-stories span.value'), '2', 'Correct number of stories value.'
+	@test.assertEquals @getHTML('#stats-dialog .stat.no-of-tasks span.value'), '2', 'Correct number of tasks value.'
+	@test.assertEquals @getHTML('#stats-dialog .stat.remaining-time span.value'), '18.5', 'Correct remaining time value.'
+	@test.assertEquals @getHTML('#stats-dialog .stat.time-spent span.value'), '4', 'Correct time spent value.'
+	@click '#stats-dialog .popup-buttons .button.close'
+	@test.assertNotVisible '#stats-dialog', 'Stats dialog disappeared.'
+
+casper.then ->
+
 	@test.info 'Fill several throttled fields, then verify page content after reload:'
 	@fill '#content form', 
 
@@ -127,5 +139,5 @@ casper.then ->
 
 casper.run ->
 
-	@test.done 34
+	@test.done 40
 	@test.renderResults true

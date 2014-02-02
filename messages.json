@@ -15,6 +15,7 @@
     "ERROR_ADD": "Could not add the item. Its parent might have been removed meanwhile.",
     "ESTIMATION": "Estimation",
     "INITIAL_ESTIMATION": "Initial estimation",
+    "NO_OF_STORIES": "No. of Stories",
     "NO_OF_TASKS": "No. of Tasks",
     "OK": "Ok",
     "OPEN": "Open",

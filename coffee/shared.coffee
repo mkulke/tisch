@@ -25,6 +25,10 @@ curry3 = (fn) ->
 
         fn arg1, arg2, arg3
 
+add = (a, b) ->
+
+  a + b
+
 common = (->
 
   uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace /[xy]/g, (c) ->

@@ -51,16 +51,61 @@ var connect = function() {
 	});
 };
 
+var getTimeSpent = function(type, parentType, parentIds, range) {
+
+  var mapFn, reduceFn, deferred, objectIds;
+  
+  deferred = Q.defer();
+  objectIds = parentIds.map(ObjectID);
+
+  // ATTN: map & reduce are functions which are eval'ed in mongodb.
+  mapFn = function() {  
+
+    var object = this.time_spent;
+    var time_spent = Object.keys(object).filter(function(key) {
+
+      return ((key >= start) && (key <= end)); // filters out 'initial' as well
+    }).reduce(function (memo, key) {
+
+      return memo + object[key];
+    }, 0);
+
+    // TODO: storyId? fixed here?
+    emit(this.story_id, time_spent);
+  };
+
+  reduceFn = function(key, values) {
+
+    return Array.sum(values);
+  };
+
+  query = {};
+  query[parentType + '_id'] = {$in: objectIds};
+  db().collection(type).mapReduce(mapFn, reduceFn, {query: query, out: {inline: 1}, scope: {start: range.start, end: range.end}}, function (err, result) {
+
+    if (err) {
+
+      deferred.reject(new Error(err));
+    }
+    else {
+
+      var timesSpent = _.object(_.chain(result).pluck('_id').invoke('toString').value(), _.pluck(result, 'value'));
+      deferred.resolve(timesSpent);
+    }
+  });
+
+  return deferred.promise;
+};
+
 var getRemainingTime = function(type, parentType, parentIds, range) {
 
   var deferred = Q.defer();
-
-  objectIds = parentIds.map(ObjectID);
+  var objectIds = parentIds.map(ObjectID);
 
   // ATTN: map & reduce are functions which are eval'ed in mongodb.
   var map = function() {  
 
-    var remaining_time;
+    var remaining_time = this.remaining_time.initial;
     var keys = Object.keys(this.remaining_time).filter(function(key) {
 
       return ((key >= start) && (key <= end)); // filters out 'initial' as well
@@ -71,11 +116,8 @@ var getRemainingTime = function(type, parentType, parentIds, range) {
       var key = keys[keys.length - 1];
       remaining_time = this.remaining_time[key];
     }
-    else {
 
-      remaining_time = this.remaining_time.initial;
-    }
-
+    // TODO: storyId? fixed here?
     emit(this.story_id, remaining_time);
   };
 
@@ -98,6 +140,51 @@ var getRemainingTime = function(type, parentType, parentIds, range) {
       deferred.resolve(remainingTimes);
     }
   });
+
+  return deferred.promise;
+};
+
+var getChildCount = function(type, parentType, parentIds) {
+
+  var deferred = Q.defer();
+  var objectIds = parentIds.map(ObjectID);
+  var key = parentType + '_id';
+
+  var filter = {};
+  filter[key] = {"$in": objectIds};
+
+  db().collection(type).find(filter).toArray(function(err, result) {
+
+    if (err) {
+
+      deferred.reject(new Error(err));
+    }
+    else {
+
+      var count = _.countBy(result, function(child) {
+
+        return child[key];
+      });
+
+      deferred.resolve(count);
+    }
+  });
+
+  /*var ids = _.map(parentIds, ObjectID);
+  var filter = {};
+  filter[parentType + '_id'] = {"$in": ids};
+
+  db().collection(type).count(filter, function(err, result) {
+
+    if (err) {
+
+      deferred.reject(new Error(err));
+    }
+    else {
+
+      deferred.resolve(result);
+    }
+  });*/
 
   return deferred.promise;
 };
@@ -405,3 +492,6 @@ exports.findAndRemoveStories = partial(findAndRemove, 'story');
 exports.updateTaskAssignment = partial(updateAssignment, 'task', 'story');
 exports.updateStoryAssignment = partial(updateAssignment, 'story', 'sprint');
 exports.getStoriesRemainingTime = partial(getRemainingTime, 'task', 'story');
+exports.getStoriesTimeSpent = partial(getTimeSpent, 'task', 'story');
+exports.getStoriesTaskCount = partial(getChildCount, 'task', 'story');
+

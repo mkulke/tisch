@@ -64,17 +64,8 @@ html
 					input(data-bind="click: showStats", type='button', value=messages.en.SHOW_STATS, name="show_stats").button.stats
 					input(data-bind="click: addTask", type='button', value=messages.en.ADD_TASK, name="add-task").button.add
 					input(data-bind="click: remove", type='button', value=messages.en.REMOVE, name="remove").button.remove
-		div(data-bind="visible: modal() == 'error-dialog'")#error-dialog
-			div(data-bind="text: errorMessage()").message.error
-			.popup-buttons
-				form.buttons
-					input(data-bind="click: confirmError", type="button", value=messages.en.OK).button.confirm
-		div(data-bind="visible: modal() == 'confirm-dialog'")#confirm-dialog
-			div(data-bind="text: confirmMessage()").message.warning
-			.popup-buttons
-				form.buttons
-					input(data-bind="click: cancel", type="button", value=messages.en.CANCEL).button.cancel
-					input(data-bind="click: confirm", type="button", value=messages.en.CONFIRM).button.confirm
+		+errorDialog()
+		+confirmDialog()
 		div(data-bind="visible: modal() == 'stats-dialog'")#stats-dialog
 			.content
 				.textbox

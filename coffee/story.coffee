@@ -117,6 +117,7 @@ class StoryViewModel extends ViewModel
         @model.buildRemainingTime remainingTime(), @sprint.computed.range()
     readonly:
 
+      story_id: ko.observable task.story_id
       color: ko.observable task.color
       remaining_time: remainingTime
       time_spent: ko.observable task.time_spent    
@@ -275,6 +276,7 @@ class StoryViewModel extends ViewModel
 
     @tasks = ko.observableArray _.map @model.tasks, @_createObservables
     _.chain(@tasks()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority, @tasks))
+    @_subscribeToAssignmentChanges @tasks, 'story_id'
     @_setupSortable @tasks()
 
     # stats
@@ -319,6 +321,7 @@ class StoryViewModel extends ViewModel
 
     wires = []
     observables = _.extend {}, @writable, @readonly
+    wires.push @_createAssignmentWire(@model.story._id, @tasks, 'story_id', @model.getTask)
     wires.push @_createUpdateWire(@model.story, observables)
     wires.push @_createAddWire(@model.story._id, @tasks)
     wires.push sprintWire = @_createUpdateWire(@model.sprint, @sprint.readonly)

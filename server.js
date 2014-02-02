@@ -275,7 +275,7 @@ var storyViewQuery = function(id) {
 
 var sprintViewQuery = function(id) {
 
-  var sprint, stories;
+  var sprint, stories, remaining_times, times_spent, range;
 
   return tischDB.findSingleSprint(id)
   .then(function (result) {
@@ -287,15 +287,28 @@ var sprintViewQuery = function(id) {
 
     stories = result;
     storyIds = _.chain(stories).pluck('_id').invoke('toString').value();
-
+    
     // TODO: remove literals
-    startIndex = moment(sprint.start).format('YYYY-MM-DD');
-    endIndex = moment(sprint.start).add('days', sprint.length - 1).format('YYYY-MM-DD');
-    return tischDB.getStoriesRemainingTime(storyIds, {start: startIndex, end: endIndex});
+    range = {
+
+      start: moment(sprint.start).format('YYYY-MM-DD'), 
+      end: moment(sprint.start).add('days', sprint.length - 1).format('YYYY-MM-DD')
+    };
+
+    return tischDB.getStoriesRemainingTime(storyIds, range);
   })
   .then(function (result) {
 
-    return {sprint: sprint, stories: stories, calculations: {remaining_time: result}}; 
+    remaining_times = result;
+    return tischDB.getStoriesTimeSpent(storyIds, range);
+  }).then(function (result) {
+
+    times_spent = result;
+    return tischDB.getStoriesTaskCount(storyIds);
+  })
+  .then(function (result) {
+
+    return {sprint: sprint, stories: stories, calculations: {remaining_time: remaining_times, time_spent: times_spent, task_count: result}}; 
   });
 };
 
@@ -346,9 +359,18 @@ var addQuery = function(dbFn, data, parentKey, parentId) {
   });
 };
 
+var calculationQuery = function(dbFn, id) {
+
+  return dbFn([id])
+  .then(function (result) {
+
+    return (result[id] || 0);
+  });
+};
+
 var processRequest = function(request, response) {
 
-  var query, answer, id, parentId, rev, property;
+  var query, answer, id, parentId, rev, property, filter;
   var url_parts = url.parse(request.url, true);
   var urlQuery = url_parts.query;
   var pathname = url_parts.pathname;
@@ -362,7 +384,7 @@ var processRequest = function(request, response) {
   // simple json get requests
   if ((!html) && (method == 'GET') && (_.contains(['task', 'story', 'sprint'], type))) {
 
-    var filter = {};
+    filter = {};
     if (request.headers.parent_id) {
 
       if (type == 'task') {
@@ -437,7 +459,7 @@ var processRequest = function(request, response) {
     query = function() {
 
       var story;
-      var filter = {_id: ObjectID(id), _rev: rev};
+      filter = {_id: ObjectID(id), _rev: rev};
 
       return tischDB.removeStory(filter, true)
       .then(function(result) {
@@ -491,7 +513,7 @@ var processRequest = function(request, response) {
 
     query = function() {
 
-      var filter = {_id: ObjectID(id), _rev: rev};
+      filter = {_id: ObjectID(id), _rev: rev};
       var removed = [];
 
       return tischDB.removeSprint(filter, true)
@@ -536,20 +558,24 @@ var processRequest = function(request, response) {
     query = indexViewQuery;
     answer = respond;
   }
-  else if ((type == 'calculation') && (request.method == 'GET')) {
+  else if (id && (type == 'calculation') && (request.method == 'GET') && (urlQuery.func == 'remaining_time_for_story')) {
 
-    // TODO: which calculation?
     // TODO: robustness, check for start & end query
 
-    query = function() {
+    query = partial(calculationQuery, curry2(tischDB.getStoriesRemainingTime)({start: urlQuery.start, end: urlQuery.end}), id);
+    answer = partial(respondWithJson, response);
+  }
+  else if (id && (type == 'calculation') && (request.method == 'GET') && (urlQuery.func == 'time_spent_for_story')) {
 
-      return tischDB.getStoriesRemainingTime([id], {start: urlQuery.start, end: urlQuery.end})
-      .then(function (result) {
+    // TODO: robustness, check for start & end query
 
-        return (result[id] || null);
-      });
-    };
-    answer = respond;
+    query = partial(calculationQuery, curry2(tischDB.getStoriesTimeSpent)({start: urlQuery.start, end: urlQuery.end}), id);
+    answer = partial(respondWithJson, response);
+  }
+  else if (id && (type == 'calculation') && (request.method == 'GET') && (urlQuery.func == 'task_count_for_story')) {
+
+    query = partial(calculationQuery, tischDB.getStoriesTaskCount, id);
+    answer = partial(respondWithJson, response);    
   }
   else {
 
