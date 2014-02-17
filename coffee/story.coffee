@@ -107,21 +107,7 @@ class StoryViewModel extends ViewModel
     createObservable = partial @_createObservable, updateModel, task
     remainingTime = ko.observable task.remaining_time
 
-    id: task._id
-    url: '/task/' + task._id
-    js: task
-    computed:
-
-      remaining_time: ko.computed =>
-
-        @model.buildRemainingTime remainingTime(), @sprint.computed.range()
-    readonly:
-
-      story_id: ko.observable task.story_id
-      color: ko.observable task.color
-      remaining_time: remainingTime
-      time_spent: ko.observable task.time_spent    
-    writable: _.reduce [
+    writable = _.reduce [
 
       {name: 'summary', throttled: true}
       {name: 'description', throttled: true}
@@ -130,6 +116,31 @@ class StoryViewModel extends ViewModel
 
       object[property.name] = createObservable property.name, _.omit(property, 'name'); object
     , {}
+
+    readonly =
+
+      story_id: ko.observable task.story_id
+      color: ko.observable task.color
+      remaining_time: remainingTime
+      time_spent: ko.observable task.time_spent  
+
+    computed =
+
+      remaining_time: ko.computed =>
+
+        @model.buildRemainingTime remainingTime(), @sprint.computed.range()
+
+    observables =
+
+      id: task._id
+      url: '/task/' + task._id
+      js: task
+      computed: computed
+      readonly: readonly
+      writable: writable
+
+    @_setupMarkdown.call observables, writable.description   
+    observables
 
   _replaceSprint: (sprint) =>
 
@@ -220,6 +231,8 @@ class StoryViewModel extends ViewModel
 
     super(@model)
 
+    # explicitely do not bind the markdown mixin fns, as call() for childs in _createObservables 
+    # will fail. it's questionably wheter binding is needed for those fns...
     _.bindAll @, _.functions(parentMixin)..., _.functions(sortableMixin)...
 
     # breadcrumbs
@@ -317,6 +330,10 @@ class StoryViewModel extends ViewModel
 
       @_refreshChart()      
 
+    # markdown
+
+    @_setupMarkdown @writable.description
+
     # realtime specific initializations
 
     wires = []
@@ -345,3 +362,4 @@ class StoryViewModel extends ViewModel
 
 _.extend StoryViewModel.prototype, parentMixin
 _.extend StoryViewModel.prototype, sortableMixin
+_.extend StoryViewModel.prototype, markdownMixin

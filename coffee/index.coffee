@@ -15,15 +15,13 @@ class IndexViewModel extends ViewModel
     updateModel = partial @_updateModel, 'sprint'
     createObservable = partial @_createObservable, updateModel, sprint
 
-    id: sprint._id
-    url: '/sprint/' + sprint._id
-    js: sprint
-    readonly:
+    readonly = 
 
       color: ko.observable sprint.color
       start: ko.observable sprint.start
-      length: ko.observable sprint.length  
-    writable: _.reduce [
+      length: ko.observable sprint.length
+
+    writable = _.reduce [
 
       {name: 'title', throttled: true}
       {name: 'description', throttled: true}
@@ -31,6 +29,17 @@ class IndexViewModel extends ViewModel
 
       object[property.name] = createObservable property.name, _.omit(property, 'name'); object
     , {}
+
+    observables =
+
+      id: sprint._id
+      url: '/sprint/' + sprint._id
+      js: sprint
+      readonly: readonly
+      writable: writable
+
+    @_setupMarkdown.call observables, writable.description
+    observables
 
   formatStart: (sprint) ->
 
@@ -91,3 +100,4 @@ class IndexViewModel extends ViewModel
       socket.registerWires wires
 
 _.extend IndexViewModel.prototype, parentMixin
+_.extend IndexViewModel.prototype, markdownMixin

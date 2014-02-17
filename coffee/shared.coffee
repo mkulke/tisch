@@ -467,6 +467,13 @@ class ViewModel
 
   constructor: (@model) ->
 
+    # markdown
+
+    marked.setOptions
+
+      gfm: true
+      tables: true
+
     ko.extenders.matches = (target, regex) ->
 
       target.hasError = ko.observable()

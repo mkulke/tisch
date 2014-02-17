@@ -39,6 +39,7 @@ module.exports = function(grunt) {
           'coffee/index.coffee.js': 'coffee/index.coffee',
           'coffee/shared.coffee.js': 'coffee/shared.coffee',
           'coffee/parent.coffee.js': 'coffee/parent.coffee',
+          'coffee/markdown.coffee.js': 'coffee/markdown.coffee',
           'coffee/sortable.coffee.js': 'coffee/sortable.coffee',
           'test/unit/sprint.coffee.js': 'test/unit/sprint.coffee',
           'test/unit/task.coffee.js': 'test/unit/task.coffee',

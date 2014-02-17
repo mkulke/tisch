@@ -3,6 +3,7 @@ html
 		title Sprint details
 		include shared
 		script(type='text/javascript', src='/knockout-sortable.min.js')
+		script(type='text/javascript', src='/markdown.coffee.js')
 		script(type='text/javascript', src='/parent.coffee.js')
 		script(type='text/javascript', src='/sortable.coffee.js')
 		script(type='text/javascript', src='/sprint.coffee.js')
@@ -14,10 +15,9 @@ html
 				img(src="/logo_30.png").logo
 			#content
 				form
-					p
-						input(data-bind="value: writable.title, valueUpdate: ['afterkeydown','propertychange','input']", name="title")#title.identifier
-					p
-						textarea(data-bind="value: writable.description, valueUpdate: ['afterkeydown','propertychange','input']", name="description")#description
+					input(data-bind="value: writable.title, valueUpdate: ['afterkeydown','propertychange','input']", name="title", autocomplete="off")#title.identifier
+					textarea(data-bind="visible: editorVisible() == true, hasFocus: editorVisible, event: {keyup: hideEditor.bind($data, editorVisible)}, value: writable.description, valueUpdate: ['afterkeydown','propertychange','input']", name="description")#description
+					div(data-bind="visible: editorVisible() == false, click: showEditor.bind($data, editorVisible), html: markdown").markdown					.attribute
 					.attribute
 						span.label
 							=messages.en.COLOR+':'
@@ -49,7 +49,8 @@ html
 											div(data-bind="if: $data.computed.remaining_time() > 0")
 												img(src="/clock_white_30.png")
 												div(data-bind="text: parseFloat($data.computed.remaining_time().toFixed(2))").text
-							textarea(data-bind="value: $data.writable.description, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'description-' + $index()}").body
+							textarea(data-bind="visible: $data.editorVisible() == true, hasFocus: $data.editorVisible, event: {keyup: $parent.hideEditor.bind($data, $data.editorVisible)}, value: $data.writable.description, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'description-' + $index()}").body
+							div(data-bind="visible: $data.editorVisible() == false, click: $parent.showEditor.bind($data, $data.editorVisible), html: $data.markdown").markdown
 							.button-bar
 								.buttons
 									a(data-bind="attr: {href: $data.url}").button.open

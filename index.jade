@@ -2,6 +2,7 @@ html
 	head
 		title Index
 		include shared
+		script(type='text/javascript', src='/markdown.coffee.js')
 		script(type='text/javascript', src='/parent.coffee.js')
 		script(type='text/javascript', src='/index.coffee.js')
 	body
@@ -17,7 +18,8 @@ html
 							.panel
 								div(data-bind="css: $data.readonly.color() + ' header'")
 									input(data-bind="value: $data.writable.title, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'title-' + $index()}")
-								textarea(data-bind="value: $data.writable.description, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'description-' + $index()}").body
+								textarea(data-bind="visible: $data.editorVisible() == true, hasFocus: $data.editorVisible, event: {keyup: $parent.hideEditor.bind($data, $data.editorVisible)}, value: $data.writable.description, valueUpdate: ['afterkeydown','propertychange','input'], attr: {name: 'description-' + $index()}").body
+								div(data-bind="visible: $data.editorVisible() == false, click: $parent.showEditor.bind($data, $data.editorVisible), html: $data.markdown").markdown
 								.button-bar
 									.buttons
 										a(data-bind="attr: {href: $data.url}").button.open

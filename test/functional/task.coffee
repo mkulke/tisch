@@ -22,6 +22,26 @@ casper.then ->
 	@test.assertEquals @getElementInfo("button[name='color']").attributes.class, 'red', 'Color button correct.'
 	@test.assertEquals @getElementInfo("button[name='story_id']").text, 'Test Story A', 'Story button correct.'
 
+casper.then -> 
+
+	@test.info 'Check markdown:'
+	@test.assertNotVisible "textarea[name='description']", 'Description editor not visible.'
+	@test.assertVisible "textarea[name='description'] + .markdown", 'Markdown rendering visible.'
+	html = @getHTML "textarea[name='description'] + .markdown"
+	@test.assertEqual html, "<p>Task A description</p>\n", 'Rendered markdown correct.'
+	@click "textarea[name='description'] + .markdown"
+	@test.assertVisible "textarea[name='description']", 'Description editor is visible.'
+	@test.assertNotVisible "textarea[name='description'] + .markdown", 'Markdown rendering not visible.'
+	@fill '#content form', 
+
+		'description': '_test_'
+	@wait throttle, ->
+
+		@test.assertNotVisible "textarea[name='description']", 'Description editor not visible.'
+		@test.assertVisible "textarea[name='description'] + .markdown", 'Markdown rendering visible.'
+		html = @getHTML "textarea[name='description'] + .markdown"
+		@test.assertEqual html, "<p><em>test</em></p>\n", 'Rendered markdown correct.'
+
 casper.then ->
 
 	@test.info 'Test color selector:'
@@ -119,5 +139,5 @@ casper.then ->
 
 casper.run ->
 
-	@test.done 34
+	@test.done 42
 	@test.renderResults true

@@ -13,7 +13,7 @@ sortableMixin =
       a.writable.priority() - b.writable.priority()
 
   # TODO: unit-test
-  _calculatePriority: (objects, index) =>
+  _calculatePriority: (objects, index) ->
 
     if index == 0 then prevPrio = 0
     else prevPrio = objects[index - 1].writable.priority()
