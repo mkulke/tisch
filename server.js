@@ -577,6 +577,13 @@ var processRequest = function(request, response) {
     query = partial(calculationQuery, tischDB.getStoriesTaskCount, id);
     answer = partial(respondWithJson, response);    
   }
+  else if (id && (type == 'calculation') && (request.method == 'GET') && (urlQuery.func == 'test')) {
+
+    // TODO: robustness, check for start & end query
+
+    query = partial(calculationQuery, curry2(tischDB.getStoriesRemainingTime_)({start: urlQuery.start, end: urlQuery.end}), id);
+    answer = partial(respondWithJson, response);
+  }
   else {
 
     // TODO
