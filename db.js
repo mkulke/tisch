@@ -186,7 +186,7 @@ var getRemainingTime_ = function(type, parentType, parentIds, range) {
 
       accumulated[key] = remaining_times.reduce(function(memo, remaining_time, index) {
 
-        if (remaining_time[key] != null) {
+        if (remaining_time[key] !== undefined) {
 
           var value = remaining_time[key];
           buffer[index] = value ;
