@@ -210,14 +210,24 @@ var notify = function(request, result) {
     return {client: registration.client, index: registration.index, data: result};
   }, result);
 
+  // notifications = _.chain(tischRT.registrations())
+  //   .filter(byRequest)
+  //   .filter(byId)
+  //   .filter(byParentId)
+  //   .filter(byProperties)
+  //   .reject(originatingClient)
+  //   .map(toNotification)
+  //   .value();
+
   notifications = _.chain(tischRT.registrations())
     .filter(byRequest)
     .filter(byId)
     .filter(byParentId)
     .filter(byProperties)
-    .reject(originatingClient)
     .map(toNotification)
     .value();
+
+  console.log(notifications.length + " notifications are going out!");
 
   tischRT.notify(notifications);
 };
@@ -588,8 +598,23 @@ var processRequest = function(request, response) {
     answer = function() {};
   }
 
+  // query()
+  // .then(answer)
+  // .then(partial(notify, request))
+  // .fail(html ? complainWithPlain.bind(response) : complainWithJson.bind(response))
+  // .done();
+
+  var respondSucess = function(result) {
+
+    headers = html ? {'Content-Type': 'text/html', 'Cache-control': 'no-store'} : {'Content-Type': 'application/json'};
+    response.writeHead(200, headers);
+    response.write(JSON.stringify({rev: result._rev}));
+    response.end();
+    return result;
+  };
+
   query()
-  .then(answer)
+  .then(request.method == 'GET' ? answer : respondSucess)
   .then(partial(notify, request))
   .fail(html ? complainWithPlain.bind(response) : complainWithJson.bind(response))
   .done();

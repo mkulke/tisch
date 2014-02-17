@@ -255,7 +255,7 @@ class Model
         jqXHR.setRequestHeader 'rev', getRev()
       success: (data, textStatus, jqXHR) -> 
 
-        successCb? data
+        #successCb? data
       error: (jqXHR, textStatus, errorThrown) -> 
 
         errorCb? (if errorThrown == "" then 'Error: Unknown communications problem with server.' else errorThrown)
@@ -273,7 +273,7 @@ class Model
       headers: headers
       success: (data, textStatus, jqXHR) -> 
 
-        successCb? data.new
+        #successCb? data.new
       error: (jqXHR, textStatus, errorThrown) -> 
 
         # TODO: proper err msg
@@ -351,7 +351,6 @@ class Model
       success: (data, textStatus, jqXHR) ->
 
         object._rev = data.rev
-        successCb? data
       error: (jqXHR, textStatus, errorThrown) ->
 
         # TODO: i18n
