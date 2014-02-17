@@ -16,7 +16,10 @@ markdownMixin =
 			observable false
 		true
 
-	showEditor: (observable) ->
+	showEditor: (observable, data, event) ->
 
-		observable true
-		true
+		if event.target.localName == 'a'
+
+			true
+		else
+			observable true
