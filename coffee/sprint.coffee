@@ -48,19 +48,18 @@ class SprintViewModel extends ViewModel
     updateModel = partial @_updateModel, 'story'
     createObservable = partial @_createObservable, updateModel, story
 
-    id: story._id
-    url: '/story/' + story._id
-    js: story
-    computed:
+    computed =
 
       remaining_time: ko.computed =>
 
         @readonly.remainingTimeCalculations()[story._id]
-    readonly:
+
+    readonly = 
 
       color: ko.observable story.color
-      sprint_id: ko.observable story.sprint_id  
-    writable: _.reduce [
+      sprint_id: ko.observable story.sprint_id
+
+    writable = _.reduce [
 
       {name: 'title', throttled: true}
       {name: 'description', throttled: true}
@@ -69,6 +68,18 @@ class SprintViewModel extends ViewModel
 
       object[property.name] = createObservable property.name, _.omit(property, 'name'); object
     , {}
+
+    observables = 
+
+      id: story._id
+      url: '/story/' + story._id
+      js: story
+      computed: computed
+      readonly: readonly
+      writable: writable
+
+    @_setupMarkdown.call observables, writable.description
+    observables
 
   _updateStat: (id) =>
 
@@ -251,6 +262,10 @@ class SprintViewModel extends ViewModel
     @_subscribeToAssignmentChanges @stories, 'sprint_id'
     @_setupSortable @stories()
 
+    # markdown
+
+    @_setupMarkdown @writable.description
+
     # rt specific initializations
 
     wires = []
@@ -272,3 +287,4 @@ class SprintViewModel extends ViewModel
 
 _.extend SprintViewModel.prototype, parentMixin
 _.extend SprintViewModel.prototype, sortableMixin
+_.extend SprintViewModel.prototype, markdownMixin

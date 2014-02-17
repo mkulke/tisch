@@ -25,6 +25,32 @@ casper.then ->
 	@test.assertField 'summary-0', 'Test Task A', 'Task 1 summary field correct.'
 	@test.assertField 'description-0', 'Task A description', 'Task 1 description field correct.'
 
+casper.then -> 
+
+	fn = (selector, description) =>
+
+		@test.info 'Check markdown:'
+		@test.assertNotVisible selector, 'Description editor not visible.'
+		@test.assertVisible "#{selector} + .markdown", 'Markdown rendering visible.'
+		html = @getHTML "#{selector} + .markdown"
+		@test.assertEqual html, "<p>#{description}</p>\n", 'Rendered markdown correct.'
+		@click "#{selector} + .markdown"
+		@test.assertVisible selector, 'Description editor is visible.'
+		@test.assertNotVisible "#{selector} + .markdown", 'Markdown rendering not visible.'
+		@fill '#content form', 
+
+			'description': '_test_'
+			'description-0': '_test_'
+		@wait throttle, ->
+
+			@test.assertNotVisible selector, 'Description editor not visible.'
+			@test.assertVisible "#{selector} + .markdown", 'Markdown rendering visible.'
+			html = @getHTML "#{selector} + .markdown"
+			@test.assertEqual html, "<p><em>test</em></p>\n", 'Rendered markdown correct.'
+
+	fn "textarea[name='description']", "Story A description"
+	fn "textarea[name='description-0']", "Task A description"
+
 casper.then ->
 
 	@test.info 'Test color selector:'
@@ -137,5 +163,5 @@ casper.then ->
 
 casper.run ->
 
-	@test.done 32
+	@test.done 48
 	@test.renderResults true

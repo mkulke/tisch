@@ -1,0 +1,61 @@
+.markdown > :first-child {
+
+	margin-top: 10px;
+}
+
+.markdown > :last-child {
+
+	margin-bottom: 10px;
+}
+
+.markdown {
+	overflow-y: auto;
+  padding: 0 10 0 10px;
+  color: #000000;
+  font-size: 16px;
+  font-family: inherit;
+  /*font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", AppleSDGothicNeo-Medium, 'Segoe UI', 'Malgun Gothic', Verdana, Tahoma, sans-serif;*/
+  background: #ffffff;
+  /*-webkit-font-smoothing: antialiased;*/
+  height: 200px;
+}
+.markdown a {
+  color: #3269a0;
+}
+.markdown a:hover {
+  color: #4183c4;
+}
+.markdown h2 {
+	margin-top: 0px;
+  border-bottom: 1px solid #e6e6e6;
+  line-height: 1.7em;
+}
+.markdown h6 {
+  color: #777;
+}
+.markdown hr {
+  border: 1px solid #e6e6e6;
+}
+.markdown pre > code {
+  font-size: .9em;
+  font-family: Consolas, Inconsolata, Courier, monospace;
+}
+.markdown blockquote {
+  border-left: 4px solid #e6e6e6;
+  padding: 0 15px;
+  font-style: italic;
+}
+.markdown table {
+  border-spacing: 0;
+  border-bottom: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+}
+.markdown table th,
+.markdown table td {
+  border-top: 1px solid #ddd;
+  border-left: 1px solid #ddd;
+}
+
+.panel .markdown {
+  height: 150px;
+}

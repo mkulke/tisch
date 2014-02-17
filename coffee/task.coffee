@@ -115,6 +115,8 @@ class TaskViewModel extends ViewModel
 
     super(@model)   
 
+    #_.bindAll @, _.functions(markdownMixin)...
+
     # breadcrumbs
 
     @breadcrumbs =
@@ -257,6 +259,10 @@ class TaskViewModel extends ViewModel
       if value? then value else 0
     @indexedTimeSpent = @_createIndexedComputed readTimeSpent, partial(writeIndexed, 'time_spent', @writable.time_spent, @timeSpentIndex), @
 
+    # markdown
+
+    @_setupMarkdown @writable.description
+
     # rt specific initializations
 
     wires = []
@@ -282,3 +288,4 @@ class TaskViewModel extends ViewModel
 
       @model.sessionid = sessionid
       socket.registerWires wires
+_.extend(TaskViewModel.prototype, markdownMixin)

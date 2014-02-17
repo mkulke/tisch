@@ -360,6 +360,12 @@ body {
 	background-color: #dcdcdc;
 }
 
+form > input {
+
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
 input {
 
 	font-family: inherit;
@@ -372,7 +378,7 @@ input {
 
 textarea#description {
 
-	font-family: inherit;
+	font-family: monospace;
 	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
 	font-size: 16px;
 	outline: none;
@@ -393,8 +399,7 @@ textarea#description {
 
 .attribute {
 
-	margin-left: 10px;
-	margin-bottom: 10px;
+	margin: 10px;
 }
 
 .attribute input {
@@ -795,9 +800,9 @@ ul#well:empty {
   resize: none;
   border: 0px;
   width: 100%;
-  height: 100px;
+  height: 150px;
   background-color: #ffffff;
-  font-family: inherit;
+  font-family: monospace;
 	/*font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;*/
 	font-size: 16px;
 }

@@ -29,6 +29,32 @@ casper.then ->
 	@test.assertExist "ul#well li.panel:nth-of-type(1) .header .stats img[src='/clock_white_30.png']", 'Story 1 stats picture is a clock.'
 	# TODO: check stats text
 
+casper.then -> 
+
+	fn = (selector, description) =>
+
+		@test.info 'Check markdown:'
+		@test.assertNotVisible selector, 'Description editor not visible.'
+		@test.assertVisible "#{selector} + .markdown", 'Markdown rendering visible.'
+		html = @getHTML "#{selector} + .markdown"
+		@test.assertEqual html, "<p>#{description}</p>\n", 'Rendered markdown correct.'
+		@click "#{selector} + .markdown"
+		@test.assertVisible selector, 'Description editor is visible.'
+		@test.assertNotVisible "#{selector} + .markdown", 'Markdown rendering not visible.'
+		@fill '#content form', 
+
+			'description': '_test_'
+			'description-0': '_test_'
+		@wait throttle, ->
+
+			@test.assertNotVisible selector, 'Description editor not visible.'
+			@test.assertVisible "#{selector} + .markdown", 'Markdown rendering visible.'
+			html = @getHTML "#{selector} + .markdown"
+			@test.assertEqual html, "<p><em>test</em></p>\n", 'Rendered markdown correct.'
+
+	fn "textarea[name='description']", "Sprint A description"
+	fn "textarea[name='description-0']", "Story A description"
+
 casper.then ->
 
 	@test.info 'Test color selector:'
@@ -139,5 +165,5 @@ casper.then ->
 
 casper.run ->
 
-	@test.done 40
+	@test.done 56
 	@test.renderResults true
