@@ -567,13 +567,6 @@ var processRequest = function(request, response) {
     query = indexViewQuery;
     answer = respond;
   }
-  else if (id && (type == 'calculation') && (request.method == 'GET') && (urlQuery.func == 'remaining_time_for_story')) {
-
-    // TODO: robustness, check for start & end query
-
-    query = partial(calculationQuery, curry2(tischDB.getStoriesRemainingTime)({start: urlQuery.start, end: urlQuery.end}), id);
-    answer = partial(respondWithJson, response);
-  }
   else if (id && (type == 'calculation') && (request.method == 'GET') && (urlQuery.func == 'time_spent_for_story')) {
 
     // TODO: robustness, check for start & end query
@@ -586,7 +579,7 @@ var processRequest = function(request, response) {
     query = partial(calculationQuery, tischDB.getStoriesTaskCount, id);
     answer = partial(respondWithJson, response);    
   }
-  else if (id && (type == 'calculation') && (request.method == 'GET') && (urlQuery.func == 'test')) {
+  else if (id && (type == 'calculation') && (request.method == 'GET') && (urlQuery.func == 'remaining_time_for_story')) {
 
     // TODO: robustness, check for start & end query
 

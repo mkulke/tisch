@@ -51,8 +51,7 @@ class SprintModel extends Model
     @getTimeSpent = partial @_getCalculation, 'time_spent_for_story'
     @getTimesSpent = partial @_getCalculations, @getTimeSpent
     @getRemainingTime = partial @_getCalculation, 'remaining_time_for_story'
-    @getRemainingTime_ = partial @_getCalculation, 'test'
-    @getRemainingTimes = partial @_getCalculations_, @getRemainingTime_
+    @getRemainingTimes = partial @_getCalculations_, @getRemainingTime
     @getTaskCount = partial @_getCalculation, 'task_count_for_story'
     @getTaskCounts = partial @_getCalculations, @getTaskCount
 
@@ -111,11 +110,7 @@ class SprintViewModel extends ViewModel
       _.find(observable(), belongsToStory)?[1] = data
       observable.notifySubscribers observable()
 
-    #@model.getRemainingTime id, _.compose(partial(update, @readonly.remainingTimeCalculations), getLast)
-    #@model.getRemainingTime id, partial(update, @readonly.remainingTimeCalculations)
-
-    model.getRemainingTime_ id, partial(update_, @readonly.remainingTimeCalculations )
-    #@model._getRemainingTime_ id, partial(update, @readonly.remainingTimeCalculations)
+    model.getRemainingTime id, partial(update_, @readonly.remainingTimeCalculations)
     @model.getTimeSpent id, partial(update, @readonly.timeSpentCalculations)   
     @model.getTaskCount id, partial(update, @readonly.taskCountCalculations)   
 
