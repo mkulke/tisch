@@ -110,59 +110,12 @@ var getTimeSpent = function(type, parentType, parentIds, range) {
   return deferred.promise;
 };
 
-var getRemainingTime = function(type, parentType, parentIds, range) {
-
-  var deferred = Q.defer();
-  var objectIds = parentIds.map(ObjectID);
-
-  // ATTN: map & reduce are functions which are eval'ed in mongodb.
-  var map = function() {  
-
-    var remaining_time = this.remaining_time.initial;
-    var keys = Object.keys(this.remaining_time).filter(function(key) {
-
-      return ((key >= start) && (key <= end)); // filters out 'initial' as well
-    }).sort();
-
-    if (keys.length > 0) {
-
-      var key = keys[keys.length - 1];
-      remaining_time = this.remaining_time[key];
-    }
-
-    // TODO: storyId? fixed here?
-    emit(this.story_id, remaining_time);
-  };
-
-  var reduce = function(key, values) {
-
-    return Array.sum(values);
-  };
-
-  query = {};
-  query[parentType + '_id'] = {$in: objectIds};
-  db().collection(type).mapReduce(map, reduce, {query: query, out: {inline: 1}, scope: {start: range.start, end: range.end}}, function (err, result) {
-
-    if (err) {
-
-      deferred.reject(new Error(err));
-    }
-    else {
-
-      var remainingTimes = _.object(_.chain(result).pluck('_id').invoke('toString').value(), _.pluck(result, 'value'));
-      deferred.resolve(remainingTimes);
-    }
-  });
-
-  return deferred.promise;
-};
-
 _processMapReduceRow = function(row) {
 
   return [row._id.toString(), _.pairs(row.value)];  
 };
 
-var getRemainingTime_ = function(type, parentType, parentIds, range) {
+var getRemainingTime = function(type, parentType, parentIds, range) {
 
   var deferred = Q.defer();
   var objectIds = parentIds.map(ObjectID);
@@ -569,7 +522,6 @@ exports.findAndRemoveStories = partial(findAndRemove, 'story');
 exports.updateTaskAssignment = partial(updateAssignment, 'task', 'story');
 exports.updateStoryAssignment = partial(updateAssignment, 'story', 'sprint');
 exports.getStoriesRemainingTime = partial(getRemainingTime, 'task', 'story');
-exports.getStoriesRemainingTime_ = partial(getRemainingTime_, 'task', 'story');
 exports.getStoriesTimeSpent = partial(getTimeSpent, 'task', 'story');
 exports.getStoriesTaskCount = partial(getChildCount, 'task', 'story');
 
