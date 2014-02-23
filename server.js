@@ -295,7 +295,7 @@ var sprintViewQuery = function(id) {
       end: moment(sprint.start).add('days', sprint.length - 1).format('YYYY-MM-DD')
     };
 
-    return tischDB.getStoriesRemainingTime(storyIds, range);
+    return tischDB.getStoriesRemainingTime_(storyIds, range);
   })
   .then(function (result) {
 
@@ -356,6 +356,15 @@ var addQuery = function(dbFn, data, parentKey, parentId) {
 
       return {"new": result};
     }
+  });
+};
+
+var calculationQuery_ = function(dbFn, id) {
+
+  return dbFn([id])
+  .then(function (result) {
+
+    return _.last(_.first(result)) || null; //[['partial', 0]];
   });
 };
 
@@ -581,7 +590,7 @@ var processRequest = function(request, response) {
 
     // TODO: robustness, check for start & end query
 
-    query = partial(calculationQuery, curry2(tischDB.getStoriesRemainingTime_)({start: urlQuery.start, end: urlQuery.end}), id);
+    query = partial(calculationQuery_, curry2(tischDB.getStoriesRemainingTime_)({start: urlQuery.start, end: urlQuery.end}), id);
     answer = partial(respondWithJson, response);
   }
   else {

@@ -381,7 +381,9 @@ class Model
     start = moment sprintStart
     end = moment(start).add 'days', sprintLength - 1
     start: start.format(common.DATE_DB_FORMAT), end: end.format(common.DATE_DB_FORMAT)
+  _mostRecentValue: (pairs) ->
 
+    _.chain(pairs).sortBy(_.first).last(2).first().last().value()
 class ViewModel
 
   _createObservable: (updateModelFn, object, property, options = {}) ->

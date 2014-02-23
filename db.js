@@ -4,6 +4,8 @@ var Q = require('q');
 var messages = require('./messages.json');
 var _ = require('underscore')._;
 
+var _processMapReduceRow;
+
 // TODO: put in tischutils.js
 function partial(fn) {
 
@@ -13,6 +15,17 @@ function partial(fn) {
   return function() {
 
     return fn.apply(this, args.concat(aps.call(arguments)));
+  };
+}
+
+function curry2(fn) {
+
+  return function(arg2) {
+
+    return function(arg1) {
+
+      return fn(arg1, arg2);
+    };
   };
 }
 
@@ -144,6 +157,11 @@ var getRemainingTime = function(type, parentType, parentIds, range) {
   return deferred.promise;
 };
 
+_processMapReduceRow = function(row) {
+
+  return [row._id.toString(), _.pairs(row.value)];  
+};
+
 var getRemainingTime_ = function(type, parentType, parentIds, range) {
 
   var deferred = Q.defer();
@@ -156,7 +174,7 @@ var getRemainingTime_ = function(type, parentType, parentIds, range) {
     Object.keys(this.remaining_time).filter(function(key) {
 
       return ((key >= start) && (key <= end)); // filters out 'initial' as well
-    }).sort().forEach(function(key) { 
+    }).forEach(function(key) { 
 
       filtered[key] = this[key];  
     }, this.remaining_time);
@@ -167,22 +185,23 @@ var getRemainingTime_ = function(type, parentType, parentIds, range) {
 
   var reduce = function(id, remaining_times) {
 
-    // collect keys for all Objects
-    var keys = [];
-    remaining_times.forEach(function(remaining_time) {
+    // collect keys for all remaining_times
 
-      Object.keys(remaining_time).forEach(function(key) {
+    var dateKeys = remaining_times.reduce(function (memo, remaining_time) {
 
-        if (keys.indexOf(key) == -1) {
+      Object.keys(remaining_time).forEach(function (key) {
 
-          keys.push(key);
+        if (memo.indexOf(key) == -1) {
+
+          memo.push(key);
         }
       });
-    });
+      return memo;
+    }, []).sort();
+    dateKeys.unshift(dateKeys.pop());
 
-    var accumulated = {};
     var buffer = [];
-    keys.forEach(function(key) {
+    return dateKeys.reduce(function(accumulated, key) {
 
       accumulated[key] = remaining_times.reduce(function(memo, remaining_time, index) {
 
@@ -197,9 +216,8 @@ var getRemainingTime_ = function(type, parentType, parentIds, range) {
           return memo + buffer[index];
         }
       }, 0);
-    });
-
-    return accumulated;
+      return accumulated;
+    }, {});
   };
 
   query = {};
@@ -212,8 +230,7 @@ var getRemainingTime_ = function(type, parentType, parentIds, range) {
     }
     else {
 
-      var remainingTimes = _.object(_.chain(result).pluck('_id').invoke('toString').value(), _.pluck(result, 'value'));
-      deferred.resolve(remainingTimes);
+      deferred.resolve(_.map(result, _processMapReduceRow));
     }
   });
 

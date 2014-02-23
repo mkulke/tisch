@@ -1,3 +1,4 @@
+- When the last task is removed from a story, the sprint remaining_time calc shows done, instead of empty.
 - On Firefox the chart rendering does not work.
 - When changing the sprint range, so that formerly included values are not in the range anymore, they still appear on the chart as single dots.
 - When server is down and the description is edited on a task view, there is an exception (besides the error popup).

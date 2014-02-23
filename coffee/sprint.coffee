@@ -31,13 +31,28 @@ class SprintModel extends Model
 
       successCb? result
 
+  _getCalculations_: (promiseFn, storyIds, successCb) =>
+
+    result = []
+    gets = _.map storyIds, (storyId) ->
+
+      promiseFn storyId, (data) ->
+
+        if data?
+
+          result.push [storyId, data]
+    $.when.apply($, gets).then ->
+
+      successCb? result
+
   type: 'sprint'
   constructor: (@stories, @sprint, @calculations) ->
 
     @getTimeSpent = partial @_getCalculation, 'time_spent_for_story'
     @getTimesSpent = partial @_getCalculations, @getTimeSpent
     @getRemainingTime = partial @_getCalculation, 'remaining_time_for_story'
-    @getRemainingTimes = partial @_getCalculations, @getRemainingTime
+    @getRemainingTime_ = partial @_getCalculation, 'test'
+    @getRemainingTimes = partial @_getCalculations_, @getRemainingTime_
     @getTaskCount = partial @_getCalculation, 'task_count_for_story'
     @getTaskCounts = partial @_getCalculations, @getTaskCount
 
@@ -52,7 +67,9 @@ class SprintViewModel extends ViewModel
 
       remaining_time: ko.computed =>
 
-        @readonly.remainingTimeCalculations()[story._id]
+        belongsToStory = _.compose(partial(_.isEqual, story._id), _.first)
+        calculation = _.chain(@readonly.remainingTimeCalculations()).find(belongsToStory).last().value()
+        @model._mostRecentValue(calculation)
 
     readonly = 
 
@@ -88,8 +105,17 @@ class SprintViewModel extends ViewModel
       object = observable()
       object[id] = data
       observable.notifySubscribers object
+    update_ = (observable, data) ->
 
-    @model.getRemainingTime id, partial(update, @readonly.remainingTimeCalculations)
+      belongsToStory = _.compose(partial(_.isEqual, id), _.first)
+      _.find(observable(), belongsToStory)?[1] = data
+      observable.notifySubscribers observable()
+
+    #@model.getRemainingTime id, _.compose(partial(update, @readonly.remainingTimeCalculations), getLast)
+    #@model.getRemainingTime id, partial(update, @readonly.remainingTimeCalculations)
+
+    model.getRemainingTime_ id, partial(update_, @readonly.remainingTimeCalculations )
+    #@model._getRemainingTime_ id, partial(update, @readonly.remainingTimeCalculations)
     @model.getTimeSpent id, partial(update, @readonly.timeSpentCalculations)   
     @model.getTaskCount id, partial(update, @readonly.taskCountCalculations)   
 
@@ -217,6 +243,10 @@ class SprintViewModel extends ViewModel
           add memo, value
         , 0)
 
+      # TODO: remember to remove old sum
+      sum2 = curry3(_.reduce)(0)(add)
+      mostRecentValues = curry2(_.map)(_.compose(@model._mostRecentValue, _.last))
+
       lengthDate = ko.computed
 
         read: =>
@@ -248,7 +278,7 @@ class SprintViewModel extends ViewModel
 
         moment(lengthDate()).format(common.DATE_DISPLAY_FORMAT)
       lengthDate: lengthDate
-      remainingTime: ko.computed partial(sum, @readonly.remainingTimeCalculations) 
+      remainingTime: ko.computed _.compose(sum2, mostRecentValues, @readonly.remainingTimeCalculations)
       timeSpent: ko.computed partial(sum, @readonly.timeSpentCalculations)
       taskCount: ko.computed partial(sum, @readonly.taskCountCalculations)
 
