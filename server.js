@@ -571,7 +571,7 @@ var processRequest = function(request, response) {
 
     // TODO: robustness, check for start & end query
 
-    query = partial(calculationQuery, curry2(tischDB.getStoriesTimeSpent)({start: urlQuery.start, end: urlQuery.end}), id);
+    query = partial(calculationQuery_, curry2(tischDB.getStoriesTimeSpent)({start: urlQuery.start, end: urlQuery.end}), id);
     answer = partial(respondWithJson, response);
   }
   else if (id && (type == 'calculation') && (request.method == 'GET') && (urlQuery.func == 'task_count_for_story')) {

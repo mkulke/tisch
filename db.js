@@ -64,6 +64,11 @@ var connect = function() {
 	});
 };
 
+_processMapReduceRow = function(row) {
+
+  return [row._id.toString(), _.pairs(row.value)];  
+};
+
 var getTimeSpent = function(type, parentType, parentIds, range) {
 
   var mapFn, reduceFn, deferred, objectIds;
@@ -74,22 +79,49 @@ var getTimeSpent = function(type, parentType, parentIds, range) {
   // ATTN: map & reduce are functions which are eval'ed in mongodb.
   mapFn = function() {  
 
-    var object = this.time_spent;
-    var time_spent = Object.keys(object).filter(function(key) {
+    var filtered = {};
+    //var filtered = {initial: this.time_spent.initial};
+    Object.keys(this.time_spent).filter(function(key) {
 
       return ((key >= start) && (key <= end)); // filters out 'initial' as well
-    }).reduce(function (memo, key) {
+    }).forEach(function(key) { 
 
-      return memo + object[key];
-    }, 0);
+      filtered[key] = this[key];  
+    }, this.time_spent);
 
     // TODO: storyId? fixed here?
-    emit(this.story_id, time_spent);
+    emit(this.story_id, filtered);
   };
 
-  reduceFn = function(key, values) {
+  reduceFn = function(id, times_spent) {
 
-    return Array.sum(values);
+    // collect keys for all remaining_times
+
+    var dateKeys = times_spent.reduce(function (memo, time_spent) {
+
+      Object.keys(time_spent).forEach(function (key) {
+
+        if (memo.indexOf(key) == -1) {
+
+          memo.push(key);
+        }
+      });
+      return memo;
+    }, []).sort();
+    //dateKeys.unshift(dateKeys.pop());
+
+    return dateKeys.reduce(function(accumulated, key) {
+
+      accumulated[key] = times_spent.reduce(function(memo, time_spent) {
+
+        if (time_spent[key] !== undefined) {
+
+          memo += time_spent[key];
+        }
+        return memo;
+      }, 0);
+      return accumulated;
+    }, {});
   };
 
   query = {};
@@ -102,17 +134,11 @@ var getTimeSpent = function(type, parentType, parentIds, range) {
     }
     else {
 
-      var timesSpent = _.object(_.chain(result).pluck('_id').invoke('toString').value(), _.pluck(result, 'value'));
-      deferred.resolve(timesSpent);
+      deferred.resolve(_.map(result, _processMapReduceRow));
     }
   });
 
   return deferred.promise;
-};
-
-_processMapReduceRow = function(row) {
-
-  return [row._id.toString(), _.pairs(row.value)];  
 };
 
 var getRemainingTime = function(type, parentType, parentIds, range) {
