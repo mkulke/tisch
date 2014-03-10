@@ -359,21 +359,12 @@ var addQuery = function(dbFn, data, parentKey, parentId) {
   });
 };
 
-var calculationQuery_ = function(dbFn, id) {
-
-  return dbFn([id])
-  .then(function (result) {
-
-    return _.last(_.first(result)) || null; //[['partial', 0]];
-  });
-};
-
 var calculationQuery = function(dbFn, id) {
 
   return dbFn([id])
   .then(function (result) {
 
-    return (result[id] || 0);
+    return _.last(_.first(result));
   });
 };
 
@@ -571,7 +562,7 @@ var processRequest = function(request, response) {
 
     // TODO: robustness, check for start & end query
 
-    query = partial(calculationQuery_, curry2(tischDB.getStoriesTimeSpent)({start: urlQuery.start, end: urlQuery.end}), id);
+    query = partial(calculationQuery, curry2(tischDB.getStoriesTimeSpent)({start: urlQuery.start, end: urlQuery.end}), id);
     answer = partial(respondWithJson, response);
   }
   else if (id && (type == 'calculation') && (request.method == 'GET') && (urlQuery.func == 'task_count_for_story')) {
@@ -583,7 +574,7 @@ var processRequest = function(request, response) {
 
     // TODO: robustness, check for start & end query
 
-    query = partial(calculationQuery_, curry2(tischDB.getStoriesRemainingTime)({start: urlQuery.start, end: urlQuery.end}), id);
+    query = partial(calculationQuery, curry2(tischDB.getStoriesRemainingTime)({start: urlQuery.start, end: urlQuery.end}), id);
     answer = partial(respondWithJson, response);
   }
   else {

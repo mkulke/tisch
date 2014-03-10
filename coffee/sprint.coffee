@@ -18,20 +18,7 @@ class SprintModel extends Model
         
         successCb? data
 
-  _getCalculations: (fn, storyIds, successCb) =>
-
-    gets = []
-    result = {}
-    _.each storyIds, (storyId) ->
-
-      gets.push fn storyId, (data) ->
-
-        result[storyId] = data
-    $.when.apply($, gets).then ->
-
-      successCb? result
-
-  _getCalculations_: (promiseFn, storyIds, successCb) =>
+  _getCalculations: (promiseFn, storyIds, successCb) =>
 
     result = []
     gets = _.map storyIds, (storyId) ->
@@ -49,9 +36,9 @@ class SprintModel extends Model
   constructor: (@stories, @sprint, @calculations) ->
 
     @getTimeSpent = partial @_getCalculation, 'time_spent_for_story'
-    @getTimesSpent = partial @_getCalculations_, @getTimeSpent
+    @getTimesSpent = partial @_getCalculations, @getTimeSpent
     @getRemainingTime = partial @_getCalculation, 'remaining_time_for_story'
-    @getRemainingTimes = partial @_getCalculations_, @getRemainingTime
+    @getRemainingTimes = partial @_getCalculations, @getRemainingTime
     @getTaskCount = partial @_getCalculation, 'task_count_for_story'
     @getTaskCounts = partial @_getCalculations, @getTaskCount
 
@@ -99,19 +86,20 @@ class SprintViewModel extends ViewModel
 
   _updateStat: (id) =>
 
-    update = (observable, data) =>
-
-      object = observable()
-      object[id] = data
-      observable.notifySubscribers object
-    update_ = (observable, data) ->
+    update = (observable, data) ->
 
       belongsToStory = _.compose(partial(_.isEqual, id), _.first)
-      _.find(observable(), belongsToStory)?[1] = data
+      storyRow = _.find(observable(), belongsToStory)
+      if storyRow? 
+
+        storyRow[1] = data
+      else
+
+        observable().push [id, data]
       observable.notifySubscribers observable()
 
-    model.getRemainingTime id, partial(update_, @readonly.remainingTimeCalculations)
-    @model.getTimeSpent id, partial(update_, @readonly.timeSpentCalculations)   
+    @model.getRemainingTime id, partial(update, @readonly.remainingTimeCalculations)
+    @model.getTimeSpent id, partial(update, @readonly.timeSpentCalculations)   
     @model.getTaskCount id, partial(update, @readonly.taskCountCalculations)   
 
   _updateStats: =>
@@ -231,17 +219,13 @@ class SprintViewModel extends ViewModel
 
     @computed = do =>
 
-      sum = (observable) =>
-
-        _.reduce(observable(), (memo, value) ->
-
-          add memo, value
-        , 0)
-
-      # TODO: remember to remove old sum
-      sum2 = curry3(_.reduce)(0)(add)
+      sum = curry3(_.reduce)(0)(add)
       mostRecentValues = curry2(_.map)(_.compose(@model._mostRecentValue, _.last))
-      accumulatedValues = curry2(_.map)(_.compose(sum2, curry2(_.map)(_.last), _.last))
+      accumulatedValues = curry2(_.map)(_.compose(sum, curry2(_.map)(_.last), _.last))
+      normalize = curry2(_.map)((value) ->
+
+        value || 0
+      )
 
       lengthDate = ko.computed
 
@@ -274,9 +258,9 @@ class SprintViewModel extends ViewModel
 
         moment(lengthDate()).format(common.DATE_DISPLAY_FORMAT)
       lengthDate: lengthDate
-      remainingTime: ko.computed _.compose(sum2, mostRecentValues, @readonly.remainingTimeCalculations)
-      timeSpent: ko.computed _.compose(sum2, accumulatedValues, @readonly.timeSpentCalculations)
-      taskCount: ko.computed partial(sum, @readonly.taskCountCalculations)
+      remainingTime: ko.computed _.compose(sum, normalize, mostRecentValues, @readonly.remainingTimeCalculations)
+      timeSpent: ko.computed _.compose(sum, accumulatedValues, @readonly.timeSpentCalculations)
+      taskCount: ko.computed _.compose(sum, curry2(_.map)(_.last), @readonly.taskCountCalculations)
 
     @writable.start.subscribe @_updateStats
     @writable.length.subscribe @_updateStats
@@ -286,6 +270,8 @@ class SprintViewModel extends ViewModel
     @stories = ko.observableArray _.map @model.stories, @_createObservables
     _.chain(@stories()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority, @stories))
     @_subscribeToAssignmentChanges @stories, 'sprint_id'
+    @stories.subscribe @_updateStats, null, 'arrayChange'
+
     @_setupSortable @stories()
 
     # markdown

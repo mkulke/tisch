@@ -94,7 +94,10 @@ pairs = [
 		@test.assertEval -> 
 
 			document.querySelectorAll('ul#well li.panel').length == 3
-		,'3 Story panels visible.'		
+		,'3 Story panels visible.'
+		@click '#button-bar input.button.stats'
+		@test.assertSelectorHasText '#stats-dialog .content .textbox .stat.no-of-stories span.value', 3, 'No of stories stat correct.'
+		@click '#stats-dialog .popup-buttons input.button.close'
 ,
 	do: ->
 
@@ -121,6 +124,9 @@ pairs = [
 
 			document.querySelectorAll('ul#well li.panel').length == 2
 		, '2 Story panels visible.'
+		@click '#button-bar input.button.stats'
+		@test.assertSelectorHasText '#stats-dialog .content .textbox .stat.no-of-stories span.value', 2, 'No of stories stat correct.'
+		@click '#stats-dialog .popup-buttons input.button.close'
 ,
 	do: ->
 
@@ -207,6 +213,9 @@ pairs = [
 	verify: ->
 
 		@test.assertSelectorHasText '.panel:nth-child(2) .header .stats .text', '21.5', 'Stats text correctly updated on Sprint view.'
+		@click '#button-bar input.button.stats'
+		@test.assertSelectorHasText '#stats-dialog .content .textbox .stat.remaining-time span.value', '21.5', 'Remaining time stat correct.'
+		@click '#stats-dialog .popup-buttons input.button.close'
 ,
 	do: ->
 
@@ -216,7 +225,44 @@ pairs = [
 		@waitForResource url('story', storyId), @lock.release
 	verify: ->
 
-		@test.assertSelectorHasText '.panel:nth-child(2) .header .stats .text', '20.5', 'Stats text correctly updated on Sprint view.'
+		@test.assertSelectorHasText '.panel:nth-child(2) .header .stats .text', '20.5', 'Stats text correctly updated on Sprint view.'	
+		@click '#button-bar input.button.stats'
+		@test.assertSelectorHasText '#stats-dialog .content .textbox .stat.remaining-time span.value', '20.5', 'Remaining time stat correct.'
+		@click '#stats-dialog .popup-buttons input.button.close'
+,
+	do: ->
+
+		@test.info 'Reassign Task:'
+		@open(url('task', taskId)).then ->
+
+			@click "button[name='story_id']"
+			@waitForResource url('task', taskId), ->
+	
+				@click '#story-selector .content .line:nth-child(2)'
+				@waitForResource url('task', taskId), @lock.release
+	verify: ->
+
+		@test.assertSelectorHasText '.panel:nth-child(1) .header .stats .text', '12', 'Stats text correctly updated on Sprint view.'
+,
+	do: -> 
+
+		@test.info 'Reassign Story:'
+		@open(url('story', storyId)).then ->
+
+			@click "button[name='sprint_id']"
+			@waitForResource url('story', storyId), ->
+
+				index = @evaluate ->
+
+					$("#sprint-selector .content .line:contains('Test Sprint B')").index()
+
+				@click "#sprint-selector .content .line:nth-child(#{index + 1})"
+				@waitForResource url('story', storyId), @lock.release
+	verify: ->
+
+		@click '#button-bar input.button.stats'
+		@test.assertSelectorHasText '#stats-dialog .content .textbox .stat.remaining-time span.value', '12', 'Remaining time stat correct.'
+		@click '#stats-dialog .popup-buttons input.button.close'		
 ]
 
 casper2.lock.release()
@@ -234,5 +280,5 @@ casper1.then waitFor2 ->
 casper1.run()
 casper2.run ->
 
-	@test.done 11
+	@test.done 17
 	@test.renderResults true

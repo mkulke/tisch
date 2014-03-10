@@ -134,11 +134,22 @@ var getTimeSpent = function(type, parentType, parentIds, range) {
     }
     else {
 
+      result = _padResult(result, parentIds);
       deferred.resolve(_.map(result, _processMapReduceRow));
     }
   });
 
   return deferred.promise;
+};
+
+var _padResult = function(result, ids) {
+
+  resultIds = _.chain(result).pluck('_id').invoke('toString').value();
+  padded = _.difference(ids, resultIds).map(function(id) {
+
+    return {_id: ObjectID(id), value: []};
+  });
+  return result.concat(padded);
 };
 
 var getRemainingTime = function(type, parentType, parentIds, range) {
@@ -209,6 +220,7 @@ var getRemainingTime = function(type, parentType, parentIds, range) {
     }
     else {
 
+      result = _padResult(result, parentIds);
       deferred.resolve(_.map(result, _processMapReduceRow));
     }
   });
@@ -219,7 +231,9 @@ var getRemainingTime = function(type, parentType, parentIds, range) {
 var getChildCount = function(type, parentType, parentIds) {
 
   var deferred = Q.defer();
-  var objectIds = parentIds.map(ObjectID);
+  var objectIds = _.map(parentIds, ObjectID);
+  var zeroValues = _.range(parentIds.length).map(partial(_.identity, 0));
+  var defaults = _.object(parentIds, zeroValues);
   var key = parentType + '_id';
 
   var filter = {};
@@ -233,10 +247,10 @@ var getChildCount = function(type, parentType, parentIds) {
     }
     else {
 
-      var count = _.countBy(result, function(child) {
+      var count = _.chain(result).countBy(function(child) {
 
         return child[key];
-      });
+      }).defaults(defaults).pairs().value();
 
       deferred.resolve(count);
     }
