@@ -107,7 +107,8 @@ casper.then ->
 			@test.assertEval ->
 
 					document.querySelectorAll('ul#well li.panel').length == 2;
-			, '2 Story panels visible.'	
+			, '2 Story panels visible.'
+			@waitForResource sprintUrl #fetches calculations
 
 casper.then ->
 
@@ -125,6 +126,7 @@ casper.then ->
 		@waitForResource sprintUrl, ->
 
 			@test.assertField 'title-0', 'Test Story B', 'Title field correct.'
+			@waitForResource sprintUrl #fetches calculations
 
 casper.then ->
 
