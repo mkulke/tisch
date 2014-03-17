@@ -29,6 +29,8 @@ add = (a, b) ->
 
   a + b
 
+sum = curry3(_.reduce)(0)(add)
+
 common = (->
 
   uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace /[xy]/g, (c) ->

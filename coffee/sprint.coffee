@@ -61,6 +61,7 @@ class SprintViewModel extends ViewModel
 
       color: ko.observable story.color
       sprint_id: ko.observable story.sprint_id
+      estimation: ko.observable story.estimation
 
     writable = _.reduce [
 
@@ -83,6 +84,22 @@ class SprintViewModel extends ViewModel
 
     @_setupMarkdown.call observables, writable.description
     observables
+
+  _refreshChart: =>
+
+    buildObj = (date, value) ->
+
+      {date: moment(date).format('YYYY-MM-DD'), value: value}
+
+    # TODO: chart render issues when sprint range is modified.
+    @chart.refresh 
+
+      'remaining-time': @computed.remainingTimeChartData()
+      reference: [
+
+        buildObj(@computed.startDate(), @computed.allStoriesEstimation())
+        buildObj(@computed.lengthDate(), 0)
+      ]
 
   _updateStat: (id) =>
 
@@ -145,6 +162,54 @@ class SprintViewModel extends ViewModel
       else if change.status == 'deleted'
 
         socket.unregisterWires _.where(wires, {parent_id: change.value.id})
+
+  # TODO: unit test!
+  _createRemainingTimeChartData: (calculations) =>
+
+    storyEstimation = (id) =>
+
+      _.findWhere(@stories(), {id: id})?.readonly.estimation() || 0
+
+    closestDate = (dates, matchDate) ->
+
+      _.reduce _.rest(dates), (memo, date) ->
+
+        if date <= matchDate && matchDate != 'initial'
+
+          date
+        else
+
+          memo
+      , 'initial'
+
+    toDate = curry2(_.map)(_.first)
+
+    valueForDate = (storyCalculations, date) ->
+
+      pairs = _.last storyCalculations
+      calculation = _.find pairs, (pair) ->
+
+        _.first(pair) == closestDate toDate(pairs), date
+      _.last(calculation) || storyEstimation(_.first(storyCalculations))
+
+    allDates = _.union _.chain(calculations).map(_.last).map(toDate).value()...
+    allValues = _.map allDates, (date) ->
+
+      sum _.map(calculations, curry2(valueForDate)(date))
+
+    startDate = moment(@writable.start()).format('YYYY-MM-DD')
+    if allDates[1] != startDate
+
+      allDates[0] = startDate
+    else
+
+      allDates = _.rest allDates
+      allValues[1] += allValues[0]
+      allValues = _.rest allValues
+    zippedPairs = _.zip(allDates, allValues)
+    _.map zippedPairs, (pair) ->
+
+      {date: _.first(pair), value: _.last(pair)}
 
   showColorSelector: =>
 
@@ -219,7 +284,6 @@ class SprintViewModel extends ViewModel
 
     @computed = do =>
 
-      sum = curry3(_.reduce)(0)(add)
       mostRecentValues = curry2(_.map)(_.compose(@model._mostRecentValue, _.last))
       accumulatedValues = curry2(_.map)(_.compose(sum, curry2(_.map)(_.last), _.last))
       normalize = curry2(_.map)((value) ->
@@ -271,12 +335,25 @@ class SprintViewModel extends ViewModel
     _.chain(@stories()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority, @stories))
     @_subscribeToAssignmentChanges @stories, 'sprint_id'
     @stories.subscribe @_updateStats, null, 'arrayChange'
+    @computed.allStoriesEstimation = ko.computed _.compose(sum, curry2(_.invoke)('estimation'), curry2(_.pluck)('readonly'), @stories)
+    @computed.remainingTimeChartData = ko.computed _.compose(@_createRemainingTimeChartData, @readonly.remainingTimeCalculations)
+
 
     @_setupSortable @stories()
 
     # markdown
 
     @_setupMarkdown @writable.description
+
+    # chart
+
+    @chart = new Chart ['reference', 'remaining-time', 'time-spent']
+    @_refreshChart()
+
+    @computed.remainingTimeChartData.subscribe @_refreshChart
+    @computed.allStoriesEstimation.subscribe @_refreshChart
+    @computed.startDate.subscribe @_refreshChart
+    @computed.lengthDate.subscribe @_refreshChart
 
     # rt specific initializations
 
