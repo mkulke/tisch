@@ -1,3 +1,48 @@
+describe 'SprintViewModel._createRemainingTimeChartData', ->
+
+  before ->
+
+    class StubViewModel extends SprintViewModel
+
+      constructor: ->
+
+        @writable = {
+
+          start: -> '2013-01-01'
+        }
+    @viewModel = new StubViewModel
+  context 'when calculations are empty', ->
+
+    it 'returns an empty array', ->
+
+      chartData = @viewModel._createRemainingTimeChartData [], []  
+      expect(chartData).to.deep.equal([])
+  context 'when all stories have no date', ->
+    it 'returns an empty array', ->
+
+      chartData = @viewModel._createRemainingTimeChartData ['a', []], [['a', 5]]  
+      expect(chartData).to.deep.equal([])
+  context 'when one story has no values', ->
+
+    it 'uses the estimation of the story', ->
+
+      chartData = @viewModel._createRemainingTimeChartData [['a', [['initial', 1], ['2013-01-02', 2]]], ['b', []]], [['a', 5], ['b', 4]]
+      expect(chartData).to.deep.equal([{date: '2013-01-01', value: 5}, {date: '2013-01-02', value: 6}])
+  context 'when several story have values', ->
+
+    context 'at the same dates', ->
+
+      it 'sums up the values', ->
+
+        chartData = @viewModel._createRemainingTimeChartData [['a', [['initial', 1], ['2013-01-02', 2]]], ['b', [['initial', 1], ['2013-01-02', 3]]]], [['a', 5], ['b', 4]]
+        expect(chartData).to.deep.equal([{date: '2013-01-01', value: 2}, {date: '2013-01-02', value: 5}])
+    context 'at different dates', ->
+
+      it 'uses the last available value', ->
+
+        chartData = @viewModel._createRemainingTimeChartData [['a', [['initial', 1], ['2013-01-02', 2]]], ['b', [['initial', 1], ['2013-01-03', 3]]]], [['a', 5], ['b', 4]]
+        expect(chartData).to.deep.equal([{date: '2013-01-01', value: 2}, {date: '2013-01-02', value: 3}, {date: '2013-01-03', value: 5}])
+
 ###describe 'SprintViewModel._selectDate', ->
 
   before ->

@@ -7,6 +7,14 @@ partial = (fn) ->
 
     fn.apply @, args.concat(aps.call(arguments))
 
+equals = (a, b) ->
+
+  a == b
+
+at = (arr, index) ->
+
+  arr[index]
+
 curry2 = (fn) ->
 
   (arg2) ->
@@ -135,6 +143,7 @@ class SocketIO
       @_registrations = []
     @server.on 'disconnect', onDisconnect
 
+#TODO: refactor in functional code
 class Chart 
 
   constructor: (lines = []) ->
@@ -226,9 +235,17 @@ class Chart
         .attr("cx", (d) => @xScale(@dateFn(d)))
         .attr("cy", (d) => @yScale(@valueFn(d)))
 
-      @svg.select("path.#{path}").datum(data)
-        .transition()
-        .attr("d", @lineGn)
+      circles.exit()
+        .remove()
+
+      if circles.empty()
+
+        @svg.select("path.#{path}").remove()
+      else
+
+        @svg.select("path.#{path}").datum(data)
+          .transition()
+          .attr("d", @lineGn)
 
       @svg.selectAll('g.y.axis')
         .call(@yAxis)

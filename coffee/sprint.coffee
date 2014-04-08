@@ -163,49 +163,49 @@ class SprintViewModel extends ViewModel
 
         socket.unregisterWires _.where(wires, {parent_id: change.value.id})
 
-  # TODO: unit test!
-  _createRemainingTimeChartData: (calculations) =>
+  _createRemainingTimeChartData: (allCalculations, allEstimations) =>
 
-    storyEstimation = (id) =>
+    toPairs = curry2(at)(1)
+    findEstimation = (id) ->
 
-      _.findWhere(@stories(), {id: id})?.readonly.estimation() || 0
-
-    closestDate = (dates, matchDate) ->
-
-      _.reduce _.rest(dates), (memo, date) ->
-
-        if date <= matchDate && matchDate != 'initial'
-
-          date
-        else
-
-          memo
-      , 'initial'
-
-    toDate = curry2(_.map)(_.first)
+      pair = _.find(allEstimations, _.compose(partial(equals, id), _.first))
+      _.last(pair) || 0
+    toDates = curry2(_.map)(_.first)
 
     valueForDate = (storyCalculations, date) ->
 
-      pairs = _.last storyCalculations
-      calculation = _.find pairs, (pair) ->
+      pairs = toPairs storyCalculations
+      dates = toDates pairs 
 
-        _.first(pair) == closestDate toDate(pairs), date
-      _.last(calculation) || storyEstimation(_.first(storyCalculations))
+      dateMatcher = (memo, value) ->
 
-    allDates = _.union _.chain(calculations).map(_.last).map(toDate).value()...
+        if value <= date && date != 'initial' then value else memo
+      closestDate = _.reduce(_.rest(dates), dateMatcher, 'initial')
+
+      byClosestDate = _.compose partial(equals, closestDate), _.first
+      
+      calculation = _.find pairs, byClosestDate
+      _.last(calculation) || findEstimation(_.first(storyCalculations))
+
+    # Extract all unique dates in the calculations
+    allDates = _.union(_.chain(allCalculations).map(toPairs).reject(_.isEmpty).map(toDates).value()...)
+    # get date-value for every date found in all story calculations
     allValues = _.map allDates, (date) ->
 
-      sum _.map(calculations, curry2(valueForDate)(date))
+      sum _.map(allCalculations, curry2(valueForDate)(date))
 
+    # move initial to the front, if necessary
     startDate = moment(@writable.start()).format('YYYY-MM-DD')
-    if allDates[1] != startDate
+    if allDates.length > 0
 
-      allDates[0] = startDate
-    else
+      if allDates[1] != startDate
 
-      allDates = _.rest allDates
-      allValues[1] += allValues[0]
-      allValues = _.rest allValues
+        allDates[0] = startDate
+      else
+
+        allDates = _.rest allDates
+        allValues[1] += allValues[0]
+        allValues = _.rest allValues
     zippedPairs = _.zip(allDates, allValues)
     _.map zippedPairs, (pair) ->
 
@@ -336,8 +336,12 @@ class SprintViewModel extends ViewModel
     @_subscribeToAssignmentChanges @stories, 'sprint_id'
     @stories.subscribe @_updateStats, null, 'arrayChange'
     @computed.allStoriesEstimation = ko.computed _.compose(sum, curry2(_.invoke)('estimation'), curry2(_.pluck)('readonly'), @stories)
-    @computed.remainingTimeChartData = ko.computed _.compose(@_createRemainingTimeChartData, @readonly.remainingTimeCalculations)
+    @computed.remainingTimeChartData = ko.computed => 
 
+      calculations = @readonly.remainingTimeCalculations()
+      ids = calculations.map(_.first)
+      estimations = _.zip(ids, _.chain(@stories()).pluck('readonly').invoke('estimation').value())
+      @_createRemainingTimeChartData calculations, estimations
 
     @_setupSortable @stories()
 
