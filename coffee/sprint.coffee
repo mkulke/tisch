@@ -163,6 +163,38 @@ class SprintViewModel extends ViewModel
 
         socket.unregisterWires _.where(wires, {parent_id: change.value.id})
 
+  _extractDatesFromCalculations: (calculations) ->
+
+    toPairs = curry2(at)(1)
+    toDates = curry2(_.map)(_.first)
+    _.union(_.chain(calculations).map(toPairs).reject(_.isEmpty).map(toDates).value()...)
+
+  _toChartData: (pair) ->
+
+    {date: _.first(pair), value: _.last(pair)} 
+
+  _createTimeSpentChartData: (allCalculations) =>
+
+    toPairs = curry2(at)(1)
+    valueForDate = (storyCalculations, date) ->
+
+      pairs = toPairs storyCalculations
+
+      byMatchingDate = _.compose partial(equals, date), _.first
+      pair = _.find pairs, byMatchingDate
+      _.last(pair) || 0
+
+    allDates = @_extractDatesFromCalculations allCalculations
+    allValues = _.map allDates, (date) ->
+
+      sum _.map(allCalculations, curry2(valueForDate)(date))
+
+    zippedPairs = _.zip(allDates, allValues)
+    # prepend with 0 if necessary
+    startDate = moment(@writable.start()).format('YYYY-MM-DD')
+    zippedPairs = [[startDate, 0]].concat(zippedPairs) unless _.contains(allDates, startDate) || allDates.length == 0
+    _.map zippedPairs, @_toChartData
+
   _createRemainingTimeChartData: (allCalculations, allEstimations) =>
 
     toPairs = curry2(at)(1)
@@ -188,7 +220,7 @@ class SprintViewModel extends ViewModel
       _.last(calculation) || findEstimation(_.first(storyCalculations))
 
     # Extract all unique dates in the calculations
-    allDates = _.union(_.chain(allCalculations).map(toPairs).reject(_.isEmpty).map(toDates).value()...)
+    allDates = @_extractDatesFromCalculations allCalculations
     # get date-value for every date found in all story calculations
     allValues = _.map allDates, (date) ->
 
@@ -207,9 +239,7 @@ class SprintViewModel extends ViewModel
         allValues[1] += allValues[0]
         allValues = _.rest allValues
     zippedPairs = _.zip(allDates, allValues)
-    _.map zippedPairs, (pair) ->
-
-      {date: _.first(pair), value: _.last(pair)}
+    _.map zippedPairs, @_toChartData
 
   showColorSelector: =>
 
