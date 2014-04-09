@@ -1,3 +1,122 @@
+describe 'SprintViewModel._createRemainingTimeChartData', ->
+
+  before ->
+
+    class StubViewModel extends SprintViewModel
+
+      constructor: ->
+
+        @writable = {
+
+          start: -> '2013-01-01'
+        }
+    @viewModel = new StubViewModel
+
+  beforeEach ->
+
+    @subject = ->
+
+      @viewModel._createRemainingTimeChartData @calculations, @estimations      
+  context 'when calculations are empty', ->
+
+    it 'returns an empty array', ->
+
+      @calculations = []
+      @estimations = []
+      expect(do @subject).to.deep.equal([])
+  context 'when all stories have no values', ->
+    it 'returns an empty array', ->
+
+      @calculations = ['a', []]
+      @estimations = [['a', 5]]
+      expect(do @subject).to.deep.equal([])
+  context 'when one story has no values', ->
+
+    it 'uses the estimation of the story', ->
+
+      @calculations = [['a', [['initial', 1], ['2013-01-02', 2]]], ['b', []]]
+      @estimations = [['a', 5], ['b', 4]]
+      expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 5}, {date: '2013-01-02', value: 6}])
+  context 'when several story have values', ->
+
+    context 'at the same dates', ->
+
+      it 'sums up the values', ->
+
+        @calculations = [['a', [['initial', 1], ['2013-01-02', 2]]], ['b', [['initial', 1], ['2013-01-02', 3]]]]
+        @estimations = [['a', 5], ['b', 4]]
+        expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 2}, {date: '2013-01-02', value: 5}])
+    context 'at different dates', ->
+
+      it 'uses the last available value', ->
+
+        @calculations = [['a', [['initial', 1], ['2013-01-02', 2]]], ['b', [['initial', 1], ['2013-01-03', 3]]]]
+        @estimations = [['a', 5], ['b', 4]]
+        expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 2}, {date: '2013-01-02', value: 3}, {date: '2013-01-03', value: 5}])
+
+describe 'SprintViewModel._createTimeSpentChartData', ->
+
+  before ->
+
+    class StubViewModel extends SprintViewModel
+
+      constructor: ->
+
+        @writable = {
+
+          start: -> '2013-01-01'
+        }
+    @viewModel = new StubViewModel    
+
+  beforeEach ->
+
+    @subject = ->
+
+      @viewModel._createTimeSpentChartData @calculations
+
+  context 'when calculations are empty', ->
+
+    it 'returns an empty array', ->
+
+      @calculations = []
+      expect(do @subject).to.deep.equal([])   
+  context 'when all stories have no values', ->
+
+    it 'returns an empty array', ->
+
+      @calculations = [['a', []]]
+      expect(do @subject).to.deep.equal([]) 
+
+  context 'when one story has no values', ->
+
+    it 'returns only the (accumulated) value of the other story', ->
+
+      @calculations = [['a', [['2013-01-01', 2], ['2013-01-07', 3]]], ['b', []]]
+      expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 2}, {date: '2013-01-07', value: 5}])
+
+  context 'when there is no value at sprint start, but others exist', ->
+
+    it 'sets the sprint start value to 0', ->
+    
+      @calculations = [['a', [['2013-01-02', 1]]]]
+      expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 0}, {date: '2013-01-02', value: 1}])
+
+  context 'when two stories have values', ->
+
+    context 'on distinct dates', ->
+
+      it 'merges the values', ->
+
+        @calculations = [['a', [['2013-01-01', 1]]], ['b', [['2013-01-02', 2]]]]
+        expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 1}, {date: '2013-01-02', value: 3}])
+    
+    context 'on overlapping dates', ->
+
+      it 'sums up the overlapping values', ->
+
+        @calculations = [['a', [['2013-01-01', 1], ['2013-01-02', 1]]], ['b', [['2013-01-02', 2], ['2013-01-03', 7]]]]
+        expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 1}, {date: '2013-01-02', value: 4}, {date: '2013-01-03', value: 11}])
+
 ###describe 'SprintViewModel._selectDate', ->
 
   before ->

@@ -2,6 +2,10 @@ casper = require('casper').create()
 
 sprintId = '528c95f4eab8b32b76efac0b'
 sprintUrl = "http://localhost:8000/sprint/#{sprintId}"
+storyAId = '528c961beab8b32b76efac0c'
+storyBId = '528cc5cb42a7877322b90c2c'
+calculationAUrl = "http://localhost:8000/calculation/#{storyAId}"
+calculationBUrl = "http://localhost:8000/calculation/#{storyBId}"
 throttle = 500
 dragDelay = 150
 
@@ -107,7 +111,10 @@ casper.then ->
 			@test.assertEval ->
 
 					document.querySelectorAll('ul#well li.panel').length == 2;
-			, '2 Story panels visible.'	
+			, '2 Story panels visible.'
+			@waitForResource calculationAUrl, ->
+
+				@waitForResource calculationBUrl, ->
 
 casper.then ->
 
@@ -125,6 +132,9 @@ casper.then ->
 		@waitForResource sprintUrl, ->
 
 			@test.assertField 'title-0', 'Test Story B', 'Title field correct.'
+			@waitForResource calculationAUrl, ->
+
+				@waitForResource calculationBUrl, ->
 
 casper.then ->
 

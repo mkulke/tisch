@@ -3,6 +3,7 @@ html
 		title Sprint details
 		include shared
 		script(type='text/javascript', src='/knockout-sortable.min.js')
+		script(type='text/javascript', src='/d3.min.js')
 		script(type='text/javascript', src='/markdown.coffee.js')
 		script(type='text/javascript', src='/parent.coffee.js')
 		script(type='text/javascript', src='/sortable.coffee.js')
@@ -75,10 +76,12 @@ html
 							=messages.en.NO_OF_TASKS+':'
 						span(data-bind="text: computed.taskCount").value 
 					p.stat.remaining-time
+						span.indicator.blue
 						span.label
 							=messages.en.REMAINING_TIME+':'
 						span(data-bind="text: computed.remainingTime").value
 					p.stat.time-spent
+						span.indicator.red
 						span.label
 							=messages.en.TIME_SPENT+':'
 						span(data-bind="text: computed.timeSpent").value

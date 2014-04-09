@@ -2,6 +2,17 @@ var messages = require('./messages.json');
 var _ = require('underscore')._;
 var io = require('socket.io');
 
+function curry2(fn) {
+
+  return function(arg2) {
+
+    return function(arg1) {
+
+      return fn(arg1, arg2);
+    };
+  };
+}
+
 var registrations = [];
 var socket;
 

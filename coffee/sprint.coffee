@@ -18,15 +18,16 @@ class SprintModel extends Model
         
         successCb? data
 
-  _getCalculations: (fn, storyIds, successCb) =>
+  _getCalculations: (promiseFn, storyIds, successCb) =>
 
-    gets = []
-    result = {}
-    _.each storyIds, (storyId) ->
+    result = []
+    gets = _.map storyIds, (storyId) ->
 
-      gets.push fn storyId, (data) ->
+      promiseFn storyId, (data) ->
 
-        result[storyId] = data
+        if data?
+
+          result.push [storyId, data]
     $.when.apply($, gets).then ->
 
       successCb? result
@@ -52,12 +53,15 @@ class SprintViewModel extends ViewModel
 
       remaining_time: ko.computed =>
 
-        @readonly.remainingTimeCalculations()[story._id]
+        belongsToStory = _.compose(partial(_.isEqual, story._id), _.first)
+        calculation = _.chain(@readonly.remainingTimeCalculations()).find(belongsToStory).last().value()
+        @model._mostRecentValue(calculation)
 
     readonly = 
 
       color: ko.observable story.color
       sprint_id: ko.observable story.sprint_id
+      estimation: ko.observable story.estimation
 
     writable = _.reduce [
 
@@ -81,13 +85,36 @@ class SprintViewModel extends ViewModel
     @_setupMarkdown.call observables, writable.description
     observables
 
+  _refreshChart: =>
+
+    buildObj = (date, value) ->
+
+      {date: moment(date).format('YYYY-MM-DD'), value: value}
+
+    # TODO: chart render issues when sprint range is modified.
+    @chart.refresh 
+
+      'remaining-time': @computed.remainingTimeChartData()
+      'time-spent': @computed.timeSpentChartData()
+      reference: [
+
+        buildObj(@computed.startDate(), @computed.allStoriesEstimation())
+        buildObj(@computed.lengthDate(), 0)
+      ]
+
   _updateStat: (id) =>
 
-    update = (observable, data) =>
+    update = (observable, data) ->
 
-      object = observable()
-      object[id] = data
-      observable.notifySubscribers object
+      belongsToStory = _.compose(partial(_.isEqual, id), _.first)
+      storyRow = _.find(observable(), belongsToStory)
+      if storyRow? 
+
+        storyRow[1] = data
+      else
+
+        observable().push [id, data]
+      observable.notifySubscribers observable()
 
     @model.getRemainingTime id, partial(update, @readonly.remainingTimeCalculations)
     @model.getTimeSpent id, partial(update, @readonly.timeSpentCalculations)   
@@ -136,6 +163,87 @@ class SprintViewModel extends ViewModel
       else if change.status == 'deleted'
 
         socket.unregisterWires _.where(wires, {parent_id: change.value.id})
+
+  _extractDatesFromCalculations: (calculations) ->
+
+    toPairs = curry2(at)(1)
+    toDates = curry2(_.map)(_.first)
+    _.union(_.chain(calculations).map(toPairs).reject(_.isEmpty).map(toDates).value()...)
+
+  _toChartData: (pair) ->
+
+    {date: _.first(pair), value: _.last(pair)} 
+
+  _createTimeSpentChartData: (allCalculations) =>
+
+    toPairs = curry2(at)(1)
+    valueForDate = (storyCalculations, date) ->
+
+      pairs = toPairs storyCalculations
+
+      byMatchingDate = _.compose partial(equals, date), _.first
+      pair = _.find pairs, byMatchingDate
+      _.last(pair) || 0
+
+    allDates = @_extractDatesFromCalculations allCalculations
+    allValues = _.reduce allDates, (memo, date) ->
+
+      previous = _.last(memo) || 0
+      value = sum _.map(allCalculations, curry2(valueForDate)(date))
+      memo.concat [value + previous]
+    , []
+
+    zippedPairs = _.zip(allDates, allValues)
+    # prepend with 0 if necessary
+    startDate = moment(@writable.start()).format('YYYY-MM-DD')
+    zippedPairs = [[startDate, 0]].concat(zippedPairs) unless _.contains(allDates, startDate) || allDates.length == 0
+    _.map zippedPairs, @_toChartData
+
+  _createRemainingTimeChartData: (allCalculations, allEstimations) =>
+
+    toPairs = curry2(at)(1)
+    findEstimation = (id) ->
+
+      pair = _.find(allEstimations, _.compose(partial(equals, id), _.first))
+      _.last(pair) || 0
+    toDates = curry2(_.map)(_.first)
+
+    valueForDate = (storyCalculations, date) ->
+
+      pairs = toPairs storyCalculations
+      dates = toDates pairs 
+
+      dateMatcher = (memo, value) ->
+
+        if value <= date && date != 'initial' then value else memo
+      closestDate = _.reduce(_.rest(dates), dateMatcher, 'initial')
+
+      byClosestDate = _.compose partial(equals, closestDate), _.first
+      
+      calculation = _.find pairs, byClosestDate
+      _.last(calculation) || findEstimation(_.first(storyCalculations))
+
+    # Extract all unique dates in the calculations
+    allDates = @_extractDatesFromCalculations allCalculations
+    # get date-value for every date found in all story calculations
+    allValues = _.map allDates, (date) ->
+
+      sum _.map(allCalculations, curry2(valueForDate)(date))
+
+    # move initial to the front, if necessary
+    startDate = moment(@writable.start()).format('YYYY-MM-DD')
+    if allDates.length > 0
+
+      if allDates[1] != startDate
+
+        allDates[0] = startDate
+      else
+
+        allDates = _.rest allDates
+        allValues[1] += allValues[0]
+        allValues = _.rest allValues
+    zippedPairs = _.zip(allDates, allValues)
+    _.map zippedPairs, @_toChartData
 
   showColorSelector: =>
 
@@ -210,12 +318,12 @@ class SprintViewModel extends ViewModel
 
     @computed = do =>
 
-      sum = (observable) =>
+      mostRecentValues = curry2(_.map)(_.compose(@model._mostRecentValue, _.last))
+      accumulatedValues = curry2(_.map)(_.compose(sum, curry2(_.map)(_.last), _.last))
+      normalize = curry2(_.map)((value) ->
 
-        _.reduce(observable(), (memo, value) ->
-
-          add memo, value
-        , 0)
+        value || 0
+      )
 
       lengthDate = ko.computed
 
@@ -248,9 +356,9 @@ class SprintViewModel extends ViewModel
 
         moment(lengthDate()).format(common.DATE_DISPLAY_FORMAT)
       lengthDate: lengthDate
-      remainingTime: ko.computed partial(sum, @readonly.remainingTimeCalculations) 
-      timeSpent: ko.computed partial(sum, @readonly.timeSpentCalculations)
-      taskCount: ko.computed partial(sum, @readonly.taskCountCalculations)
+      remainingTime: ko.computed _.compose(sum, normalize, mostRecentValues, @readonly.remainingTimeCalculations)
+      timeSpent: ko.computed _.compose(sum, accumulatedValues, @readonly.timeSpentCalculations)
+      taskCount: ko.computed _.compose(sum, curry2(_.map)(_.last), @readonly.taskCountCalculations)
 
     @writable.start.subscribe @_updateStats
     @writable.length.subscribe @_updateStats
@@ -260,11 +368,32 @@ class SprintViewModel extends ViewModel
     @stories = ko.observableArray _.map @model.stories, @_createObservables
     _.chain(@stories()).pluck('writable').pluck('priority').invoke('subscribe', partial(@_sortByPriority, @stories))
     @_subscribeToAssignmentChanges @stories, 'sprint_id'
+    @stories.subscribe @_updateStats, null, 'arrayChange'
+    @computed.allStoriesEstimation = ko.computed _.compose(sum, curry2(_.invoke)('estimation'), curry2(_.pluck)('readonly'), @stories)
+    @computed.remainingTimeChartData = ko.computed => 
+
+      calculations = @readonly.remainingTimeCalculations()
+      ids = calculations.map(_.first)
+      estimations = _.zip(ids, _.chain(@stories()).pluck('readonly').invoke('estimation').value())
+      @_createRemainingTimeChartData calculations, estimations
+    @computed.timeSpentChartData = ko.computed _.compose(@_createTimeSpentChartData, @readonly.timeSpentCalculations)
+
     @_setupSortable @stories()
 
     # markdown
 
     @_setupMarkdown @writable.description
+
+    # chart
+
+    @chart = new Chart ['reference', 'remaining-time', 'time-spent']
+    @_refreshChart()
+
+    @computed.timeSpentChartData.subscribe @_refreshChart
+    @computed.remainingTimeChartData.subscribe @_refreshChart
+    @computed.allStoriesEstimation.subscribe @_refreshChart
+    @computed.startDate.subscribe @_refreshChart
+    @computed.lengthDate.subscribe @_refreshChart
 
     # rt specific initializations
 

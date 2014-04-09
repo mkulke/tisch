@@ -4,6 +4,8 @@ var Q = require('q');
 var messages = require('./messages.json');
 var _ = require('underscore')._;
 
+var _processMapReduceRow;
+
 // TODO: put in tischutils.js
 function partial(fn) {
 
@@ -13,6 +15,17 @@ function partial(fn) {
   return function() {
 
     return fn.apply(this, args.concat(aps.call(arguments)));
+  };
+}
+
+function curry2(fn) {
+
+  return function(arg2) {
+
+    return function(arg1) {
+
+      return fn(arg1, arg2);
+    };
   };
 }
 
@@ -51,6 +64,11 @@ var connect = function() {
 	});
 };
 
+_processMapReduceRow = function(row) {
+
+  return [row._id.toString(), _.pairs(row.value)];  
+};
+
 var getTimeSpent = function(type, parentType, parentIds, range) {
 
   var mapFn, reduceFn, deferred, objectIds;
@@ -61,22 +79,49 @@ var getTimeSpent = function(type, parentType, parentIds, range) {
   // ATTN: map & reduce are functions which are eval'ed in mongodb.
   mapFn = function() {  
 
-    var object = this.time_spent;
-    var time_spent = Object.keys(object).filter(function(key) {
+    var filtered = {};
+    //var filtered = {initial: this.time_spent.initial};
+    Object.keys(this.time_spent).filter(function(key) {
 
       return ((key >= start) && (key <= end)); // filters out 'initial' as well
-    }).reduce(function (memo, key) {
+    }).forEach(function(key) { 
 
-      return memo + object[key];
-    }, 0);
+      filtered[key] = this[key];  
+    }, this.time_spent);
 
     // TODO: storyId? fixed here?
-    emit(this.story_id, time_spent);
+    emit(this.story_id, filtered);
   };
 
-  reduceFn = function(key, values) {
+  reduceFn = function(id, times_spent) {
 
-    return Array.sum(values);
+    // collect keys for all remaining_times
+
+    var dateKeys = times_spent.reduce(function (memo, time_spent) {
+
+      Object.keys(time_spent).forEach(function (key) {
+
+        if (memo.indexOf(key) == -1) {
+
+          memo.push(key);
+        }
+      });
+      return memo;
+    }, []).sort();
+    //dateKeys.unshift(dateKeys.pop());
+
+    return dateKeys.reduce(function(accumulated, key) {
+
+      accumulated[key] = times_spent.reduce(function(memo, time_spent) {
+
+        if (time_spent[key] !== undefined) {
+
+          memo += time_spent[key];
+        }
+        return memo;
+      }, 0);
+      return accumulated;
+    }, {});
   };
 
   query = {};
@@ -89,12 +134,22 @@ var getTimeSpent = function(type, parentType, parentIds, range) {
     }
     else {
 
-      var timesSpent = _.object(_.chain(result).pluck('_id').invoke('toString').value(), _.pluck(result, 'value'));
-      deferred.resolve(timesSpent);
+      result = _padResult(result, parentIds);
+      deferred.resolve(_.map(result, _processMapReduceRow));
     }
   });
 
   return deferred.promise;
+};
+
+var _padResult = function(result, ids) {
+
+  resultIds = _.chain(result).pluck('_id').invoke('toString').value();
+  padded = _.difference(ids, resultIds).map(function(id) {
+
+    return {_id: ObjectID(id), value: []};
+  });
+  return result.concat(padded);
 };
 
 var getRemainingTime = function(type, parentType, parentIds, range) {
@@ -105,25 +160,54 @@ var getRemainingTime = function(type, parentType, parentIds, range) {
   // ATTN: map & reduce are functions which are eval'ed in mongodb.
   var map = function() {  
 
-    var remaining_time = this.remaining_time.initial;
-    var keys = Object.keys(this.remaining_time).filter(function(key) {
+    var filtered = {initial: this.remaining_time.initial};
+    Object.keys(this.remaining_time).filter(function(key) {
 
       return ((key >= start) && (key <= end)); // filters out 'initial' as well
-    }).sort();
+    }).forEach(function(key) { 
 
-    if (keys.length > 0) {
-
-      var key = keys[keys.length - 1];
-      remaining_time = this.remaining_time[key];
-    }
+      filtered[key] = this[key];  
+    }, this.remaining_time);
 
     // TODO: storyId? fixed here?
-    emit(this.story_id, remaining_time);
+    emit(this.story_id, filtered);
   };
 
-  var reduce = function(key, values) {
+  var reduce = function(id, remaining_times) {
 
-    return Array.sum(values);
+    // collect keys for all remaining_times
+
+    var dateKeys = remaining_times.reduce(function (memo, remaining_time) {
+
+      Object.keys(remaining_time).forEach(function (key) {
+
+        if (memo.indexOf(key) == -1) {
+
+          memo.push(key);
+        }
+      });
+      return memo;
+    }, []).sort();
+    dateKeys.unshift(dateKeys.pop());
+
+    var buffer = [];
+    return dateKeys.reduce(function(accumulated, key) {
+
+      accumulated[key] = remaining_times.reduce(function(memo, remaining_time, index) {
+
+        if (remaining_time[key] !== undefined) {
+
+          var value = remaining_time[key];
+          buffer[index] = value ;
+          return memo + value;
+        }
+        else {
+
+          return memo + buffer[index];
+        }
+      }, 0);
+      return accumulated;
+    }, {});
   };
 
   query = {};
@@ -136,8 +220,8 @@ var getRemainingTime = function(type, parentType, parentIds, range) {
     }
     else {
 
-      var remainingTimes = _.object(_.chain(result).pluck('_id').invoke('toString').value(), _.pluck(result, 'value'));
-      deferred.resolve(remainingTimes);
+      result = _padResult(result, parentIds);
+      deferred.resolve(_.map(result, _processMapReduceRow));
     }
   });
 
@@ -147,7 +231,9 @@ var getRemainingTime = function(type, parentType, parentIds, range) {
 var getChildCount = function(type, parentType, parentIds) {
 
   var deferred = Q.defer();
-  var objectIds = parentIds.map(ObjectID);
+  var objectIds = _.map(parentIds, ObjectID);
+  var zeroValues = _.range(parentIds.length).map(partial(_.identity, 0));
+  var defaults = _.object(parentIds, zeroValues);
   var key = parentType + '_id';
 
   var filter = {};
@@ -161,30 +247,14 @@ var getChildCount = function(type, parentType, parentIds) {
     }
     else {
 
-      var count = _.countBy(result, function(child) {
+      var count = _.chain(result).countBy(function(child) {
 
         return child[key];
-      });
+      }).defaults(defaults).pairs().value();
 
       deferred.resolve(count);
     }
   });
-
-  /*var ids = _.map(parentIds, ObjectID);
-  var filter = {};
-  filter[parentType + '_id'] = {"$in": ids};
-
-  db().collection(type).count(filter, function(err, result) {
-
-    if (err) {
-
-      deferred.reject(new Error(err));
-    }
-    else {
-
-      deferred.resolve(result);
-    }
-  });*/
 
   return deferred.promise;
 };

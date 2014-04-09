@@ -7,6 +7,14 @@ partial = (fn) ->
 
     fn.apply @, args.concat(aps.call(arguments))
 
+equals = (a, b) ->
+
+  a == b
+
+at = (arr, index) ->
+
+  arr[index]
+
 curry2 = (fn) ->
 
   (arg2) ->
@@ -28,6 +36,8 @@ curry3 = (fn) ->
 add = (a, b) ->
 
   a + b
+
+sum = curry3(_.reduce)(0)(add)
 
 common = (->
 
@@ -179,22 +189,22 @@ class Chart
 
   _calculateChartRange: (object) =>
 
-    allData = (value for key, value of object)
+    allData = _.values object
 
-    yMax = allData.reduce (biggestMax, data) =>
+    yMax = _.reduce allData, (biggestMax, data) =>
 
       max = d3.max(data, @valueFn)
       if max > biggestMax then max
       else biggestMax
     , 0
-    xMin = allData.reduce (smallestMin, data) =>
+    xMin = _.reduce allData, (smallestMin, data) =>
 
       min = d3.min(data, @dateFn)
       if !smallestMin? then smallestMin = min
       if min < smallestMin then min
       else smallestMin
     , null
-    xMax = allData.reduce (biggestMax, data) =>
+    xMax = _.reduce allData, (biggestMax, data) =>
 
       max = d3.max(data, @dateFn)
       if max > biggestMax then max
@@ -209,30 +219,40 @@ class Chart
     @xScale.domain([xMin, xMax])
     @yScale.domain([0, yMax])
 
-    do (=>
+    _.each object, (data, path) =>
 
       circles = @svg.selectAll("circle.#{path}").data(data)
   
+      onXScale = _.compose @xScale, @dateFn
+      onYScale = _.compose @yScale, @valueFn
+
       circles.transition()
-        .attr("cx", (d) => @xScale(@dateFn(d)))
-        .attr("cy", (d) => @yScale(@valueFn(d)))
+        .attr("cx", onXScale)
+        .attr("cy", onYScale)
 
       circles.enter()
         .append("svg:circle")
         .attr('class', "circle #{path}")
         .attr("r", 4)
-        .attr("cx", (d) => @xScale(@dateFn(d)))
-        .attr("cy", (d) => @yScale(@valueFn(d)))
+        .attr("cx", onXScale)
+        .attr("cy", onYScale)
 
-      @svg.select("path.#{path}").datum(data)
-        .transition()
-        .attr("d", @lineGn)
+      circles.exit()
+        .remove()
+
+      if circles.empty()
+
+        @svg.select("path.#{path}").remove()
+      else
+
+        @svg.select("path.#{path}").datum(data)
+          .transition()
+          .attr("d", @lineGn)
 
       @svg.selectAll('g.y.axis')
         .call(@yAxis)
       @svg.selectAll('g.x.axis')
         .call(@xAxis)
-    ) for path, data of object
 
 class Model
 
@@ -381,7 +401,9 @@ class Model
     start = moment sprintStart
     end = moment(start).add 'days', sprintLength - 1
     start: start.format(common.DATE_DB_FORMAT), end: end.format(common.DATE_DB_FORMAT)
+  _mostRecentValue: (pairs) ->
 
+    _.chain(pairs).sortBy(_.first).last(2).first().last().value()
 class ViewModel
 
   _createObservable: (updateModelFn, object, property, options = {}) ->

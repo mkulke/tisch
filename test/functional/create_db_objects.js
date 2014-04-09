@@ -114,7 +114,7 @@ var taskB = {
 
 		initial: 1,
 		"2013-01-04": 8.5,
-		"2012-01-15": 5
+		"2013-01-15": 5
 	},
 	story_id: storyAId,
 	summary: "Test Task B",
