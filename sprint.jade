@@ -76,10 +76,12 @@ html
 							=messages.en.NO_OF_TASKS+':'
 						span(data-bind="text: computed.taskCount").value 
 					p.stat.remaining-time
+						span.indicator.blue
 						span.label
 							=messages.en.REMAINING_TIME+':'
 						span(data-bind="text: computed.remainingTime").value
 					p.stat.time-spent
+						span.indicator.red
 						span.label
 							=messages.en.TIME_SPENT+':'
 						span(data-bind="text: computed.timeSpent").value

@@ -95,6 +95,7 @@ class SprintViewModel extends ViewModel
     @chart.refresh 
 
       'remaining-time': @computed.remainingTimeChartData()
+      'time-spent': @computed.timeSpentChartData()
       reference: [
 
         buildObj(@computed.startDate(), @computed.allStoriesEstimation())
@@ -185,9 +186,12 @@ class SprintViewModel extends ViewModel
       _.last(pair) || 0
 
     allDates = @_extractDatesFromCalculations allCalculations
-    allValues = _.map allDates, (date) ->
+    allValues = _.reduce allDates, (memo, date) ->
 
-      sum _.map(allCalculations, curry2(valueForDate)(date))
+      previous = _.last(memo) || 0
+      value = sum _.map(allCalculations, curry2(valueForDate)(date))
+      memo.concat [value + previous]
+    , []
 
     zippedPairs = _.zip(allDates, allValues)
     # prepend with 0 if necessary
@@ -372,6 +376,7 @@ class SprintViewModel extends ViewModel
       ids = calculations.map(_.first)
       estimations = _.zip(ids, _.chain(@stories()).pluck('readonly').invoke('estimation').value())
       @_createRemainingTimeChartData calculations, estimations
+    @computed.timeSpentChartData = ko.computed _.compose(@_createTimeSpentChartData, @readonly.timeSpentCalculations)
 
     @_setupSortable @stories()
 
@@ -384,6 +389,7 @@ class SprintViewModel extends ViewModel
     @chart = new Chart ['reference', 'remaining-time', 'time-spent']
     @_refreshChart()
 
+    @computed.timeSpentChartData.subscribe @_refreshChart
     @computed.remainingTimeChartData.subscribe @_refreshChart
     @computed.allStoriesEstimation.subscribe @_refreshChart
     @computed.startDate.subscribe @_refreshChart

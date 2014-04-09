@@ -45,13 +45,6 @@ describe 'SprintViewModel._createRemainingTimeChartData', ->
 
 describe 'SprintViewModel._createTimeSpentChartData', ->
 
-  itReturnsAnEmptyArray = ->
-
-    it 'returns an empty array', ->
-
-      result = @subject()
-      expect(result).to.deep.equal([]) 
-
   before ->
 
     class StubViewModel extends SprintViewModel
@@ -85,10 +78,10 @@ describe 'SprintViewModel._createTimeSpentChartData', ->
 
   context 'when one story has no values', ->
 
-    it 'returns only the value of the other story', ->
+    it 'returns only the (accumulated) value of the other story', ->
 
       @calculations = [['a', [['2013-01-01', 2], ['2013-01-07', 3]]], ['b', []]]
-      expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 2}, {date: '2013-01-07', value: 3}])
+      expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 2}, {date: '2013-01-07', value: 5}])
 
   context 'when there is no value at sprint start, but others exist', ->
 
@@ -104,14 +97,14 @@ describe 'SprintViewModel._createTimeSpentChartData', ->
       it 'merges the values', ->
 
         @calculations = [['a', [['2013-01-01', 1]]], ['b', [['2013-01-02', 2]]]]
-        expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 1}, {date: '2013-01-02', value: 2}])
+        expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 1}, {date: '2013-01-02', value: 3}])
     
     context 'on overlapping dates', ->
 
       it 'sums up the overlapping values', ->
 
         @calculations = [['a', [['2013-01-01', 1], ['2013-01-02', 1]]], ['b', [['2013-01-02', 2], ['2013-01-03', 7]]]]
-        expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 1}, {date: '2013-01-02', value: 3}, {date: '2013-01-03', value: 7}])
+        expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 1}, {date: '2013-01-02', value: 4}, {date: '2013-01-03', value: 11}])
 
 ###describe 'SprintViewModel._selectDate', ->
 
