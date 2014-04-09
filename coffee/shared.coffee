@@ -143,7 +143,6 @@ class SocketIO
       @_registrations = []
     @server.on 'disconnect', onDisconnect
 
-#TODO: refactor in functional code
 class Chart 
 
   constructor: (lines = []) ->
@@ -190,22 +189,22 @@ class Chart
 
   _calculateChartRange: (object) =>
 
-    allData = (value for key, value of object)
+    allData = _.values object
 
-    yMax = allData.reduce (biggestMax, data) =>
+    yMax = _.reduce allData, (biggestMax, data) =>
 
       max = d3.max(data, @valueFn)
       if max > biggestMax then max
       else biggestMax
     , 0
-    xMin = allData.reduce (smallestMin, data) =>
+    xMin = _.reduce allData, (smallestMin, data) =>
 
       min = d3.min(data, @dateFn)
       if !smallestMin? then smallestMin = min
       if min < smallestMin then min
       else smallestMin
     , null
-    xMax = allData.reduce (biggestMax, data) =>
+    xMax = _.reduce allData, (biggestMax, data) =>
 
       max = d3.max(data, @dateFn)
       if max > biggestMax then max
@@ -220,20 +219,23 @@ class Chart
     @xScale.domain([xMin, xMax])
     @yScale.domain([0, yMax])
 
-    do (=>
+    _.each object, (data, path) =>
 
       circles = @svg.selectAll("circle.#{path}").data(data)
   
+      onXScale = _.compose @xScale, @dateFn
+      onYScale = _.compose @yScale, @valueFn
+
       circles.transition()
-        .attr("cx", (d) => @xScale(@dateFn(d)))
-        .attr("cy", (d) => @yScale(@valueFn(d)))
+        .attr("cx", onXScale)
+        .attr("cy", onYScale)
 
       circles.enter()
         .append("svg:circle")
         .attr('class', "circle #{path}")
         .attr("r", 4)
-        .attr("cx", (d) => @xScale(@dateFn(d)))
-        .attr("cy", (d) => @yScale(@valueFn(d)))
+        .attr("cx", onXScale)
+        .attr("cy", onYScale)
 
       circles.exit()
         .remove()
@@ -251,7 +253,6 @@ class Chart
         .call(@yAxis)
       @svg.selectAll('g.x.axis')
         .call(@xAxis)
-    ) for path, data of object
 
 class Model
 
