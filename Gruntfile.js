@@ -2,6 +2,13 @@ module.exports = function(grunt) {
 
   grunt.initConfig({
 
+    env: {
+
+      test: {
+
+        NODE_ENV: 'test'
+      }
+    },
     pkg: grunt.file.readJSON('package.json'),
     ghost: {
 
@@ -70,7 +77,7 @@ module.exports = function(grunt) {
 
       create_db_objects: {
 
-        command: 'mongo test/functional/create_db_objects.js',
+        command: 'mongo test test/functional/create_db_objects.js',
         options: {
 
           failOnError: true
@@ -78,7 +85,7 @@ module.exports = function(grunt) {
       },
       cleanup_db_objects: {
 
-        command: 'mongo test/functional/cleanup_db_objects.js',
+        command: 'mongo test test/functional/cleanup_db_objects.js',
         options: {
           
           failOnError: true
@@ -97,6 +104,8 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-ghost');
   grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-env');
+
   grunt.registerTask('server', function() {
   
     grunt.log.writeln('Starting tisch server.');
@@ -110,6 +119,6 @@ module.exports = function(grunt) {
   grunt.registerTask('functional_story', ['shell:create_db_objects', 'ghost:story', 'shell:cleanup_db_objects']);
   grunt.registerTask('functional_sprint', ['shell:create_db_objects', 'ghost:sprint', 'shell:cleanup_db_objects']);
   grunt.registerTask('functional_rt', ['shell:create_db_objects', 'ghost:rt', 'shell:cleanup_db_objects']);
-  grunt.registerTask('functional', ['server', 'functional_task', 'functional_story', 'functional_sprint', 'functional_rt']);
+  grunt.registerTask('functional', ['env:test', 'server', 'functional_task', 'functional_story', 'functional_sprint', 'functional_rt']);
   grunt.registerTask('test', ['jshint', 'coffee', 'mocha_phantomjs', 'functional']);
 };

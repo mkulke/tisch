@@ -1,0 +1,15 @@
+{
+	"db": {
+
+		"backend": "mongo",
+		"mongo": {
+
+			"uri": "mongodb://localhost:27017/",
+			"name": {
+
+				"test": "test",
+				"development": "development"
+			}	
+		}
+	}
+}

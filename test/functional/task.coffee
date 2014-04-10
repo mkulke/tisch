@@ -1,9 +1,9 @@
 casper = require('casper').create()
 
 taskId = '528c9639eab8b32b76efac0d'
-taskUrl = "http://localhost:8000/task/#{taskId}"
+taskUrl = "http://localhost:8001/task/#{taskId}"
 storyId = '528cc5cb42a7877322b90c2c'
-storyUrl = "http://localhost:8000/story/#{storyId}"
+storyUrl = "http://localhost:8001/story/#{storyId}"
 throttle = 500
 
 casper.start taskUrl 

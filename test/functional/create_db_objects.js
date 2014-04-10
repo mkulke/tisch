@@ -1,11 +1,13 @@
+db.createCollection('sprint');
+db.createCollection('story');
+db.createCollection('task');
+db.task.ensureIndex({story_id: 1, priority: 1}, {unique: true});
+db.story.ensureIndex({sprint_id: 1, priority: 1}, {unique: true});
+
 sprintAId = ObjectId("528c95f4eab8b32b76efac0b");
 sprintBId = ObjectId("52d7099a9f3c50aef93a88fe");
 storyAId = ObjectId("528c961beab8b32b76efac0c");
 storyBId = ObjectId("528cc5cb42a7877322b90c2c");
-
-db.sprint.remove({"_meta.test": true});
-db.story.remove({$or: [{"_meta.test": true}, {"sprint_id": sprintAId}, {"sprint_id": sprintBId}]});
-db.task.remove({$or: [{"_meta.test": true}, {"story_id": storyAId}, {"story_id": storyBId}]});
 
 var sprintA = {
 
@@ -16,10 +18,6 @@ var sprintA = {
 	length: 14,
 	color: "blue",
 	title: "Test Sprint A",
-	_meta: {
-
-		test: true
-	}
 };
 db.sprint.insert(sprintA);
 
@@ -32,10 +30,6 @@ var sprintB = {
 	length: 14,
 	color: "red",
 	title: "Test Sprint B",
-	_meta: {
-
-		test: true
-	}
 };
 db.sprint.insert(sprintB);
 
@@ -49,10 +43,6 @@ var storyA = {
 	priority: 1,
 	sprint_id: sprintAId,
 	title: "Test Story A",
-	_meta: {
-
-		test: true
-	}
 };
 db.story.insert(storyA);
 
@@ -66,10 +56,6 @@ var storyB = {
 	priority: 2,
 	sprint_id: sprintAId,
 	title: "Test Story B",
-	_meta: {
-
-		test: true
-	}
 };
 db.story.insert(storyB);
 
@@ -95,10 +81,6 @@ var taskA = {
 		"2013-01-01": 2,
 		"2013-01-02": 3
 	},
-	_meta: {
-
-		test: true
-	}
 };
 db.task.insert(taskA);
 
@@ -123,9 +105,5 @@ var taskB = {
 		initial: 0,
 		"2013-01-02": 1
 	},
-	_meta: {
-
-		test: true
-	}
 };
 db.task.insert(taskB);

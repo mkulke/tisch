@@ -2,11 +2,13 @@ var MongoClient = require('mongodb').MongoClient;
 var ObjectID = require('mongodb').ObjectID;
 var Q = require('q');
 var messages = require('./messages.json');
+var config = require('./config.json');
 var _ = require('underscore')._;
 
 var _processMapReduceRow;
 
 // TODO: put in tischutils.js
+
 function partial(fn) {
 
   var aps = Array.prototype.slice;
@@ -56,7 +58,7 @@ var db = function() {
 var connect = function() {
 
 	var connect = Q.nfbind(MongoClient.connect);
-	return connect('mongodb://localhost:27017/test')
+	return connect(config.db.mongo.uri + config.db.mongo.name[process.env.NODE_ENV || 'development'])
 	.then(function(result) {
 
 		db(result);

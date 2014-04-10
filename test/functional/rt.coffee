@@ -9,7 +9,7 @@ sync = 1000
 taskId = '528c9639eab8b32b76efac0d'
 storyId = '528c961beab8b32b76efac0c'
 sprintId = '528c95f4eab8b32b76efac0b'
-url = (type, id) -> "http://localhost:8000/#{type}/#{id}"
+url = (type, id) -> "http://localhost:8001/#{type}/#{id}"
 
 setViewport = ->
 

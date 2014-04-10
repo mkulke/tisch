@@ -1,11 +1,11 @@
 casper = require('casper').create()
 
 sprintId = '528c95f4eab8b32b76efac0b'
-sprintUrl = "http://localhost:8000/sprint/#{sprintId}"
+sprintUrl = "http://localhost:8001/sprint/#{sprintId}"
 storyAId = '528c961beab8b32b76efac0c'
 storyBId = '528cc5cb42a7877322b90c2c'
-calculationAUrl = "http://localhost:8000/calculation/#{storyAId}"
-calculationBUrl = "http://localhost:8000/calculation/#{storyBId}"
+calculationAUrl = "http://localhost:8001/calculation/#{storyAId}"
+calculationBUrl = "http://localhost:8001/calculation/#{storyBId}"
 throttle = 500
 dragDelay = 150
 

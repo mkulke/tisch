@@ -1,9 +1,9 @@
 casper = require('casper').create()
 
 storyId = '528c961beab8b32b76efac0c'
-storyUrl = "http://localhost:8000/story/#{storyId}"
+storyUrl = "http://localhost:8001/story/#{storyId}"
 sprintId = '52d7099a9f3c50aef93a88fe'
-sprintUrl = "http://localhost:8000/sprint/#{sprintId}"
+sprintUrl = "http://localhost:8001/sprint/#{sprintId}"
 throttle = 500
 dragDelay = 150
 

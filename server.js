@@ -609,9 +609,10 @@ app.start = function() {
   tischDB.connect()
   .then(function() {
 
-    var server = http.createServer(app).listen(8000, function() {
+    var port = (process.env.NODE_ENV == 'test') ? 8001 : 8000;
+    var server = http.createServer(app).listen(port, function() {
     
-      console.log('Server listening on port 8000');
+      console.log('Server listening on port ' + port);
       tischRT.listen(server);
     });
   });
