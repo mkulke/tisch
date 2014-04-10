@@ -31,6 +31,6 @@
     "grunt-shell": "~0.6.0",
     "grunt-ghost": "~1.0.3",
     "grunt-contrib-jshint": "~0.8.0",
-    "grunt-env:": "~0.4.1"
+    "grunt-env": "~0.4.1"
   }
 }
