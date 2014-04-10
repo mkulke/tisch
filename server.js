@@ -11,7 +11,8 @@ var Q = require('q');
 var io = require('socket.io');
 var moment = require('moment');
 var _ = require('underscore')._;
-var tischDB = require('./db.js');
+var config = require('./config.json');
+var tischDB = require('./' + (config.db.backend || 'mongo' ) + '.js');
 var tischRT = require('./rt.js');
 
 var cwd = process.cwd();
