@@ -1,24 +1,32 @@
 task: [
 
     _id,
+    _rev,
+    summary,
     description,
-    status,
-    time : {
-
-        initial_estimation
-        spent
-        remaining
-    }
-    owner,
+    color,
     priority,
+    time_spent : {
+
+        initial: 0,
+        date: value
+    },
+    remaining_time: {
+
+        initial: 0,
+        date: value
+    },
     story_id
 ]
 
 story: [
 
     _id,
+    _rev,
+    title,
     description,
-    estimated_time,
+    color,
+    estimation,
     priority,
     sprint_id
 ]
@@ -26,16 +34,12 @@ story: [
 sprint: [
 
     _id,
+    _rev,
     title,
     description,
+    color,
     start,
     length
-]
-
-user: [
-
-    _id
-    name
 ]
 
 db.task.ensureIndex({story_id: 1, priority: 1}, {unique: true})
