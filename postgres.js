@@ -62,6 +62,19 @@ var _query = function(query, client, done) {
 	return deferred.promise;
 };
 
+var _verifyTable = function(table) {
+
+	return Q.fcall(function() {
+
+		allowedTables = ['sprints'];
+
+		if (!_.contains(allowedTables, table)) {
+
+			throw new Error('table ' + table + ' is not allowed.');
+		}
+	});
+};
+
 var _verifyColumn = function(table, column) {
 
 	return Q.fcall(function() {
@@ -80,17 +93,18 @@ var _verifyColumn = function(table, column) {
 
 var _getRows = curry2(_.result)('rows');
 
-var findSprints = function() {
+var _find = function(table) {
 
-	var query = partial(_query, 'SELECT * FROM sprints');
+	var verify = partial(_verifyTable, table);
+	var query = partial(_query, 'SELECT * FROM ' + table);
 	var process = _getRows;
-	return _connect().spread(query).then(process);
+	return verify().then(_connect).spread(query).then(process);
 };
 
-var updateSprint = function(id, rev, column, value) {
+var _update = function(table, id, rev, column, value) {
 
-	var verify = partial(_verifyColumn, 'sprints', column);
-	var query = partial(_query, {text: "UPDATE sprints SET " + column + "=$3, _rev=_rev+1 WHERE _id=$1 AND _rev=$2 RETURNING *", values: [id, rev, value]});
+	var verify = partial(_verifyColumn, table, column);
+	var query = partial(_query, {text: "UPDATE " + table + " SET " + column + "=$3, _rev=_rev+1 WHERE _id=$1 AND _rev=$2 RETURNING *", values: [id, rev, value]});
 	var confirm = function(result) {
 
 		var count = result.rowCount;
@@ -106,6 +120,6 @@ var updateSprint = function(id, rev, column, value) {
 };
 
 exports.init = Q.resolve;
-exports.cleaup = function() {};
-exports.findSprints = findSprints;
-exports.updateSprint = updateSprint;
+exports.cleaup = null;
+exports.findSprints = partial(_find, 'sprints');
+exports.updateSprint = partial(_update, 'sprints');
