@@ -55,7 +55,7 @@ var db = function() {
 	};
 }();
 
-var connect = function() {
+var init = function() {
 
 	var connect = Q.nfbind(MongoClient.connect);
 	return connect(config.db.mongo.uri + config.db.mongo.name[process.env.NODE_ENV || 'development'])
@@ -531,7 +531,7 @@ var findAndModify = function(type, id, rev, key, value) {
   return deferred.promise;
 };
 
-var close = function() {
+var cleanup = function() {
 
 	try {
 	
@@ -540,8 +540,8 @@ var close = function() {
 	catch (exception) {}
 };
 
-exports.connect = connect;
-exports.close = close;
+exports.init = init;
+exports.cleanup = cleanup;
 exports.updateTask = partial(findAndModify, 'task');
 exports.updateStory = partial(findAndModify, 'story');
 exports.updateSprint = partial(findAndModify, 'sprint');

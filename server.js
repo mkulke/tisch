@@ -41,7 +41,7 @@ var htmlTemplates = {
   },
   task: function(response) {
 
-    return task_template({task: response.task, story: response.story, sprint: response.sprint, messages: messages});  
+    return task_template({task: response.task, story: response.story, sprint: response.sprint, messages: messages});
   }
 };
 
@@ -88,7 +88,7 @@ var complainWithPlain = function(err) {
 var complainWithJson = function(err) {
 
   this.writeHead(500, err.toString());
-  this.end();  
+  this.end();
 };
 
 var postAnswer = function(key, parentKey, respond, result) {
@@ -100,6 +100,7 @@ var postAnswer = function(key, parentKey, respond, result) {
     changes.parent_id = result[parentKey].toString();
   }
   respond(changes);
+
   return changes;
 };
 
@@ -607,7 +608,7 @@ var app = connect()
 
 app.start = function() {
 
-  tischDB.connect()
+  tischDB.init()
   .then(function() {
 
     var port = (process.env.NODE_ENV == 'test') ? 8001 : 8000;

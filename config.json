@@ -2,6 +2,15 @@
 	"db": {
 
 		"backend": "mongo",
+		"postgres": {
+
+			"uri": "postgres://localhost/",
+			"name" : {
+
+				"test": "test",
+				"development": "tisch"
+			}
+		},
 		"mongo": {
 
 			"uri": "mongodb://localhost:27017/",
