@@ -1,5 +1,5 @@
 var pg = require('pg');
-var config = require('./config.json');
+var config = require('./config/' + (process.env.NODE_ENV || 'development') + '.json');
 var Q = require('q');
 var _ = require('underscore')._;
 
