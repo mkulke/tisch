@@ -2,7 +2,7 @@ var MongoClient = require('mongodb').MongoClient;
 var ObjectID = require('mongodb').ObjectID;
 var Q = require('q');
 var messages = require('./messages.json');
-var config = require('./config.json');
+var config = require('./config/' + (process.env.NODE_ENV || 'development') + '.json');
 var _ = require('underscore')._;
 
 var _processMapReduceRow;
