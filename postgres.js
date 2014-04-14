@@ -2,32 +2,9 @@ var pg = require('pg');
 var config = require('./config/' + (process.env.NODE_ENV || 'development') + '.json');
 var Q = require('q');
 var _ = require('underscore')._;
+var u = require('./utils.js');
 
-var connectionString = config.db.postgres.uri + config.db.postgres.name[process.env.NODE_ENV || 'development'];
-
-// TODO: put in tischutils.js
-
-function partial(fn) {
-
-  var aps = Array.prototype.slice;
-  var args = aps.call(arguments, 1);
-  
-  return function() {
-
-    return fn.apply(this, args.concat(aps.call(arguments)));
-  };
-}
-
-function curry2(fn) {
-
-  return function(arg2) {
-
-    return function(arg1) {
-
-      return fn(arg1, arg2);
-    };
-  };
-}
+var connectionString = config.db.postgres.uri + config.db.postgres.name;
 
 var _connect = function() {
 
@@ -92,7 +69,7 @@ var _verifyColumn = function(table, column) {
 	});
 };
 
-var _getRows = curry2(_.result)('rows');
+var _getRows = u.curry2(_.result)('rows');
 
 var _find = function(table, filter, sort) {
 
@@ -115,12 +92,12 @@ var _find = function(table, filter, sort) {
 	var orderClauses = sort ? _.map(sort, toOrderClause) : null;
 	var orderText = sort ? 'ORDER BY ' + orderClauses.join(', ') : '';
 
-	var verifyTable = partial(_verifyTable, table);
-	var verifyColumn = partial(_verifyColumn, table);
+	var verifyTable = u.partial(_verifyTable, table);
+	var verifyColumn = u.partial(_verifyColumn, table);
 	var verifyFilterColumns = filter ? Q.all(_.chain(filter).keys().map(verifyColumn).value()) : Q.resolve;
 	var verifySortColumns = sort ? Q.all(_.chain(sort).keys().map(verifyColumn).value()) : Q.resolve;
 
-	var query = partial(_query, {text: [selectText, whereText, orderText].join(' '), values: whereValues});
+	var query = u.partial(_query, {text: [selectText, whereText, orderText].join(' '), values: whereValues});
 	var process = _getRows;
 
 	return verifyTable()
@@ -133,8 +110,8 @@ var _find = function(table, filter, sort) {
 
 var _update = function(table, id, rev, column, value) {
 
-	var verify = partial(_verifyColumn, table, column);
-	var query = partial(_query, {text: "UPDATE " + table + " SET " + column + "=$3, _rev=_rev+1 WHERE _id=$1 AND _rev=$2 RETURNING *", values: [id, rev, value]});
+	var verify = u.partial(_verifyColumn, table, column);
+	var query = u.partial(_query, {text: "UPDATE " + table + " SET " + column + "=$3, _rev=_rev+1 WHERE _id=$1 AND _rev=$2 RETURNING *", values: [id, rev, value]});
 	var confirm = function(result) {
 
 		var count = result.rowCount;
@@ -159,5 +136,5 @@ var cleanup = function() {
 
 exports.init = Q.resolve;
 exports.cleanup = cleanup;
-exports.findSprints = partial(_find, 'sprints');
-exports.updateSprint = partial(_update, 'sprints');
+exports.findSprints = u.partial(_find, 'sprints');
+exports.updateSprint = u.partial(_update, 'sprints');
