@@ -108,21 +108,27 @@ var _find = function(table, filter, sort) {
 	var whereText = filter ? 'WHERE ' + whereClauses.join(' AND ') : '';
 	var whereValues = filter ? _.values(filter) : [];
 
-	var toOrderClause = function(value) {
+	var toOrderClause = function(value, key) {
 
-		return '$' + parameterCount++ + (value == 1 ? '' : ' desc');
+		return key + (value == 1 ? '' : ' desc');
 	};
 	var orderClauses = sort ? _.map(sort, toOrderClause) : null;
 	var orderText = sort ? 'ORDER BY ' + orderClauses.join(', ') : '';
-	var orderValues = sort ? _.keys(sort) : [];
 
 	var verifyTable = partial(_verifyTable, table);
-	var verifyFilterColumn = partial(_verifyColumn, table);
-	var verifyFilterColumns = filter ? Q.all(_.chain(filter).keys().map(verifyFilterColumn).value()) : Q.resolve;
+	var verifyColumn = partial(_verifyColumn, table);
+	var verifyFilterColumns = filter ? Q.all(_.chain(filter).keys().map(verifyColumn).value()) : Q.resolve;
+	var verifySortColumns = sort ? Q.all(_.chain(sort).keys().map(verifyColumn).value()) : Q.resolve;
 
-	var query = partial(_query, {text: [selectText, whereText, orderText].join(' '), values: whereValues.concat(orderValues)});
+	var query = partial(_query, {text: [selectText, whereText, orderText].join(' '), values: whereValues});
 	var process = _getRows;
-	return verifyTable().then(verifyFilterColumns).then(_connect).spread(query).then(process);
+	
+	return verifyTable()
+		.then(verifyFilterColumns)
+		.then(verifySortColumns)
+		.then(_connect)
+		.spread(query)
+		.then(process);
 };
 
 var _update = function(table, id, rev, column, value) {
