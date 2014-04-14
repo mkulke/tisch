@@ -27,7 +27,7 @@ module.exports = function(grunt) {
       rt: {
 
         filesSrc: ['test/functional/rt.coffee.js']
-      }     
+      }
     },
     coffee: {
 
@@ -48,6 +48,7 @@ module.exports = function(grunt) {
           'coffee/parent.coffee.js': 'coffee/parent.coffee',
           'coffee/markdown.coffee.js': 'coffee/markdown.coffee',
           'coffee/sortable.coffee.js': 'coffee/sortable.coffee',
+          'test/unit/postgres.coffee.js': 'test/unit/postgres.coffee',
           'test/unit/sprint.coffee.js': 'test/unit/sprint.coffee',
           'test/unit/task.coffee.js': 'test/unit/task.coffee',
           'test/unit/story.coffee.js': 'test/unit/story.coffee',
@@ -65,6 +66,17 @@ module.exports = function(grunt) {
 
         files: ['coffee/*.coffee', 'test/unit/*.coffee', 'test/functional/*.coffee'],
         tasks: 'coffee'
+      }
+    },
+    mochaTest: {
+
+      pg: {
+
+        options: {
+
+          reporter: 'spec'
+        },
+        src: ['test/unit/postgres.coffee.js']
       }
     },
     mocha_phantomjs: {
@@ -90,7 +102,7 @@ module.exports = function(grunt) {
           
           failOnError: true
         }
-      }
+      },
     },
     jshint: {
 
@@ -98,6 +110,7 @@ module.exports = function(grunt) {
     },
   });
 
+  grunt.loadNpmTasks('grunt-mocha-test');
   grunt.loadNpmTasks('grunt-mocha-phantomjs');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-coffee');
@@ -121,4 +134,5 @@ module.exports = function(grunt) {
   grunt.registerTask('functional_rt', ['shell:create_db_objects', 'ghost:rt', 'shell:cleanup_db_objects']);
   grunt.registerTask('functional', ['env:test', 'server', 'functional_task', 'functional_story', 'functional_sprint', 'functional_rt']);
   grunt.registerTask('test', ['jshint', 'coffee', 'mocha_phantomjs', 'functional']);
+  grunt.registerTask('pg', ['env:test', 'mochaTest:pg']);
 };
