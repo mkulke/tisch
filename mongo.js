@@ -45,7 +45,7 @@ var db = function() {
 			}
 			else {
 
-				return _db;				
+				return _db;
 			}
 		}
 		else {
@@ -58,7 +58,7 @@ var db = function() {
 var init = function() {
 
 	var connect = Q.nfbind(MongoClient.connect);
-	return connect(config.db.mongo.uri + config.db.mongo.name[process.env.NODE_ENV || 'development'])
+	return connect(config.db.mongo.uri + config.db.mongo.name)
 	.then(function(result) {
 
 		db(result);
@@ -68,7 +68,7 @@ var init = function() {
 
 _processMapReduceRow = function(row) {
 
-  return [row._id.toString(), _.pairs(row.value)];  
+  return [row._id.toString(), _.pairs(row.value)];
 };
 
 var getTimeSpent = function(type, parentType, parentIds, range) {
@@ -79,16 +79,16 @@ var getTimeSpent = function(type, parentType, parentIds, range) {
   objectIds = parentIds.map(ObjectID);
 
   // ATTN: map & reduce are functions which are eval'ed in mongodb.
-  mapFn = function() {  
+  mapFn = function() {
 
     var filtered = {};
     //var filtered = {initial: this.time_spent.initial};
     Object.keys(this.time_spent).filter(function(key) {
 
       return ((key >= start) && (key <= end)); // filters out 'initial' as well
-    }).forEach(function(key) { 
+    }).forEach(function(key) {
 
-      filtered[key] = this[key];  
+      filtered[key] = this[key];
     }, this.time_spent);
 
     // TODO: storyId? fixed here?
@@ -160,15 +160,15 @@ var getRemainingTime = function(type, parentType, parentIds, range) {
   var objectIds = parentIds.map(ObjectID);
 
   // ATTN: map & reduce are functions which are eval'ed in mongodb.
-  var map = function() {  
+  var map = function() {
 
     var filtered = {initial: this.remaining_time.initial};
     Object.keys(this.remaining_time).filter(function(key) {
 
       return ((key >= start) && (key <= end)); // filters out 'initial' as well
-    }).forEach(function(key) { 
+    }).forEach(function(key) {
 
-      filtered[key] = this[key];  
+      filtered[key] = this[key];
     }, this.remaining_time);
 
     // TODO: storyId? fixed here?
@@ -408,22 +408,22 @@ var updateAssignment = function(type, parentType, id, parentId, rev) {
 
     deferred.resolve();
     return deferred.promise;
-  } 
+  }
 };
 
 var remove = function(type, filter, failOnNoDeletion) {
 
-  var deferred = Q.defer();  
+  var deferred = Q.defer();
   db().collection(type).findAndRemove(filter, function(err, result) {
 
     if (err) {
 
       deferred.reject(new Error(err));
-    } 
+    }
     else if (failOnNoDeletion && (result <= 0)) {
 
       deferred.reject(new Error(messages.en.ERROR_REMOVE));
-    } 
+    }
     else {
     
       deferred.resolve(result);
@@ -434,7 +434,7 @@ var remove = function(type, filter, failOnNoDeletion) {
 
 var findAndRemove = function(type, filter) {
 
-  var deferred = Q.defer();  
+  var deferred = Q.defer();
 
   var removed = [];
 
@@ -445,7 +445,7 @@ var findAndRemove = function(type, filter) {
       if (err) {
 
         deferred.reject(new Error(err));
-      } 
+      }
       else if (result !== null) {
 
         removed.push(result);
@@ -499,7 +499,7 @@ var findOne = function(type, id) {
       deferred.resolve(result);
     }
   });
-  return deferred.promise; 
+  return deferred.promise;
 };
 
 var findAndModify = function(type, id, rev, key, value) {
@@ -508,7 +508,7 @@ var findAndModify = function(type, id, rev, key, value) {
 
   var data = {
   
-    $set: {}, 
+    $set: {},
     $inc: {_rev: 1}
   };
   data.$set[key] = value;
