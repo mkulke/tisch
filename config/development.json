@@ -1,0 +1,16 @@
+{
+	"db": {
+
+		"backend": "mongo",
+		"postgres": {
+
+			"uri": "postgres://localhost/",
+			"name" : "tisch"
+		},
+		"mongo": {
+
+			"uri": "mongodb://localhost:27017/",
+			"name": "development"
+		}
+	}
+}
