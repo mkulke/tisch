@@ -122,7 +122,7 @@ var _find = function(table, filter, sort) {
 
 	var query = partial(_query, {text: [selectText, whereText, orderText].join(' '), values: whereValues});
 	var process = _getRows;
-	
+
 	return verifyTable()
 		.then(verifyFilterColumns)
 		.then(verifySortColumns)
@@ -155,7 +155,7 @@ var cleanup = function() {
 
 		pg.end();
 	});
-}
+};
 
 exports.init = Q.resolve;
 exports.cleanup = cleanup;
