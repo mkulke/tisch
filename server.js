@@ -11,9 +11,10 @@ var Q = require('q');
 var io = require('socket.io');
 var moment = require('moment');
 var _ = require('underscore')._;
-var config = require('./config.json');
+var config = require('./config/' + (process.env.NODE_ENV || 'development') + '.json');
 var tischDB = require('./' + (config.db.backend || 'mongo' ) + '.js');
 var tischRT = require('./rt.js');
+var u = require('./utils.js');
 
 var cwd = process.cwd();
 var options = { pretty: false, filename: 'sprint.jade' };
@@ -54,28 +55,6 @@ var ensure = function(checkFn, exception, value) {
     throw exception;
   }
   return value;
-};
-
-var partial = function (fn) {
-
-  var aps = Array.prototype.slice;
-  var args = aps.call(arguments, 1);
-  
-  return function() {
-
-    return fn.apply(this, args.concat(aps.call(arguments)));
-  };
-};
-
-var curry2 = function (fn) {
-
-  return function(arg2) {
-
-    return function(arg1) {
-
-      return fn(arg1, arg2);
-    };
-  };
 };
 
 var complainWithPlain = function(err) {
@@ -174,7 +153,7 @@ var notify = function(request, result) {
   }
   else if (_.isArray(result)) {
 
-    _.each(result, partial(notify, request));
+    _.each(result, u.partial(notify, request));
     return;
   }
 
@@ -202,12 +181,12 @@ var notify = function(request, result) {
     return registration.client.id === request.headers.sessionid;
   };
 
-  byProperties = partial(function(key, registration) {
+  byProperties = u.partial(function(key, registration) {
 
     return (!registration.properties) || _.contains(registration.properties, key);
   }, result.key);
 
-  toNotification = partial(function(result, registration){
+  toNotification = u.partial(function(result, registration){
 
     return {client: registration.client, index: registration.index, data: result};
   }, result);
@@ -324,9 +303,9 @@ var extractHeaderField = function(field, headers) {
   return value;
 };
 
-var extractRev = _.compose(partial(ensure, _.isFinite, '"rev" header in request is malformed.'), curry2(parseInt)(10), partial(extractHeaderField, 'rev'));
+var extractRev = _.compose(u.partial(ensure, _.isFinite, '"rev" header in request is malformed.'), u.curry2(parseInt)(10), u.partial(extractHeaderField, 'rev'));
 
-var extractParentId = partial(extractHeaderField, 'parent_id');
+var extractParentId = u.partial(extractHeaderField, 'parent_id');
 
 // TODO: move ObjectID to db.
 var removeTaskQuery = function(id, rev) {
@@ -381,7 +360,7 @@ var processRequest = function(request, response) {
   var method = request.method;
   id = pathParts.length > 2 ? unescape(pathParts[2]) : null;
   var html = ((request.headers.accept !== undefined) && (request.headers.accept.match(/application\/json/) !== null)) ? false : true;
-  var respond = html ? partial(respondWithHtml, response, type) : partial(respondWithJson, response);
+  var respond = html ? u.partial(respondWithHtml, response, type) : u.partial(respondWithJson, response);
 
   // simple json get requests
   if ((!html) && (method == 'GET') && (_.contains(['task', 'story', 'sprint'], type))) {
@@ -405,54 +384,54 @@ var processRequest = function(request, response) {
       sort[request.headers.sort_by] = 1;
     }
     
-    query = (id) ? partial(tischDB.findOne, type, id) : partial(tischDB.find, type, filter, sort);
-    answer = partial(respondWithJson, response);
+    query = (id) ? u.partial(tischDB.findOne, type, id) : u.partial(tischDB.find, type, filter, sort);
+    answer = u.partial(respondWithJson, response);
   }
   else if ((type == 'task') && (request.method == 'GET')) {
 
-    query = partial(taskViewQuery, id);
+    query = u.partial(taskViewQuery, id);
     answer = respond;
   } 
   else if ((type == 'task') && (request.method == 'POST')) {
 
     rev = extractRev(request.headers);
 
-    query = (request.body.key == 'story_id') ? partial(tischDB.updateTaskAssignment, id, request.body.value, rev) : partial(tischDB.updateTask, id, rev, request.body.key, request.body.value);
-    answer = partial(postAnswer, request.body.key, 'story_id', partial(respondWithJson, response));
+    query = (request.body.key == 'story_id') ? u.partial(tischDB.updateTaskAssignment, id, request.body.value, rev) : u.partial(tischDB.updateTask, id, rev, request.body.key, request.body.value);
+    answer = u.partial(postAnswer, request.body.key, 'story_id', u.partial(respondWithJson, response));
   } 
   else if ((type == 'task') && (request.method == 'PUT')) {
 
     // TODO: check client_uuid header for all non-get requests!
     parentId = extractParentId(request.headers);
 
-    query = partial(addQuery, tischDB.insertTask, constants.templates.task, 'story_id', parentId);  
-    answer = partial(putAnswer, partial(respondWithJson, response));
+    query = u.partial(addQuery, tischDB.insertTask, constants.templates.task, 'story_id', parentId);  
+    answer = u.partial(putAnswer, u.partial(respondWithJson, response));
   } 
   else if ((type == 'task') && (request.method == 'DELETE')) {   
       
     rev = extractRev(request.headers);
 
-    query = partial(removeTaskQuery, id, rev);
-    answer = partial(deleteAnswer, partial(respondWithJson, response));
+    query = u.partial(removeTaskQuery, id, rev);
+    answer = u.partial(deleteAnswer, u.partial(respondWithJson, response));
   }   
   else if ((type == 'story') && (request.method == 'GET')) {
 
-    query = partial(storyViewQuery, id);
+    query = u.partial(storyViewQuery, id);
     answer = respond;
   } 
   else if ((type == 'story') && (request.method == 'POST')) {
 
     rev = extractRev(request.headers);
 
-    query = (request.body.key == 'sprint_id') ? partial(tischDB.updateStoryAssignment, id, request.body.value, rev) : partial(tischDB.updateStory, id, rev, request.body.key, request.body.value);
-    answer = partial(postAnswer, request.body.key, 'sprint_id', partial(respondWithJson, response));
+    query = (request.body.key == 'sprint_id') ? u.partial(tischDB.updateStoryAssignment, id, request.body.value, rev) : u.partial(tischDB.updateStory, id, rev, request.body.key, request.body.value);
+    answer = u.partial(postAnswer, request.body.key, 'sprint_id', u.partial(respondWithJson, response));
   }
   else if ((type == 'story') && (request.method == 'PUT')) {
 
     parentId = extractParentId(request.headers);
 
-    query = partial(addQuery, tischDB.insertStory, constants.templates.story, 'sprint_id', parentId);
-    answer = partial(putAnswer, partial(respondWithJson, response));
+    query = u.partial(addQuery, tischDB.insertStory, constants.templates.story, 'sprint_id', parentId);
+    answer = u.partial(putAnswer, u.partial(respondWithJson, response));
   } 
   else if ((type == 'story') && (request.method == 'DELETE')) {
 
@@ -482,11 +461,11 @@ var processRequest = function(request, response) {
       });
     };  
 
-    answer = partial(deleteAnswer, partial(respondWithJson, response));
+    answer = u.partial(deleteAnswer, u.partial(respondWithJson, response));
   }   
   else if ((type == 'sprint') && (request.method == 'GET')) {
 
-    query = partial(sprintViewQuery, id);
+    query = u.partial(sprintViewQuery, id);
     answer = respond;
   } 
   else if ((type == 'sprint') && (request.method == 'POST')) {
@@ -498,16 +477,16 @@ var processRequest = function(request, response) {
       request.body.value = new Date(request.body.value);
     } 
 
-    query = partial(tischDB.updateSprint, id, rev, request.body.key, request.body.value);
-    answer = partial(postAnswer, request.body.key, null, partial(respondWithJson, response));
+    query = u.partial(tischDB.updateSprint, id, rev, request.body.key, request.body.value);
+    answer = u.partial(postAnswer, request.body.key, null, u.partial(respondWithJson, response));
   }
   else if ((type == 'sprint') && (request.method == 'PUT')) {
 
     var data = _.clone(constants.templates.sprint);
     data.start = moment().millisecond(0).second(0).minute(0).hour(0).toDate();
 
-    query = partial(addQuery, tischDB.insertSprint, data, null, 'index');
-    answer = partial(putAnswer, partial(respondWithJson, response));
+    query = u.partial(addQuery, tischDB.insertSprint, data, null, 'index');
+    answer = u.partial(putAnswer, u.partial(respondWithJson, response));
   }
   else if ((type == 'sprint') && (request.method == 'DELETE')) {
   
@@ -553,7 +532,7 @@ var processRequest = function(request, response) {
       });
     };
 
-    answer = partial(deleteAnswer, partial(respondWithJson, response));
+    answer = u.partial(deleteAnswer, u.partial(respondWithJson, response));
   }
   else if ((type == 'index') && (request.method == 'GET')) {
 
@@ -564,20 +543,20 @@ var processRequest = function(request, response) {
 
     // TODO: robustness, check for start & end query
 
-    query = partial(calculationQuery, curry2(tischDB.getStoriesTimeSpent)({start: urlQuery.start, end: urlQuery.end}), id);
-    answer = partial(respondWithJson, response);
+    query = u.partial(calculationQuery, u.curry2(tischDB.getStoriesTimeSpent)({start: urlQuery.start, end: urlQuery.end}), id);
+    answer = u.partial(respondWithJson, response);
   }
   else if (id && (type == 'calculation') && (request.method == 'GET') && (urlQuery.func == 'task_count_for_story')) {
 
-    query = partial(calculationQuery, tischDB.getStoriesTaskCount, id);
-    answer = partial(respondWithJson, response);    
+    query = u.partial(calculationQuery, tischDB.getStoriesTaskCount, id);
+    answer = u.partial(respondWithJson, response);    
   }
   else if (id && (type == 'calculation') && (request.method == 'GET') && (urlQuery.func == 'remaining_time_for_story')) {
 
     // TODO: robustness, check for start & end query
 
-    query = partial(calculationQuery, curry2(tischDB.getStoriesRemainingTime)({start: urlQuery.start, end: urlQuery.end}), id);
-    answer = partial(respondWithJson, response);
+    query = u.partial(calculationQuery, u.curry2(tischDB.getStoriesRemainingTime)({start: urlQuery.start, end: urlQuery.end}), id);
+    answer = u.partial(respondWithJson, response);
   }
   else {
 
@@ -592,7 +571,7 @@ var processRequest = function(request, response) {
 
   query()
   .then(answer)
-  .then(partial(notify, request))
+  .then(u.partial(notify, request))
   .fail(html ? complainWithPlain.bind(response) : complainWithJson.bind(response))
   .done();
 };
