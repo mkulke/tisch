@@ -1,4 +1,5 @@
 pg = require('pg')
+Q = require('q')
 _ = require('underscore')._
 chai = require('chai')
 chaiAsPromised = require('chai-as-promised')
@@ -10,15 +11,22 @@ assert = chai.assert
 expect = chai.expect
 chai.use chaiAsPromised
 
-runQuery = (queryString, next) ->
+query = (queryString, cb) ->
 
 	connectionString = 'postgres://localhost/test'
 	pg.connect connectionString, (err, client, done) ->
 
-		client.query queryString, (result, err) ->
+		client.query queryString, (err, result) ->
 
 			do done
-			do next
+			cb err, result
+
+issueQuery = (queryString, next) ->
+
+	query queryString, (err) ->
+
+		next err if err
+		do next unless err
 
 prepare = (next) ->
 
@@ -51,7 +59,7 @@ describe 'postgres db functions', ->
 			@subject = ->
 
 				postgres.findSprints @args...
-			runQuery """
+			issueQuery """
 
 				INSERT INTO 
 				sprints 
@@ -62,7 +70,7 @@ describe 'postgres db functions', ->
 			""", next
 		afterEach (next) ->
 
-			runQuery 'DELETE FROM sprints', next
+			issueQuery 'DELETE FROM sprints', next
 		it 'returns an array', ->
 
 			expect(do @subject).to.eventually.be.an('Array')
@@ -76,7 +84,7 @@ describe 'postgres db functions', ->
 				before ->
 
 					@args = [{color: 'orange'}]
-				it 'return one orange sprint', ->
+				it 'returns only filtered sprints', ->
 
 					expect(do @subject).to.eventually.have.length(1).and.satisfy (rows) ->
 
@@ -95,7 +103,7 @@ describe 'postgres db functions', ->
 				before (next) ->
 
 					@args = [{length: 14, "_rev": 3}]
-					runQuery """
+					issueQuery """
 
 						INSERT INTO
 						sprints
@@ -103,7 +111,7 @@ describe 'postgres db functions', ->
 						VALUES
 						(3, 1, 'Sprint C', 'green', '2014-01-01', 3)
 					""", next
-				it 'returns one sprint', ->
+				it 'returns sprints filtered by both clauses', ->
 
 					expect(do @subject).to.eventually.have.length(1)
 
@@ -138,7 +146,7 @@ describe 'postgres db functions', ->
 			before (next) ->
 
 				@args = [{length: 14}, {'color': 1}]
-				runQuery """
+				issueQuery """
 
 					INSERT INTO
 					sprints
@@ -151,3 +159,64 @@ describe 'postgres db functions', ->
 				expect(do @subject).to.eventually.have.length(2).and.satisfy (rows) ->
 
 					_.pluck(rows, 'color')[0] == 'orange'
+	describe 'updateSprint', ->
+
+		beforeEach (next) ->
+
+			@id = 3
+			@rev = 1
+			@column = 'color'
+			@value = 'red'
+			@subject = ->
+
+				postgres.updateSprint @args...
+			issueQuery """
+
+				INSERT INTO
+				sprints
+				(_id, _rev, title, color, start, length)
+				VALUES
+				(3, 1, 'Sprint C', 'green', '2014-01-01', 3)
+			""", next
+		afterEach (next) ->
+
+			issueQuery 'DELETE FROM sprints', next
+		context 'when all parameters are supplied', ->
+
+			beforeEach -> 
+
+				@args = [@id, @rev, @column, @value]
+			it 'returns the modifed sprint', ->
+
+				expect(do @subject).to.eventually.satisfy (sprint) =>
+
+					sprint[@column] == @value
+			it 'modifies the sprint in the db', ->
+
+				expect(@subject().then(=> Q.nfcall(query, "SELECT * FROM sprints WHERE _id=#{@id}"))).to.eventually.satisfy (result) =>
+					
+				 	result.rows[0][@column] == @value
+		context 'when specifying an illegal column', ->
+
+			before ->
+
+				@args = [@id, @rev, 'wrong', true]
+			it 'throws an error', ->
+		
+				expect(do @subject).to.be.rejectedWith(Error)
+		context 'when specifying the wrong revision', ->
+	
+			before ->
+
+				@args = [@id, @rev + 1, @column, @value]
+			it 'throws an error', ->
+
+				expect(do @subject).be.rejectedWith(Error)
+		context 'when specifying a non-existent id', ->
+
+			before ->
+
+				@args = [@id + 1, @rev, @column, @value]
+			it 'throws an error', ->
+
+				expect(do @subject).to.be.rejectedWith(Error)
