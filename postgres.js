@@ -70,7 +70,7 @@ var _verifyTable = function(table) {
 
 		if (!_.contains(allowedTables, table)) {
 
-			throw new Error('table ' + table + ' is not allowed.');
+			throw new Error('querying table ' + table + ' is not allowed.');
 		}
 	});
 };
@@ -81,24 +81,48 @@ var _verifyColumn = function(table, column) {
 
 		allowedColumns = {
 
-			'sprints': ['description', 'color', 'title', 'start', 'length']
+			'sprints': ['description', 'color', 'title', 'start', 'length'],
+			'stories': ['description', 'color', 'title', 'estimation', 'sprint_id']
 		};
 
 		if (!_.has(allowedColumns, table) || !_.contains(allowedColumns[table], column)) {
 
-			throw new Error('column ' + column + ' is not allowed on table ' + table);
+			throw new Error('querying column ' + column + ' is not allowed on table ' + table);
 		}
 	});
 };
 
 var _getRows = curry2(_.result)('rows');
 
-var _find = function(table) {
+var _find = function(table, filter, sort) {
 
-	var verify = partial(_verifyTable, table);
-	var query = partial(_query, 'SELECT * FROM ' + table);
+	var selectText = 'SELECT * FROM ' + table;
+
+	var parameterCount = 1;
+
+	var toWhereClause = function(value) {
+
+		return value + " = $" + parameterCount++;
+	};
+	var whereClauses = filter ? _.chain(filter).keys().map(toWhereClause).value() : null;
+	var whereText = filter ? 'WHERE ' + whereClauses.join(' AND ') : '';
+	var whereValues = filter ? _.values(filter) : [];
+
+	var toOrderClause = function(value) {
+
+		return '$' + parameterCount++ + (value == 1 ? '' : ' desc');
+	};
+	var orderClauses = sort ? _.map(sort, toOrderClause) : null;
+	var orderText = sort ? 'ORDER BY ' + orderClauses.join(', ') : '';
+	var orderValues = sort ? _.keys(sort) : [];
+
+	var verifyTable = partial(_verifyTable, table);
+	var verifyFilterColumn = partial(_verifyColumn, table);
+	var verifyFilterColumns = filter ? Q.all(_.chain(filter).keys().map(verifyFilterColumn).value()) : Q.resolve;
+
+	var query = partial(_query, {text: [selectText, whereText, orderText].join(' '), values: whereValues.concat(orderValues)});
 	var process = _getRows;
-	return verify().then(_connect).spread(query).then(process);
+	return verifyTable().then(verifyFilterColumns).then(_connect).spread(query).then(process);
 };
 
 var _update = function(table, id, rev, column, value) {
@@ -119,7 +143,15 @@ var _update = function(table, id, rev, column, value) {
 	return verify().then(_connect).spread(query).then(confirm).then(process);
 };
 
+var cleanup = function() {
+
+	return Q().then(function() {
+
+		pg.end();
+	});
+}
+
 exports.init = Q.resolve;
-exports.cleaup = null;
+exports.cleanup = cleanup;
 exports.findSprints = partial(_find, 'sprints');
 exports.updateSprint = partial(_update, 'sprints');

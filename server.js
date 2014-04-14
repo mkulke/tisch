@@ -226,7 +226,7 @@ var notify = function(request, result) {
 
 var indexViewQuery = function() {
 
-  return tischDB.findSprints({}, {start: 1})
+  return tischDB.findSprints(null, {start: 1})
   .then(function (result) {
 
     return {sprints: result};
