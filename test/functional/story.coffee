@@ -72,11 +72,12 @@ casper.then ->
 
 				document.querySelectorAll('ul#well li.panel').length == 3;
 		, '3 Task panels visible.'
+		taskUrl = @getElementInfo('ul#well li.panel:nth-of-type(3) a.button.open').attributes.href
 		@click 'ul#well li.panel:nth-of-type(3) input.button.remove'
 		@test.assertVisible '#confirm-dialog', 'Confirmation dialog appeared'
 		@click '#confirm-dialog input.button.confirm'
 		@test.assertNotVisible '#confirm-dialog', 'Confirmation dialog disappeared'
-		@waitForResource storyUrl, ->
+		@waitForResource taskUrl, ->
 
 			@test.assertEval ->
 
