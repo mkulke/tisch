@@ -126,7 +126,7 @@ var _findOne = function(table, id) {
 		.then(_connect)
 		.spread(query)
 		.then(process);
-}
+};
 
 var _update = function(table, id, rev, column, value) {
 
