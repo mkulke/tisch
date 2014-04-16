@@ -43,7 +43,7 @@ var _verifyTable = function(table) {
 
 	return Q.fcall(function() {
 
-		allowedTables = ['sprints'];
+		allowedTables = ['sprints', 'stories', 'tasks'];
 
 		if (!_.contains(allowedTables, table)) {
 
@@ -59,7 +59,8 @@ var _verifyColumn = function(table, column) {
 		allowedColumns = {
 
 			'sprints': ['description', 'color', 'title', 'start', 'length'],
-			'stories': ['description', 'color', 'title', 'estimation', 'sprint_id']
+			'stories': ['description', 'color', 'title', 'estimation', 'priority', 'sprint_id'],
+			'tasks': ['description', 'color', 'summary', 'priority', 'story_id']
 		};
 
 		if (!_.has(allowedColumns, table) || !_.contains(allowedColumns[table], column)) {
@@ -108,6 +109,25 @@ var _find = function(table, filter, sort) {
 		.then(process);
 };
 
+var _findOne = function(table, id) {
+
+	var verifyTable = u.partial(_verifyTable, table);
+	var query = u.partial(_query, {text: "SELECT * FROM " + table + " WHERE _id = $1", values: [id]});
+	var process = function(result) {
+
+		if (result.rows.length != 1) {
+
+			throw new Error('id ' + id + ' does not exist on table ' + table);
+		}
+		return result.rows[0];
+	};
+
+	return verifyTable()
+		.then(_connect)
+		.spread(query)
+		.then(process);
+}
+
 var _update = function(table, id, rev, column, value) {
 
 	var verify = u.partial(_verifyColumn, table, column);
@@ -137,4 +157,9 @@ var cleanup = function() {
 exports.init = Q.resolve;
 exports.cleanup = cleanup;
 exports.findSprints = u.partial(_find, 'sprints');
+exports.findSingleSprint = u.partial(_findOne, 'sprints');
+exports.findStories = u.partial(_find, 'stories');
+exports.findSingleStory = u.partial(_findOne, 'stories');
+exports.findTasks = u.partial(_find, 'tasks');
+exports.findSingleTask = u.partial(_findOne, 'tasks');
 exports.updateSprint = u.partial(_update, 'sprints');

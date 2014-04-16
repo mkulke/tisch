@@ -49,71 +49,12 @@ cleanup = (next) ->
 
 describe 'postgres db functions', ->
 
-	before prepare
-	after cleanup
+	expectItToReturnRows = (options) ->
 
-	describe 'findSprints', ->
+		it "returns #{options.n} objects", ->
 
-		beforeEach (next) ->
-
-			@subject = ->
-
-				postgres.findSprints @args...
-			issueQuery """
-
-				INSERT INTO 
-				sprints 
-				(_id, _rev, title, description, color, start, length)
-				VALUES
-				(1, 3, 'Sprint A', 'bla', 'red', '2013-01-01', 14),
-				(2, 6, 'Sprint B', 'blub', 'orange', '2013-01-15', 14)
-			""", next
-		afterEach (next) ->
-
-			issueQuery 'DELETE FROM sprints', next
-		it 'returns an array', ->
-
-			expect(do @subject).to.eventually.be.an('Array')
-		it 'returns two sprints', ->
-
-			expect(do @subject).to.eventually.have.length(2)
-		context 'when specifying a filter parameter', ->
-		
-			context 'which is valid', ->
-
-				before ->
-
-					@args = [{color: 'orange'}]
-				it 'returns only filtered sprints', ->
-
-					expect(do @subject).to.eventually.have.length(1).and.satisfy (rows) ->
-
-						_.first(rows).color == 'orange'
-			context 'which is invalid', ->
-
-				before ->
-
-					@args = [{invalid: false}]
-
-				it 'throws an error', ->
-
-					expect(do @subject).to.eventually.be.rejectedWith(Error);
-			context 'and adding another one', ->
-
-				before (next) ->
-
-					@args = [{length: 14, "_rev": 3}]
-					issueQuery """
-
-						INSERT INTO
-						sprints
-						(_id, _rev, title, color, start, length)
-						VALUES
-						(3, 1, 'Sprint C', 'green', '2014-01-01', 3)
-					""", next
-				it 'returns sprints filtered by both clauses', ->
-
-					expect(do @subject).to.eventually.have.length(1)
+			expect(do @subject).to.eventually.be.an('Array').and.have.length(options.n)
+	expectItToBeSortable = ->
 
 		context 'when specifying a sort parameter', ->
 
@@ -141,9 +82,91 @@ describe 'postgres db functions', ->
 						expect(do @subject).to.eventually.satisfy (rows) ->
 
 							_.pluck(rows, 'color')[0] == 'red'
+	expectItToReturnOneRow = ->
+
+		it 'returns a single row', ->
+
+			expect(do @subject).to.eventually.satisfy (object) =>
+
+				object._id == @id
+		context 'with an invalid id', ->
+
+			before ->
+
+				@id = 'wrong'
+
+			it 'throws an error', ->
+
+				expect(do @subject).to.be.rejectedWith(Error)
+
+	before prepare
+	after cleanup
+
+	describe 'findSprints', ->
+
+		beforeEach (next) ->
+
+			@args = []
+			@subject = ->
+
+				postgres.findSprints @args...
+			issueQuery """
+
+				INSERT INTO 
+				sprints 
+				(_id, _rev, title, description, color, start, length)
+				VALUES
+				(1, 3, 'Sprint A', 'bla', 'red', '2013-01-01', 14),
+				(2, 6, 'Sprint B', 'blub', 'orange', '2013-01-15', 14)
+			""", next
+		afterEach (next) ->
+
+			issueQuery 'DELETE FROM sprints', next
+
+		expectItToReturnRows n: 2
+
+		do expectItToBeSortable
+
+		context 'when specifying a filter parameter', ->
+		
+			context 'which is valid', ->
+
+				beforeEach ->
+
+					@args = [{color: 'orange'}]
+				it 'returns only filtered sprints', ->
+
+					expect(do @subject).to.eventually.have.length(1).and.satisfy (rows) ->
+
+						_.first(rows).color == 'orange'
+			context 'which is invalid', ->
+
+				beforeEach ->
+
+					@args = [{invalid: false}]
+
+				it 'throws an error', ->
+
+					expect(do @subject).to.eventually.be.rejectedWith(Error);
+			context 'and adding another one', ->
+
+				beforeEach (next) ->
+
+					@args = [{length: 14, "_rev": 3}]
+					issueQuery """
+
+						INSERT INTO
+						sprints
+						(_id, _rev, title, color, start, length)
+						VALUES
+						(3, 1, 'Sprint C', 'green', '2014-01-01', 3)
+					""", next
+				it 'returns sprints filtered by both clauses', ->
+
+					expect(do @subject).to.eventually.have.length(1)
 		context 'when specifying a combination of both', ->
 
-			before (next) ->
+			beforeEach (next) ->
 
 				@args = [{length: 14}, {'color': 1}]
 				issueQuery """
@@ -169,7 +192,7 @@ describe 'postgres db functions', ->
 			@value = 'red'
 			@subject = ->
 
-				postgres.updateSprint @args...
+				postgres.updateSprint @id, @rev, @column, @value
 			issueQuery """
 
 				INSERT INTO
@@ -183,9 +206,6 @@ describe 'postgres db functions', ->
 			issueQuery 'DELETE FROM sprints', next
 		context 'when all parameters are supplied', ->
 
-			beforeEach -> 
-
-				@args = [@id, @rev, @column, @value]
 			it 'returns the modifed sprint', ->
 
 				expect(do @subject).to.eventually.satisfy (sprint) =>
@@ -198,25 +218,175 @@ describe 'postgres db functions', ->
 				 	result.rows[0][@column] == @value
 		context 'when specifying an illegal column', ->
 
-			before ->
+			beforeEach ->
 
-				@args = [@id, @rev, 'wrong', true]
+				@column = 'wrong'
 			it 'throws an error', ->
 		
 				expect(do @subject).to.be.rejectedWith(Error)
 		context 'when specifying the wrong revision', ->
 	
-			before ->
+			beforeEach ->
 
-				@args = [@id, @rev + 1, @column, @value]
+				@rev = @rev + 1
 			it 'throws an error', ->
 
 				expect(do @subject).be.rejectedWith(Error)
 		context 'when specifying a non-existent id', ->
 
-			before ->
+			beforeEach ->
 
-				@args = [@id + 1, @rev, @column, @value]
+				@id = @id + 1
 			it 'throws an error', ->
 
 				expect(do @subject).to.be.rejectedWith(Error)
+	describe 'findSingleSprint', ->
+
+		before (next) ->
+
+			@id = '3'
+			@subject = ->
+
+				postgres.findSingleSprint @id
+			issueQuery """
+
+				INSERT INTO
+				sprints
+				(_id, _rev, title, color, start, length)
+				VALUES
+				(#{@id}, 1, 'Sprint D', 'yellow', '2014-01-01', 3)
+			""", next	
+
+		after (next) ->
+
+			issueQuery 'DELETE FROM sprints', next
+
+		do expectItToReturnOneRow
+	describe 'findStories', ->
+
+		beforeEach (next) ->
+
+			@args = []
+			@subject = ->
+
+				postgres.findStories @args...
+			issueQuery """
+
+				INSERT INTO 
+				stories 
+				(_id, _rev, title, color, estimation, priority, sprint_id)
+				VALUES
+				(1, 3, 'Story A', 'red', 5, 3, 1),
+				(2, 6, 'Story B', 'orange', 4, 4, 2)
+			""", next
+		afterEach (next) ->
+
+			issueQuery 'DELETE FROM stories', next
+		expectItToReturnRows {n: 2}
+
+		do expectItToBeSortable
+
+		context 'when sorting a filtering of both', ->
+
+			beforeEach (next) ->
+
+				@args = [{estimation: 5}, {'color': 1}]
+				issueQuery """
+
+					INSERT INTO
+					stories
+					(_id, _rev, title, color, estimation, priority, sprint_id)
+					VALUES
+					(3, 1, 'Story C', 'green', 5, 5, 1)
+				""", next
+			it 'returns filtered sorted sprints', ->
+
+				expect(do @subject).to.eventually.have.length(2).and.satisfy (rows) ->
+
+					_.pluck(rows, 'color')[0] == 'green'
+	describe 'findSingleStory', ->
+
+		before (next) ->
+
+			@id = '3'
+			@subject = ->
+
+				postgres.findSingleStory @id
+			issueQuery """
+
+				INSERT INTO
+				stories
+				(_id, _rev, title, color, estimation, priority, sprint_id)
+				VALUES
+				(3, 1, 'Story C', 'green', 5, 5, 1)
+			""", next	
+
+		after (next) ->
+
+			issueQuery 'DELETE FROM stories', next
+
+		do expectItToReturnOneRow
+	describe 'findTasks', ->
+
+		beforeEach (next) ->
+
+			@args = []
+			@subject = ->
+
+				postgres.findTasks @args...
+			issueQuery """
+
+				INSERT INTO 
+				tasks 
+				(_id, _rev, summary, color, priority, story_id)
+				VALUES
+				(1, 3, 'Task A', 'red', 3, 1),
+				(2, 6, 'Task B', 'orange', 4, 2)
+			""", next
+		afterEach (next) ->
+
+			issueQuery 'DELETE FROM tasks', next
+		expectItToReturnRows {n: 2}
+
+		do expectItToBeSortable
+
+		context 'when sorting a filtering of both', ->
+
+			beforeEach (next) ->
+
+				@args = [{_rev: 6}, {'color': 1}]
+				issueQuery """
+
+					INSERT INTO
+					tasks
+					(_id, _rev, summary, color, priority, story_id)
+					VALUES
+					(3, 6, 'Task C', 'green', 5, 1)
+				""", next
+			it 'returns filtered sorted sprints', ->
+
+				expect(do @subject).to.eventually.have.length(2).and.satisfy (rows) ->
+
+					_.pluck(rows, 'color')[0] == 'green'
+	describe 'findSingleTask', ->
+
+		before (next) ->
+
+			@id = '3'
+			@subject = ->
+
+				postgres.findSingleTask @id
+			issueQuery """
+
+				INSERT INTO
+				tasks
+				(_id, _rev, summary, color, priority, story_id)
+				VALUES
+				(3, 1, 'Story C', 'green', 5, 1)
+			""", next	
+
+		after (next) ->
+
+			issueQuery 'DELETE FROM tasks', next
+
+		do expectItToReturnOneRow

@@ -113,11 +113,11 @@ ALTER SEQUENCE sprints__id_seq OWNED BY sprints._id;
 --
 
 CREATE TABLE stories (
-    id bigint NOT NULL,
-    rev bigint NOT NULL,
+    _id bigint NOT NULL,
+    _rev integer DEFAULT 1 NOT NULL,
     title character varying(64),
-    description text,
-    color integer NOT NULL,
+    description text DEFAULT ''::text NOT NULL,
+    color character varying(8) NOT NULL,
     estimation integer NOT NULL,
     priority integer NOT NULL,
     sprint_id integer NOT NULL
@@ -144,34 +144,15 @@ ALTER SEQUENCE stories_id_seq OWNED BY stories.id;
 
 
 --
--- Name: stories_rev_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE stories_rev_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: stories_rev_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE stories_rev_seq OWNED BY stories.rev;
-
-
---
 -- Name: tasks; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE TABLE tasks (
-    id bigint NOT NULL,
-    rev integer DEFAULT 1 NOT NULL,
+    _id bigint NOT NULL,
+    _rev integer DEFAULT 1 NOT NULL,
     summary character varying(64) NOT NULL,
-    description text,
-    color integer NOT NULL,
+    description text default '' NOT NULL,
+    color character varying(8) NOT NULL,
     priority integer NOT NULL,
     story_id integer NOT NULL
 );
@@ -193,7 +174,7 @@ CREATE SEQUENCE tasks_id_seq
 -- Name: tasks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE tasks_id_seq OWNED BY tasks.id;
+ALTER SEQUENCE tasks_id_seq OWNED BY tasks._id;
 
 
 --
@@ -245,14 +226,14 @@ ALTER TABLE ONLY sprints ALTER COLUMN _id SET DEFAULT nextval('sprints__id_seq':
 -- Name: id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY stories ALTER COLUMN id SET DEFAULT nextval('stories_id_seq'::regclass);
+ALTER TABLE ONLY stories ALTER COLUMN _id SET DEFAULT nextval('stories_id_seq'::regclass);
 
 
 --
 -- Name: rev; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY stories ALTER COLUMN rev SET DEFAULT nextval('stories_rev_seq'::regclass);
+ALTER TABLE ONLY stories ALTER COLUMN _rev SET DEFAULT nextval('stories_rev_seq'::regclass);
 
 
 --
@@ -292,15 +273,6 @@ SELECT pg_catalog.setval('sprints__id_seq', 2, true);
 
 
 --
--- Data for Name: stories; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY stories (id, rev, title, description, color, estimation, priority, sprint_id) FROM stdin;
-1	1	A Story	\N	0	5	1	2
-\.
-
-
---
 -- Name: stories_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -312,16 +284,6 @@ SELECT pg_catalog.setval('stories_id_seq', 2, true);
 --
 
 SELECT pg_catalog.setval('stories_rev_seq', 2, true);
-
-
---
--- Data for Name: tasks; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY tasks (id, rev, summary, description, color, priority, story_id) FROM stdin;
-1	2	Your Task	\N	2	2	1
-\.
-
 
 --
 -- Name: tasks_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
@@ -375,7 +337,7 @@ ALTER TABLE ONLY sprints
 --
 
 ALTER TABLE ONLY stories
-    ADD CONSTRAINT stories_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT stories_pkey PRIMARY KEY (_id);
 
 
 --
