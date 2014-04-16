@@ -206,6 +206,9 @@ describe 'postgres db functions', ->
 			issueQuery 'DELETE FROM sprints', next
 		context 'when all parameters are supplied', ->
 
+			beforeEach -> 
+
+				@args = [@id, @rev, @column, @value]
 			it 'returns the modifed sprint', ->
 
 				expect(do @subject).to.eventually.satisfy (sprint) =>

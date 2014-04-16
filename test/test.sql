@@ -285,6 +285,7 @@ SELECT pg_catalog.setval('stories_id_seq', 2, true);
 
 SELECT pg_catalog.setval('stories_rev_seq', 2, true);
 
+
 --
 -- Name: tasks_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
