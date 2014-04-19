@@ -146,6 +146,11 @@ var _update = function(table, id, rev, column, value) {
 	return verify().then(_connect).spread(query).then(confirm).then(process);
 };
 
+var getStoriesRemainingTime = function(storyIds, range) {
+
+	return ['1', 2];
+};
+
 var cleanup = function() {
 
 	return Q().then(function() {
@@ -163,3 +168,4 @@ exports.findSingleStory = u.partial(_findOne, 'stories');
 exports.findTasks = u.partial(_find, 'tasks');
 exports.findSingleTask = u.partial(_findOne, 'tasks');
 exports.updateSprint = u.partial(_update, 'sprints');
+exports.getStoriesRemainingTime = getStoriesRemainingTime;
