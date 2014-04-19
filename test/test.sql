@@ -33,7 +33,7 @@ CREATE FUNCTION inc_rev() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-UPDATE tasks SET _rev=_rev+1 WHERE id=NEW.task_id;
+UPDATE tasks SET _rev=_rev+1 WHERE _id=NEW.task_id;
 RETURN NEW;
 END;
 $$;
