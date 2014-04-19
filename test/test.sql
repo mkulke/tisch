@@ -413,14 +413,22 @@ ALTER TABLE ONLY times_spent
 -- Name: inc_rev; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER inc_rev AFTER INSERT OR DELETE OR UPDATE ON times_spent FOR EACH ROW EXECUTE PROCEDURE inc_rev();
+CREATE TRIGGER inc_rev AFTER INSERT OR DELETE OR UPDATE ON remaining_times FOR EACH ROW EXECUTE PROCEDURE inc_rev();
 
 
 --
 -- Name: inc_rev; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER inc_rev AFTER INSERT OR DELETE OR UPDATE ON remaining_times FOR EACH ROW EXECUTE PROCEDURE inc_rev();
+CREATE TRIGGER inc_rev AFTER INSERT OR DELETE OR UPDATE ON times_spent FOR EACH ROW EXECUTE PROCEDURE inc_rev();
+
+
+--
+-- Name: remaining_times_task_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY remaining_times
+    ADD CONSTRAINT remaining_times_task_id_fkey FOREIGN KEY (task_id) REFERENCES tasks(_id) ON DELETE CASCADE;
 
 
 --
@@ -437,6 +445,14 @@ ALTER TABLE ONLY stories
 
 ALTER TABLE ONLY tasks
     ADD CONSTRAINT tasks_story_id_fkey FOREIGN KEY (story_id) REFERENCES stories(_id);
+
+
+--
+-- Name: times_spent_task_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY times_spent
+    ADD CONSTRAINT times_spent_task_id_fkey FOREIGN KEY (task_id) REFERENCES tasks(_id) ON DELETE CASCADE;
 
 
 --
