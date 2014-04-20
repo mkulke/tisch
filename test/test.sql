@@ -31,10 +31,11 @@ SET search_path = public, pg_catalog;
 
 CREATE FUNCTION inc_rev() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
+    AS $$              DECLARE tid integer;
 BEGIN
-UPDATE tasks SET _rev=_rev+1 WHERE _id=NEW.task_id;
-RETURN NEW;
+IF (TG_OP='INSERT') THEN tid=NEW.task_id; ELSE tid=OLD.task_id; END IF;
+UPDATE tasks SET _rev=_rev+1 WHERE _id=tid;
+RETURN NEW;                        
 END;
 $$;
 
@@ -334,7 +335,7 @@ COPY times_spent (_id, date, days, task_id) FROM stdin;
 -- Name: times_spent__id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('times_spent__id_seq', 1, false);
+SELECT pg_catalog.setval('times_spent__id_seq', 2, true);
 
 
 --
@@ -436,7 +437,7 @@ ALTER TABLE ONLY remaining_times
 --
 
 ALTER TABLE ONLY stories
-    ADD CONSTRAINT stories_sprint_id_fkey FOREIGN KEY (sprint_id) REFERENCES sprints(_id);
+    ADD CONSTRAINT stories_sprint_id_fkey FOREIGN KEY (sprint_id) REFERENCES sprints(_id) ON DELETE CASCADE;
 
 
 --
@@ -444,7 +445,7 @@ ALTER TABLE ONLY stories
 --
 
 ALTER TABLE ONLY tasks
-    ADD CONSTRAINT tasks_story_id_fkey FOREIGN KEY (story_id) REFERENCES stories(_id);
+    ADD CONSTRAINT tasks_story_id_fkey FOREIGN KEY (story_id) REFERENCES stories(_id) ON DELETE CASCADE;
 
 
 --
