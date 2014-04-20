@@ -199,7 +199,7 @@ var getStoriesTimesSpent = function(storyIds, range) {
 var getStoriesTaskCount = function(storyIds) {
 
 	var n = 0;
-	var idClause = (storyIds && storyIds.length) ? 'WHERE story_id in (' + _.map(storyIds, function(id) { 
+	var idClause = (storyIds && storyIds.length) ? 'WHERE story_id in (' + _.map(storyIds, function(id) {
 
 		n += 1;
 		return '$' + n;
