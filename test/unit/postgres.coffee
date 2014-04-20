@@ -56,9 +56,7 @@ prepareStories = (next) ->
 		(3, 1, 'Story C', 'green', 5, 5, 1)
 	"""
 
-	prepareSprints ->
-
-		issueQuery queryString, next
+	prepareSprints u.partial(issueQuery, queryString, next)
 
 prepareTasks = (next) ->
 
@@ -69,32 +67,31 @@ prepareTasks = (next) ->
 		(_id, _rev, summary, color, priority, story_id)
 		VALUES
 		(1, 3, 'Task A', 'red', 3, 1),
-		(2, 6, 'Task B', 'orange', 4, 1)
+		(2, 6, 'Task B', 'orange', 4, 2),
+		(3, 1, 'Task C', 'purple', 5, 1)
 	"""
 
-	prepareSprints ->
+	prepareStories u.partial(issueQuery, queryString, next)
 
-		prepareStories ->
+prepareTimesSpent = (next) ->
 
-			issueQuery queryString, next
+	queryString = """
+
+		INSERT INTO
+		times_spent
+		(_id, date, days, task_id)
+		VALUES
+		(1, '2014-01-01', 2, 1),
+		(2, '2014-01-02', 3, 1),
+		(3, '2014-01-03', 1, 2),
+		(4, '2014-01-15', 1, 1)
+	"""
+
+	prepareTasks u.partial(issueQuery, queryString, next)
 
 cleanupSprints = (next) ->
 
 	issueQuery 'DELETE FROM sprints', next
-
-cleanupStories = (next) ->
-
-	issueQuery 'DELETE FROM stories', ->
-
-		cleanupSprints next
-
-cleanupTasks = (next) ->
-
-	issueQuery 'DELETE FROM tasks', ->
-
-		cleanupStories ->
-		
-			cleanupSprints next
 
 prepare = (next) ->
 
@@ -299,7 +296,7 @@ describe 'postgres', ->
 	describe 'story', ->
 
 		beforeEach prepareStories
-		afterEach cleanupStories
+		afterEach cleanupSprints
 
 		describe 'findStories', ->
 
@@ -318,7 +315,7 @@ describe 'postgres', ->
 				before ->
 
 					@args = [{estimation: 5}, {'color': 1}]
-				it 'returns filtered sorted sprints', ->
+				it 'returns filtered sorted stories', ->
 
 					expect(do @subject).to.eventually.have.length(2).and.satisfy (rows) ->
 
@@ -337,7 +334,7 @@ describe 'postgres', ->
 	describe 'task', ->
 
 		beforeEach prepareTasks
-		afterEach cleanupTasks
+		afterEach cleanupSprints
 
 		describe 'findTasks', ->
 
@@ -348,9 +345,9 @@ describe 'postgres', ->
 
 					postgres.findTasks @args...
 
-			expectItToReturnRows n: 2
+			expectItToReturnRows n: 3
 
-			expectItToBeSortable table: 'tasks', column: 'priority', orderedValues: [3, 4]
+			expectItToBeSortable table: 'tasks', column: 'priority', orderedValues: [3, 4, 5]
 
 		describe 'findSingleTask', ->
 
@@ -364,5 +361,27 @@ describe 'postgres', ->
 			do expectItToReturnOneRow
 	describe 'calculation', ->
 
-		describe 'getStoriesRemainingTime', ->
+		describe 'times spent', ->
 
+			beforeEach prepareTimesSpent
+			afterEach cleanupSprints
+
+			describe 'getStoriesTimesSpent', ->
+
+				before ->
+
+					@args = [['1', '2'], {start: '2014-01-01', end: '2014-01-14'}]
+					@subject = ->
+
+						postgres.getStoriesTimesSpent @args...
+				it 'returns correct calculations', ->
+
+					expect(do @subject).to.eventually.deep.equal([['1', 5], ['2', 1]]) 
+				context 'when faulty ids are specified', ->
+
+					before ->
+
+						@args = [['wrong', 'false'], {start: '2014-01-01', end: '2014-01-14'}]
+					it 'throws an error', ->
+
+						expect(do @subject).to.be.rejectedWith(Error)

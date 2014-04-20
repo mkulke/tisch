@@ -137,7 +137,7 @@ var _update = function(table, id, rev, column, value) {
 		var count = result.rowCount;
 		if (count !== 1) {
 
-			throw new Error(count + " entries have been updated");
+			throw new Error([count, 'entries have been updated'].join(' '));
 		}
 		return result;
 	};
@@ -148,7 +148,42 @@ var _update = function(table, id, rev, column, value) {
 
 var getStoriesRemainingTime = function(storyIds, range) {
 
-	return ['1', 2];
+	return Q.resolve(['1', 2]);
+};
+
+var getStoriesTimesSpent = function(storyIds, range) {
+
+	var n = 2;
+	var idClause = _.map(storyIds, function(id) {
+
+		return '(s._id=$' + ++n + ')'; 
+	}).join(' OR ');
+
+	var text = ['SELECT s._id, SUM(t_s.days) FROM stories AS s',
+		'INNER JOIN tasks AS t ON (s._id=t.story_id)',
+		'INNER JOIN times_spent AS t_s ON (t._id=t_s.task_id)',
+		'WHERE t_s.date >= $1 AND t_s.date <= $2 AND (' + idClause + ')',
+		'GROUP BY s._id',
+		'ORDER BY s._id'].join(' ');
+	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds)});
+	var confirm = function(result) {
+
+		if (result.rowCount != storyIds.length) {
+
+			throw new Error('Could not find spent times for the specified story ids');
+		}
+		return result;
+	};
+	var process = function(result) {
+
+		rows = result.rows;
+		return _.map(rows, function(row) { 
+
+			return [row._id, parseFloat(row.sum)];
+		});
+	};
+
+	return _connect().spread(query).then(confirm).then(process);
 };
 
 var cleanup = function() {
@@ -169,3 +204,4 @@ exports.findTasks = u.partial(_find, 'tasks');
 exports.findSingleTask = u.partial(_findOne, 'tasks');
 exports.updateSprint = u.partial(_update, 'sprints');
 exports.getStoriesRemainingTime = getStoriesRemainingTime;
+exports.getStoriesTimesSpent = getStoriesTimesSpent
