@@ -169,22 +169,27 @@ var _processCalculation = function(result) {
 	});
 };
 
+var getStoriesRemainingTime = function(storyIds, range) {
+
+	var text = "SELECT t.story_id, SUM(c.days) FROM tasks AS t INNER JOIN (SELECT task_id, days FROM (SELECT days, task_id, date, MAX(date) OVER (PARTITION BY task_id) AS max_date FROM remaining_times) AS r_t WHERE date=max_date) AS c ON (t._id=c.task_id) GROUP BY t.story_id";
+};
+
 var getStoriesTimesSpent = function(storyIds, range) {
 
 	var n = 2;
-	var idClause = (storyIds && storyIds.length > 0) ? 'AND ' + _.map(storyIds, function(id) {
+	var idClause = (storyIds && storyIds.length > 0) ? 'AND t.story_id in (' + _.map(storyIds, function(id) {
 
 		n += 1;
-		return '(s._id=$' + n + ')';
-	}).join(' OR ') : '';
+		return '$' + n;
+	}) + ')': '';
 
-	var text = ['SELECT s._id AS id, SUM(t_s.days) AS calculation FROM stories AS s',
-		'INNER JOIN tasks AS t ON (s._id=t.story_id)',
+	var text = ['SELECT t.story_id AS id, SUM(t_s.days) AS calculation FROM tasks AS t',
 		'INNER JOIN times_spent AS t_s ON (t._id=t_s.task_id)',
 		'WHERE t_s.date >= $1 AND t_s.date <= $2',
 		idClause,
-		'GROUP BY s._id',
-		'ORDER BY s._id'].join(' ');
+		'GROUP BY t.story_id',
+		'ORDER BY t.story_id'].join(' ');
+
 	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
 	var confirm = u.partial(_confirmCalculation, storyIds, 'Could not calculate spent times for the specified story ids');
 
@@ -194,16 +199,15 @@ var getStoriesTimesSpent = function(storyIds, range) {
 var getStoriesTaskCount = function(storyIds) {
 
 	var n = 0;
-	var idClause = (storyIds && storyIds.length) ? 'WHERE ' + _.map(storyIds, function(id) {
+	var idClause = (storyIds && storyIds.length) ? 'WHERE story_id in (' + _.map(storyIds, function(id) { 
 
 		n += 1;
-		return 'story_id=$' + n;
-	}).join(' OR ') : '';
+		return '$' + n;
+	}) + ')' : '';
 	var text = ['SELECT story_id AS id, COUNT(story_id) AS calculation FROM tasks',
 		idClause,
 		'GROUP BY story_id',
-		'ORDER BY story_id'
-	].join(' ');
+		'ORDER BY story_id'].join(' ');
 
 	var query = u.partial(_query, {text: text, values: storyIds || []});
 	var confirm = u.partial(_confirmCalculation, storyIds, 'Could not calculate task count for the specified story ids');
