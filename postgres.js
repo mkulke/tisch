@@ -151,40 +151,64 @@ var getStoriesRemainingTime = function(storyIds, range) {
 	return Q.resolve(['1', 2]);
 };
 
+var _confirmCalculation = function(ids, errorMessage, result) {
+
+	if (ids && result.rowCount != ids.length) {
+
+		throw new Error(errorMessage);
+	}
+	return result;
+};
+
+var _processCalculation = function(result) {
+
+	rows = result.rows;
+	return _.map(rows, function(row) {
+
+		return [row.id.toString(), parseFloat(row.calculation)];
+	});
+};
+
 var getStoriesTimesSpent = function(storyIds, range) {
 
 	var n = 2;
-	var idClause = _.map(storyIds, function(id) {
+	var idClause = (storyIds && storyIds.length > 0) ? 'AND ' + _.map(storyIds, function(id) {
 
 		n += 1;
 		return '(s._id=$' + n + ')';
-	}).join(' OR ');
+	}).join(' OR ') : '';
 
-	var text = ['SELECT s._id, SUM(t_s.days) FROM stories AS s',
+	var text = ['SELECT s._id AS id, SUM(t_s.days) AS calculation FROM stories AS s',
 		'INNER JOIN tasks AS t ON (s._id=t.story_id)',
 		'INNER JOIN times_spent AS t_s ON (t._id=t_s.task_id)',
-		'WHERE t_s.date >= $1 AND t_s.date <= $2 AND (' + idClause + ')',
+		'WHERE t_s.date >= $1 AND t_s.date <= $2',
+		idClause,
 		'GROUP BY s._id',
 		'ORDER BY s._id'].join(' ');
-	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds)});
-	var confirm = function(result) {
+	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
+	var confirm = u.partial(_confirmCalculation, storyIds, 'Could not calculate spent times for the specified story ids');
 
-		if (result.rowCount != storyIds.length) {
+	return _connect().spread(query).then(confirm).then(_processCalculation);
+};
 
-			throw new Error('Could not find spent times for the specified story ids');
-		}
-		return result;
-	};
-	var process = function(result) {
+var getStoriesTaskCount = function(storyIds) {
 
-		rows = result.rows;
-		return _.map(rows, function(row) {
+	var n = 0;
+	var idClause = (storyIds && storyIds.length) ? 'WHERE ' + _.map(storyIds, function(id) {
 
-			return [row._id, parseFloat(row.sum)];
-		});
-	};
+		n += 1;
+		return 'story_id=$' + n;
+	}).join(' OR ') : '';
+	var text = ['SELECT story_id AS id, COUNT(story_id) AS calculation FROM tasks',
+		idClause,
+		'GROUP BY story_id',
+		'ORDER BY story_id'
+	].join(' ');
 
-	return _connect().spread(query).then(confirm).then(process);
+	var query = u.partial(_query, {text: text, values: storyIds || []});
+	var confirm = u.partial(_confirmCalculation, storyIds, 'Could not calculate task count for the specified story ids');
+
+	return _connect().spread(query).then(confirm).then(_processCalculation);
 };
 
 var cleanup = function() {
@@ -206,3 +230,4 @@ exports.findSingleTask = u.partial(_findOne, 'tasks');
 exports.updateSprint = u.partial(_update, 'sprints');
 exports.getStoriesRemainingTime = getStoriesRemainingTime;
 exports.getStoriesTimesSpent = getStoriesTimesSpent;
+exports.getStoriesTaskCount = getStoriesTaskCount;

@@ -361,6 +361,38 @@ describe 'postgres', ->
 			do expectItToReturnOneRow
 	describe 'calculation', ->
 
+		describe 'task count', ->
+
+			beforeEach prepareTasks
+			afterEach cleanupSprints
+
+			describe 'getStoriesTaskCount', ->
+
+				before ->
+
+					@args = [['1', '2']]
+					@subject = ->
+
+						postgres.getStoriesTaskCount @args...
+				it 'returns the number of tasks in the specified stories', ->
+
+					expect(do @subject).to.eventually.deep.equal([['1', 2], ['2', 1]])
+				context 'when faulty ids are specified', ->
+
+					before ->
+
+						@args = [['wrong', 'false']]
+					it 'throws an error', ->
+
+						expect(do @subject).to.be.rejectedWith(Error)
+				context 'when no ids are specified', ->
+
+					before ->
+
+						@args = []
+					it 'returns calculations for all stories', ->
+
+						expect(do @subject).to.eventually.deep.equal([['1', 2], ['2', 1]])
 		describe 'times spent', ->
 
 			beforeEach prepareTimesSpent
@@ -376,7 +408,17 @@ describe 'postgres', ->
 						postgres.getStoriesTimesSpent @args...
 				it 'returns correct calculations', ->
 
-					expect(do @subject).to.eventually.deep.equal([['1', 5], ['2', 1]]) 
+					expect(do @subject).to.eventually.deep.equal([['1', 5], ['2', 1]])
+				context 'when no ids are specified', ->
+
+					before ->
+
+						@args[0] = null
+
+					it 'returns calculations for all stories', ->
+
+						expect(do @subject).to.eventually.deep.equal([['1', 5], ['2', 1]])
+
 				context 'when faulty ids are specified', ->
 
 					before ->
