@@ -156,7 +156,8 @@ var getStoriesTimesSpent = function(storyIds, range) {
 	var n = 2;
 	var idClause = _.map(storyIds, function(id) {
 
-		return '(s._id=$' + ++n + ')'; 
+		n += 1;
+		return '(s._id=$' + n + ')';
 	}).join(' OR ');
 
 	var text = ['SELECT s._id, SUM(t_s.days) FROM stories AS s',
@@ -177,7 +178,7 @@ var getStoriesTimesSpent = function(storyIds, range) {
 	var process = function(result) {
 
 		rows = result.rows;
-		return _.map(rows, function(row) { 
+		return _.map(rows, function(row) {
 
 			return [row._id, parseFloat(row.sum)];
 		});
@@ -204,4 +205,4 @@ exports.findTasks = u.partial(_find, 'tasks');
 exports.findSingleTask = u.partial(_findOne, 'tasks');
 exports.updateSprint = u.partial(_update, 'sprints');
 exports.getStoriesRemainingTime = getStoriesRemainingTime;
-exports.getStoriesTimesSpent = getStoriesTimesSpent
+exports.getStoriesTimesSpent = getStoriesTimesSpent;
