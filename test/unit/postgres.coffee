@@ -392,7 +392,15 @@ describe 'postgres', ->
 						@args = []
 					it 'returns calculations for all stories', ->
 
-						expect(do @subject).to.eventually.deep.equal([['1', 2], ['2', 1]])
+						expect(do @subject).to.eventually.deep.equal([['1', 2], ['2', 1], ['3', 0]])
+				context 'when empty stories are specified', ->
+
+					before ->
+
+						@args[0] = ['3']
+					it 'returns 0 for that story', ->
+
+						expect(do @subject).to.eventually.deep.equal([['3', 0]])
 		describe 'times spent', ->
 
 			beforeEach prepareTimesSpent
@@ -417,8 +425,7 @@ describe 'postgres', ->
 
 					it 'returns calculations for all stories', ->
 
-						expect(do @subject).to.eventually.deep.equal([['1', 5], ['2', 1]])
-
+						expect(do @subject).to.eventually.deep.equal([['1', 5], ['2', 1], ['3', 0]])
 				context 'when faulty ids are specified', ->
 
 					before ->
@@ -427,3 +434,11 @@ describe 'postgres', ->
 					it 'throws an error', ->
 
 						expect(do @subject).to.be.rejectedWith(Error)
+				context 'when empty stories are specified', ->
+
+					before ->
+
+						@args[0] = ['3']
+					it 'returns 0 for that story', ->
+
+						expect(do @subject).to.eventually.deep.equal([['3', 0]])

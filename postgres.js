@@ -177,18 +177,21 @@ var getStoriesRemainingTime = function(storyIds, range) {
 var getStoriesTimesSpent = function(storyIds, range) {
 
 	var n = 2;
-	var idClause = (storyIds && storyIds.length > 0) ? 'AND t.story_id in (' + _.map(storyIds, function(id) {
+	var idClause = (storyIds && storyIds.length > 0) ? 'WHERE s._id IN (' + _.map(storyIds, function(id) {
 
 		n += 1;
 		return '$' + n;
 	}) + ')': '';
 
-	var text = ['SELECT t.story_id AS id, SUM(t_s.days) AS calculation FROM tasks AS t',
-		'INNER JOIN times_spent AS t_s ON (t._id=t_s.task_id)',
-		'WHERE t_s.date >= $1 AND t_s.date <= $2',
+	var text = [
+
+		'SELECT s._id AS id, COALESCE(SUM(t_s.days), 0) AS calculation FROM stories AS s',
+		'LEFT OUTER JOIN tasks AS t ON (s._id=t.story_id)',
+		'LEFT OUTER JOIN times_spent AS t_s ON (t._id=t_s.task_id AND t_s.date >= $1 AND t_s.date <= $2)',
 		idClause,
-		'GROUP BY t.story_id',
-		'ORDER BY t.story_id'].join(' ');
+		'GROUP BY s._id',
+		'ORDER BY s._id'
+	].join(' ');
 
 	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
 	var confirm = u.partial(_confirmCalculation, storyIds, 'Could not calculate spent times for the specified story ids');
@@ -199,15 +202,18 @@ var getStoriesTimesSpent = function(storyIds, range) {
 var getStoriesTaskCount = function(storyIds) {
 
 	var n = 0;
-	var idClause = (storyIds && storyIds.length) ? 'WHERE story_id in (' + _.map(storyIds, function(id) {
+	var idClause = (storyIds && storyIds.length) ? 'WHERE s._id in (' + _.map(storyIds, function(id) {
 
 		n += 1;
 		return '$' + n;
 	}) + ')' : '';
-	var text = ['SELECT story_id AS id, COUNT(story_id) AS calculation FROM tasks',
+	var text = [
+		'SELECT s._id AS id, COUNT(t._id) AS calculation FROM stories AS s',
+		'LEFT OUTER JOIN tasks AS t ON (s._id=t.story_id)',
 		idClause,
-		'GROUP BY story_id',
-		'ORDER BY story_id'].join(' ');
+		'GROUP BY s._id',
+		'ORDER BY s._id'
+	].join(' ');
 
 	var query = u.partial(_query, {text: text, values: storyIds || []});
 	var confirm = u.partial(_confirmCalculation, storyIds, 'Could not calculate task count for the specified story ids');
