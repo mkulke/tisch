@@ -133,6 +133,6 @@ module.exports = function(grunt) {
   grunt.registerTask('functional_sprint', ['shell:create_db_objects', 'ghost:sprint', 'shell:cleanup_db_objects']);
   grunt.registerTask('functional_rt', ['shell:create_db_objects', 'ghost:rt', 'shell:cleanup_db_objects']);
   grunt.registerTask('functional', ['env:test', 'server', 'functional_task', 'functional_story', 'functional_sprint', 'functional_rt']);
-  grunt.registerTask('test', ['jshint', 'coffee', 'mocha_phantomjs', 'functional']);
   grunt.registerTask('pg', ['env:test', 'mochaTest:pg']);
+  grunt.registerTask('test', ['jshint', 'coffee', 'pg', 'mocha_phantomjs', 'functional']);
 };
