@@ -169,19 +169,41 @@ var _processCalculation = function(result) {
 	});
 };
 
-var getStoriesRemainingTime = function(storyIds, range) {
+var _buildIdClause = function(ids, n) {
 
-	var text = "SELECT t.story_id, SUM(c.days) FROM tasks AS t INNER JOIN (SELECT task_id, days FROM (SELECT days, task_id, date, MAX(date) OVER (PARTITION BY task_id) AS max_date FROM remaining_times) AS r_t WHERE date=max_date) AS c ON (t._id=c.task_id) GROUP BY t.story_id";
-};
-
-var getStoriesTimesSpent = function(storyIds, range) {
-
-	var n = 2;
-	var idClause = (storyIds && storyIds.length > 0) ? 'WHERE s._id IN (' + _.map(storyIds, function(id) {
+	return (ids && ids.length > 0) ? 'WHERE s._id IN (' + _.map(ids, function(id) {
 
 		n += 1;
 		return '$' + n;
 	}) + ')': '';
+};
+
+var getStoriesRemainingTime = function(storyIds, range) {
+
+	var idClause = _buildIdClause(storyIds, 2);
+
+	var text = [
+
+		'SELECT s._id AS id, COALESCE(SUM(c.days), s.estimation) AS calculation FROM stories AS s',
+		'LEFT OUTER JOIN tasks AS t ON (t.story_id=s._id)',
+		'LEFT OUTER JOIN (SELECT task_id, days FROM',
+		'(SELECT days, task_id, date, MAX(date) OVER (PARTITION BY task_id) AS max_date FROM remaining_times',
+		'WHERE date >= $1 AND date <= $2) AS r_t WHERE date=max_date)',
+		'AS c ON (t._id=c.task_id)',
+		idClause,
+		'GROUP BY s._id',
+		'ORDER BY s._id'
+	].join(' ');
+
+	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
+	var confirm = u.partial(_confirmCalculation, storyIds, 'Could not calculate remaining times for the specified story ids');
+
+	return _connect().spread(query).then(confirm).then(_processCalculation);
+};
+
+var getStoriesTimeSpent = function(storyIds, range) {
+
+	var idClause = _buildIdClause(storyIds, 2);
 
 	var text = [
 
@@ -201,12 +223,8 @@ var getStoriesTimesSpent = function(storyIds, range) {
 
 var getStoriesTaskCount = function(storyIds) {
 
-	var n = 0;
-	var idClause = (storyIds && storyIds.length) ? 'WHERE s._id in (' + _.map(storyIds, function(id) {
+	var idClause = _buildIdClause(storyIds, 0);
 
-		n += 1;
-		return '$' + n;
-	}) + ')' : '';
 	var text = [
 		'SELECT s._id AS id, COUNT(t._id) AS calculation FROM stories AS s',
 		'LEFT OUTER JOIN tasks AS t ON (s._id=t.story_id)',
@@ -239,5 +257,5 @@ exports.findTasks = u.partial(_find, 'tasks');
 exports.findSingleTask = u.partial(_findOne, 'tasks');
 exports.updateSprint = u.partial(_update, 'sprints');
 exports.getStoriesRemainingTime = getStoriesRemainingTime;
-exports.getStoriesTimesSpent = getStoriesTimesSpent;
+exports.getStoriesTimeSpent = getStoriesTimeSpent;
 exports.getStoriesTaskCount = getStoriesTaskCount;

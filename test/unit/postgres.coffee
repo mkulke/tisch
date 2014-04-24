@@ -89,6 +89,22 @@ prepareTimesSpent = (next) ->
 
 	prepareTasks u.partial(issueQuery, queryString, next)
 
+prepareRemainingTimes = (next) ->
+
+	queryString = """
+
+		INSERT INTO
+		remaining_times
+		(_id, date, days, task_id)
+		VALUES
+		(1, '2014-01-01', 2, 1),
+		(2, '2014-01-02', 3, 1),
+		(3, '2014-01-03', 10, 2),
+		(4, '2014-01-15', 1, 1)
+	"""
+
+	prepareTasks u.partial(issueQuery, queryString, next)
+
 cleanupSprints = (next) ->
 
 	issueQuery 'DELETE FROM sprints', next
@@ -361,6 +377,46 @@ describe 'postgres', ->
 			do expectItToReturnOneRow
 	describe 'calculation', ->
 
+		describe 'remaining times', ->
+
+			beforeEach prepareRemainingTimes
+			afterEach cleanupSprints
+
+			describe 'getStoriesRemainingTime', ->
+
+				before ->
+
+					@args = [['1', '2'], {start: '2014-01-01', end: '2014-01-14'}]
+					@subject = ->
+
+						postgres.getStoriesRemainingTime @args...
+				it 'returns correct calculations', ->
+
+					expect(do @subject).to.eventually.deep.equal([['1', 3], ['2', 10]])				
+				context 'when faulty ids are specified', ->
+
+					before ->
+
+						@args[0] = ['wrong']
+					it 'throws an error', ->
+
+						expect(do @subject).to.be.rejectedWith(Error)
+				context 'when no ids are specified', ->
+
+					before ->
+
+						@args[0] = null
+					it 'returns calculations for all stories', ->
+
+						expect(do @subject).to.eventually.deep.equal([['1', 3], ['2', 10], ['3', 5]])
+				context 'when empty stories are specified', ->
+
+					before ->
+
+						@args[0] = ['3']
+					it 'returns the estimation for those stories', ->
+
+						expect(do @subject).to.eventually.deep.equal([['3', 5]])
 		describe 'task count', ->
 
 			beforeEach prepareTasks
@@ -406,14 +462,14 @@ describe 'postgres', ->
 			beforeEach prepareTimesSpent
 			afterEach cleanupSprints
 
-			describe 'getStoriesTimesSpent', ->
+			describe 'getStoriesTimeSpent', ->
 
 				before ->
 
 					@args = [['1', '2'], {start: '2014-01-01', end: '2014-01-14'}]
 					@subject = ->
 
-						postgres.getStoriesTimesSpent @args...
+						postgres.getStoriesTimeSpent @args...
 				it 'returns correct calculations', ->
 
 					expect(do @subject).to.eventually.deep.equal([['1', 5], ['2', 1]])
