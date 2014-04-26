@@ -125,7 +125,7 @@ cleanup = (next) ->
 
 		exec 'dropdb test', (err) ->
 
-			console.log("exec error: #{error}") if err
+			console.log("exec error: #{err}") if err
 			next err
 
 describe 'postgres', ->
