@@ -176,7 +176,7 @@ var _buildIdClause = function(ids, n) {
 
 var getStoriesRemainingTime = function(storyIds, range) {
 
-	if (!storyIds || storyIds.length == 0) {
+	if (!storyIds || storyIds.length === 0) {
 
 		return Q.reject(new Error('Need to specifiy at least on story id.'));
 	}
