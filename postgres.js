@@ -2,6 +2,7 @@ var pg = require('pg');
 var config = require('./config/' + (process.env.NODE_ENV || 'development') + '.json');
 var Q = require('q');
 var _ = require('underscore')._;
+var moment = require('moment');
 var u = require('./utils.js');
 
 var connectionString = config.db.postgres.uri + config.db.postgres.name;
@@ -146,11 +147,6 @@ var _update = function(table, id, rev, column, value) {
 	return verify().then(_connect).spread(query).then(confirm).then(process);
 };
 
-var getStoriesRemainingTime = function(storyIds, range) {
-
-	return Q.resolve(['1', 2]);
-};
-
 var _confirmCalculation = function(ids, errorMessage, result) {
 
 	if (ids && result.rowCount != ids.length) {
@@ -180,25 +176,75 @@ var _buildIdClause = function(ids, n) {
 
 var getStoriesRemainingTime = function(storyIds, range) {
 
+	if (!storyIds || storyIds.length == 0) {
+
+		return Q.reject(new Error('Need to specifiy at least on story id.'));
+	}
+
 	var idClause = _buildIdClause(storyIds, 2);
 
+	// The query gets remaining time date/days pairs per story and sums days up per date & story. 
+	// When a task has no remaining time pair yet, a virtual one w/ sprint start and 1 is created.
+	// When a story has no task, the story's estimation value is used.
+  // TODO: make initial remaining time on task configurable.
 	var text = [
 
-		'SELECT s._id AS id, COALESCE(SUM(c.days), s.estimation) AS calculation FROM stories AS s',
-		'LEFT OUTER JOIN tasks AS t ON (t.story_id=s._id)',
-		'LEFT OUTER JOIN (SELECT task_id, days FROM',
-		'(SELECT days, task_id, date, MAX(date) OVER (PARTITION BY task_id) AS max_date FROM remaining_times',
-		'WHERE date >= $1 AND date <= $2) AS r_t WHERE date=max_date)',
-		'AS c ON (t._id=c.task_id)',
+		'SELECT s._id AS story_id, sp._id AS sprint_id, COALESCE(r_t.date, sp.start) AS date, COALESCE(SUM(r_t.days), s.estimation) AS days',
+		'FROM stories AS s', 
+		'INNER JOIN sprints AS sp ON (sp._id = s.sprint_id)',
+		'LEFT OUTER JOIN tasks AS t ON (t.story_id = s._id)',
+		'LEFT OUTER JOIN LATERAL (',
+		'  SELECT t2._id AS task_id, r_t2._id AS rt_id, COALESCE(r_t2.date, sp.start) AS date, COALESCE(r_t2.days, 1) AS days',
+		'  FROM tasks AS t2',
+		'  LEFT OUTER JOIN remaining_times AS r_t2 ON (t2._id = r_t2.task_id)',
+		'  WHERE (r_t2.date >= $1 AND r_t2.date <= $2) OR r_t2.date IS NULL',
+		') AS r_t ON (t._id = r_t.task_id)',
 		idClause,
-		'GROUP BY s._id',
+		'GROUP BY s._id, r_t.date, sp._id, sp.start',
 		'ORDER BY s._id'
 	].join(' ');
 
-	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
-	var confirm = u.partial(_confirmCalculation, storyIds, 'Could not calculate remaining times for the specified story ids');
+	var process = function(rows) { 
 
-	return _connect().spread(query).then(confirm).then(_processCalculation);
+		var buildPair = function(row) {
+
+			return [moment(row.date).format('YYYY-MM-DD'), parseFloat(row.days)];
+		};
+
+		return _.reduce(rows, function(memo, row) {
+
+			var matchingRow = _.find(memo, function(storyRow) {
+
+				return _.first(storyRow) == row.story_id; 
+			});
+
+			if (matchingRow) {
+
+				_.last(matchingRow).push(buildPair(row));
+			}
+			else {
+
+				memo.push([row.story_id, [buildPair(row)]]);
+			}
+			return memo;
+		}, []);
+	};
+
+	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
+	var confirm = function(result) {
+
+		if (_.chain(result.rows).pluck('sprint_id').uniq().value().length > 1) {
+
+			throw new Error('The stories do not belong to a single sprint');
+		} 
+		if (_.chain(result.rows).pluck('story_id').uniq().value().length != storyIds.length) {
+
+			throw new Error('Could not calculate remaining times for the specified story ids');
+		}
+		return result.rows;
+	};
+
+	return _connect().spread(query).then(confirm).then(process);
 };
 
 var getStoriesTimeSpent = function(storyIds, range) {

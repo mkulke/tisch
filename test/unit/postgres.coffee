@@ -68,7 +68,8 @@ prepareTasks = (next) ->
 		VALUES
 		(1, 3, 'Task A', 'red', 3, 1),
 		(2, 6, 'Task B', 'orange', 4, 2),
-		(3, 1, 'Task C', 'purple', 5, 1)
+		(3, 1, 'Task C', 'purple', 5, 1),
+		(4, 1, 'Task D', 'green', 6, 1)
 	"""
 
 	prepareStories u.partial(issueQuery, queryString, next)
@@ -97,10 +98,10 @@ prepareRemainingTimes = (next) ->
 		remaining_times
 		(_id, date, days, task_id)
 		VALUES
-		(1, '2014-01-01', 2, 1),
-		(2, '2014-01-02', 3, 1),
-		(3, '2014-01-03', 10, 2),
-		(4, '2014-01-15', 1, 1)
+		(1, '2013-01-01', 2, 1),
+		(2, '2013-01-02', 3, 1),
+		(3, '2013-01-03', 10, 3),
+		(4, '2013-01-15', 1, 1)
 	"""
 
 	prepareTasks u.partial(issueQuery, queryString, next)
@@ -361,9 +362,9 @@ describe 'postgres', ->
 
 					postgres.findTasks @args...
 
-			expectItToReturnRows n: 3
+			expectItToReturnRows n: 4
 
-			expectItToBeSortable table: 'tasks', column: 'priority', orderedValues: [3, 4, 5]
+			expectItToBeSortable table: 'tasks', column: 'priority', orderedValues: [3, 4, 5, 6]
 
 		describe 'findSingleTask', ->
 
@@ -386,13 +387,22 @@ describe 'postgres', ->
 
 				before ->
 
-					@args = [['1', '2'], {start: '2014-01-01', end: '2014-01-14'}]
+					@args = [['1', '3'], {start: '2013-01-01', end: '2013-01-14'}]
 					@subject = ->
 
 						postgres.getStoriesRemainingTime @args...
 				it 'returns correct calculations', ->
 
-					expect(do @subject).to.eventually.deep.equal([['1', 3], ['2', 10]])				
+					expect(do @subject).to.eventually.deep.equal([
+						['1', [
+							['2013-01-01', 3],
+							['2013-01-02', 3],
+							['2013-01-03', 10]
+						]], 
+						['3', [
+							['2013-01-01', 5]
+						]]
+					])				
 				context 'when faulty ids are specified', ->
 
 					before ->
@@ -406,9 +416,9 @@ describe 'postgres', ->
 					before ->
 
 						@args[0] = null
-					it 'returns calculations for all stories', ->
+					it 'throws an error', ->
 
-						expect(do @subject).to.eventually.deep.equal([['1', 3], ['2', 10], ['3', 5]])
+						expect(do @subject).to.be.rejectedWith(Error)
 				context 'when empty stories are specified', ->
 
 					before ->
@@ -416,7 +426,7 @@ describe 'postgres', ->
 						@args[0] = ['3']
 					it 'returns the estimation for those stories', ->
 
-						expect(do @subject).to.eventually.deep.equal([['3', 5]])
+						expect(do @subject).to.eventually.deep.equal([['3', [['2013-01-01', 5]]]])
 		describe 'task count', ->
 
 			beforeEach prepareTasks
@@ -432,7 +442,7 @@ describe 'postgres', ->
 						postgres.getStoriesTaskCount @args...
 				it 'returns the number of tasks in the specified stories', ->
 
-					expect(do @subject).to.eventually.deep.equal([['1', 2], ['2', 1]])
+					expect(do @subject).to.eventually.deep.equal([['1', 3], ['2', 1]])
 				context 'when faulty ids are specified', ->
 
 					before ->
@@ -448,7 +458,7 @@ describe 'postgres', ->
 						@args = []
 					it 'returns calculations for all stories', ->
 
-						expect(do @subject).to.eventually.deep.equal([['1', 2], ['2', 1], ['3', 0]])
+						expect(do @subject).to.eventually.deep.equal([['1', 3], ['2', 1], ['3', 0]])
 				context 'when empty stories are specified', ->
 
 					before ->
