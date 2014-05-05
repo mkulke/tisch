@@ -395,12 +395,13 @@ describe 'postgres', ->
 
 					expect(do @subject).to.eventually.deep.equal([
 						['1', [
-							['2013-01-01', 3],
+							['2013-01-01', 2],
 							['2013-01-02', 3],
-							['2013-01-03', 10]
+							['2013-01-03', 10],
+							['initial', 1]
 						]], 
 						['3', [
-							['2013-01-01', 5]
+							['initial', 5]
 						]]
 					])				
 				context 'when faulty ids are specified', ->
@@ -426,7 +427,7 @@ describe 'postgres', ->
 						@args[0] = ['3']
 					it 'returns the estimation for those stories', ->
 
-						expect(do @subject).to.eventually.deep.equal([['3', [['2013-01-01', 5]]]])
+						expect(do @subject).to.eventually.deep.equal([['3', [['initial', 5]]]])
 		describe 'task count', ->
 
 			beforeEach prepareTasks

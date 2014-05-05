@@ -10,6 +10,7 @@ var constants = require('./constants.json');
 var Q = require('q');
 var io = require('socket.io');
 var moment = require('moment');
+var colors = require('colors');
 var _ = require('underscore')._;
 var config = require('./config/' + (process.env.NODE_ENV || 'development') + '.json');
 var tischDB = require('./' + (config.db.backend || 'mongo' ) + '.js');
@@ -280,10 +281,12 @@ var sprintViewQuery = function(id) {
   })
   .then(function (result) {
 
+    console.log('remaining_times:' + JSON.stringify(result).magenta);
     remaining_times = result;
     return tischDB.getStoriesTimeSpent(storyIds, range);
   }).then(function (result) {
 
+    console.log('times_spent:' + JSON.stringify(result).magenta);
     times_spent = result;
     return tischDB.getStoriesTaskCount(storyIds);
   })

@@ -189,27 +189,21 @@ var getStoriesRemainingTime = function(storyIds, range) {
   // TODO: make initial remaining time on task configurable.
 	var text = [
 
-		'SELECT s._id AS story_id, sp._id AS sprint_id, COALESCE(r_t.date, sp.start) AS date, COALESCE(SUM(r_t.days), s.estimation) AS days',
+		"SELECT s._id AS story_id, COALESCE(r_t.date, 'initial') AS date, COALESCE(SUM(r_t.days), s.estimation) AS days",
 		'FROM stories AS s', 
-		'INNER JOIN sprints AS sp ON (sp._id = s.sprint_id)',
 		'LEFT OUTER JOIN tasks AS t ON (t.story_id = s._id)',
-		'LEFT OUTER JOIN LATERAL (',
-		'  SELECT t2._id AS task_id, r_t2._id AS rt_id, COALESCE(r_t2.date, sp.start) AS date, COALESCE(r_t2.days, 1) AS days',
+		'LEFT OUTER JOIN (',
+		"  SELECT t2._id AS task_id, r_t2._id AS rt_id, COALESCE(TO_CHAR(r_t2.date, 'YYYY-MM-DD'), 'initial') AS date, COALESCE(r_t2.days, 1) AS days",
 		'  FROM tasks AS t2',
 		'  LEFT OUTER JOIN remaining_times AS r_t2 ON (t2._id = r_t2.task_id)',
 		'  WHERE (r_t2.date >= $1 AND r_t2.date <= $2) OR r_t2.date IS NULL',
 		') AS r_t ON (t._id = r_t.task_id)',
 		idClause,
-		'GROUP BY s._id, r_t.date, sp._id, sp.start',
+		'GROUP BY s._id, r_t.date',
 		'ORDER BY s._id'
 	].join(' ');
 
 	var process = function(rows) { 
-
-		var buildPair = function(row) {
-
-			return [moment(row.date).format('YYYY-MM-DD'), parseFloat(row.days)];
-		};
 
 		return _.reduce(rows, function(memo, row) {
 
@@ -220,11 +214,11 @@ var getStoriesRemainingTime = function(storyIds, range) {
 
 			if (matchingRow) {
 
-				_.last(matchingRow).push(buildPair(row));
+				_.last(matchingRow).push([row.date, parseFloat(row.days)]);
 			}
 			else {
 
-				memo.push([row.story_id, [buildPair(row)]]);
+				memo.push([row.story_id, [[row.date, parseFloat(row.days)]]]);
 			}
 			return memo;
 		}, []);
@@ -233,10 +227,6 @@ var getStoriesRemainingTime = function(storyIds, range) {
 	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
 	var confirm = function(result) {
 
-		if (_.chain(result.rows).pluck('sprint_id').uniq().value().length > 1) {
-
-			throw new Error('The stories do not belong to a single sprint');
-		} 
 		if (_.chain(result.rows).pluck('story_id').uniq().value().length != storyIds.length) {
 
 			throw new Error('Could not calculate remaining times for the specified story ids');
