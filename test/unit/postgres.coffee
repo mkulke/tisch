@@ -417,9 +417,22 @@ describe 'postgres', ->
 					before ->
 
 						@args[0] = null
-					it 'throws an error', ->
+					it 'returns the calculations for all stories', ->
 
-						expect(do @subject).to.be.rejectedWith(Error)
+						expect(do @subject).to.eventually.deep.equal([
+							["1", [
+								["2013-01-01", 2],
+								["2013-01-02", 3],
+								["2013-01-03", 10],
+								["initial", 1]
+							]],
+							["2", [
+								["initial",1]
+							]],
+							["3", [
+								["initial",5]
+							]]
+						])
 				context 'when empty stories are specified', ->
 
 					before ->

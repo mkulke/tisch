@@ -176,11 +176,6 @@ var _buildIdClause = function(ids, n) {
 
 var getStoriesRemainingTime = function(storyIds, range) {
 
-	if (!storyIds || storyIds.length === 0) {
-
-		return Q.reject(new Error('Need to specifiy at least on story id.'));
-	}
-
 	var idClause = _buildIdClause(storyIds, 2);
 
 	// The query gets remaining time date/days pairs per story and sums days up per date & story. 
@@ -227,7 +222,7 @@ var getStoriesRemainingTime = function(storyIds, range) {
 	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
 	var confirm = function(result) {
 
-		if (_.chain(result.rows).pluck('story_id').uniq().value().length != storyIds.length) {
+		if (storyIds && _.chain(result.rows).pluck('story_id').uniq().value().length != storyIds.length) {
 
 			throw new Error('Could not calculate remaining times for the specified story ids');
 		}
