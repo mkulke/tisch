@@ -199,13 +199,9 @@ class SprintViewModel extends ViewModel
     zippedPairs = [[startDate, 0]].concat(zippedPairs) unless _.contains(allDates, startDate) || allDates.length == 0
     _.map zippedPairs, @_toChartData
 
-  _createRemainingTimeChartData: (allCalculations, allEstimations) =>
+  _createRemainingTimeChartData: (allCalculations) =>
 
     toPairs = curry2(at)(1)
-    findEstimation = (id) ->
-
-      pair = _.find(allEstimations, _.compose(partial(equals, id), _.first))
-      _.last(pair) || 0
     toDates = curry2(_.map)(_.first)
 
     valueForDate = (storyCalculations, date) ->
@@ -213,15 +209,16 @@ class SprintViewModel extends ViewModel
       pairs = toPairs storyCalculations
       dates = toDates pairs 
 
-      dateMatcher = (memo, value) ->
+      equalOrOlder = (matchDate) ->
 
-        if value <= date && date != 'initial' then value else memo
-      closestDate = _.reduce(_.rest(dates), dateMatcher, 'initial')
+        matchDate <= date
+ 
+      closestDate = _.chain(dates).filter(equalOrOlder).last().value()
 
       byClosestDate = _.compose partial(equals, closestDate), _.first
       
       calculation = _.find pairs, byClosestDate
-      _.last(calculation) || findEstimation(_.first(storyCalculations))
+      _.last(calculation) || 0
 
     # Extract all unique dates in the calculations
     allDates = @_extractDatesFromCalculations allCalculations
@@ -230,18 +227,6 @@ class SprintViewModel extends ViewModel
 
       sum _.map(allCalculations, curry2(valueForDate)(date))
 
-    # move initial to the front, if necessary
-    startDate = moment(@writable.start()).format('YYYY-MM-DD')
-    if allDates.length > 0
-
-      if allDates[1] != startDate
-
-        allDates[0] = startDate
-      else
-
-        allDates = _.rest allDates
-        allValues[1] += allValues[0]
-        allValues = _.rest allValues
     zippedPairs = _.zip(allDates, allValues)
     _.map zippedPairs, @_toChartData
 

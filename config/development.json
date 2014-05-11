@@ -1,7 +1,7 @@
 {
 	"db": {
 
-		"backend": "mongo",
+		"backend": "postgres",
 		"postgres": {
 
 			"uri": "postgres://localhost/",

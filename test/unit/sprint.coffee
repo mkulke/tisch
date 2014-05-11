@@ -16,42 +16,42 @@ describe 'SprintViewModel._createRemainingTimeChartData', ->
 
     @subject = ->
 
-      @viewModel._createRemainingTimeChartData @calculations, @estimations      
+      @viewModel._createRemainingTimeChartData @calculations      
   context 'when calculations are empty', ->
 
     it 'returns an empty array', ->
 
       @calculations = []
-      @estimations = []
       expect(do @subject).to.deep.equal([])
   context 'when all stories have no values', ->
     it 'returns an empty array', ->
 
       @calculations = ['a', []]
-      @estimations = [['a', 5]]
       expect(do @subject).to.deep.equal([])
   context 'when one story has no values', ->
 
     it 'uses the estimation of the story', ->
 
-      @calculations = [['a', [['initial', 1], ['2013-01-02', 2]]], ['b', []]]
-      @estimations = [['a', 5], ['b', 4]]
-      expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 5}, {date: '2013-01-02', value: 6}])
+      @calculations = [['a', [['2013-01-01', 1], ['2013-01-02', 2]]], ['b', []]]
+      expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 1}, {date: '2013-01-02', value: 2}])
   context 'when several story have values', ->
 
     context 'at the same dates', ->
 
       it 'sums up the values', ->
 
-        @calculations = [['a', [['initial', 1], ['2013-01-02', 2]]], ['b', [['initial', 1], ['2013-01-02', 3]]]]
-        @estimations = [['a', 5], ['b', 4]]
+        @calculations = [['a', [['2013-01-01', 1], ['2013-01-02', 2]]], ['b', [['2013-01-01', 1], ['2013-01-02', 3]]]]
         expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 2}, {date: '2013-01-02', value: 5}])
     context 'at different dates', ->
 
       it 'uses the last available value', ->
 
-        @calculations = [['a', [['initial', 1], ['2013-01-02', 2]]], ['b', [['initial', 1], ['2013-01-03', 3]]]]
-        @estimations = [['a', 5], ['b', 4]]
+        # 1 2 3
+        # 1 2 x
+        # 1 x 3
+        # 2 3 5
+
+        @calculations = [['a', [['2013-01-01', 1], ['2013-01-02', 2]]], ['b', [['2013-01-01', 1], ['2013-01-03', 3]]]]
         expect(do @subject).to.deep.equal([{date: '2013-01-01', value: 2}, {date: '2013-01-02', value: 3}, {date: '2013-01-03', value: 5}])
 
 describe 'SprintViewModel._createTimeSpentChartData', ->

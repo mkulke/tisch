@@ -156,15 +156,6 @@ var _confirmCalculation = function(ids, errorMessage, result) {
 	return result;
 };
 
-var _processCalculation = function(result) {
-
-	rows = result.rows;
-	return _.map(rows, function(row) {
-
-		return [row.id.toString(), parseFloat(row.calculation)];
-	});
-};
-
 var _buildIdClause = function(ids, n) {
 
 	return (ids && ids.length > 0) ? 'WHERE s._id IN (' + _.map(ids, function(id) {
@@ -184,11 +175,11 @@ var getStoriesRemainingTime = function(storyIds, range) {
   // TODO: make initial remaining time on task configurable.
 	var text = [
 
-		"SELECT s._id AS story_id, COALESCE(r_t.date, 'initial') AS date, COALESCE(SUM(r_t.days), s.estimation) AS days",
+		"SELECT s._id AS story_id, COALESCE(r_t.date, $1) AS date, COALESCE(SUM(r_t.days), s.estimation) AS days",
 		'FROM stories AS s', 
 		'LEFT OUTER JOIN tasks AS t ON (t.story_id = s._id)',
 		'LEFT OUTER JOIN (',
-		"  SELECT t2._id AS task_id, r_t2._id AS rt_id, COALESCE(TO_CHAR(r_t2.date, 'YYYY-MM-DD'), 'initial') AS date, COALESCE(r_t2.days, 1) AS days",
+		"  SELECT t2._id AS task_id, r_t2._id AS rt_id, COALESCE(r_t2.date, $1) AS date, COALESCE(r_t2.days, 1) AS days",
 		'  FROM tasks AS t2',
 		'  LEFT OUTER JOIN remaining_times AS r_t2 ON (t2._id = r_t2.task_id)',
 		'  WHERE (r_t2.date >= $1 AND r_t2.date <= $2) OR r_t2.date IS NULL',
@@ -198,38 +189,45 @@ var getStoriesRemainingTime = function(storyIds, range) {
 		'ORDER BY s._id'
 	].join(' ');
 
-	var process = function(rows) { 
-
-		return _.reduce(rows, function(memo, row) {
-
-			var matchingRow = _.find(memo, function(storyRow) {
-
-				return _.first(storyRow) == row.story_id; 
-			});
-
-			if (matchingRow) {
-
-				_.last(matchingRow).push([row.date, parseFloat(row.days)]);
-			}
-			else {
-
-				memo.push([row.story_id, [[row.date, parseFloat(row.days)]]]);
-			}
-			return memo;
-		}, []);
-	};
-
 	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
-	var confirm = function(result) {
+	var confirm = u.partial(_confirmPairs, storyIds);
+
+	return _connect().spread(query).then(confirm).then(_foldToDateDayPairs);
+};
+
+var _confirmPairs = function(storyIds, result) {
 
 		if (storyIds && _.chain(result.rows).pluck('story_id').uniq().value().length != storyIds.length) {
 
-			throw new Error('Could not calculate remaining times for the specified story ids');
+			throw new Error('Could not calculate values for the specified story ids');
 		}
-		return result.rows;
+		return result;
+};
+
+var _foldToDateDayPairs = function(result) {
+
+	var buildPair = function(row) {
+
+		return [row.date ? moment(row.date).format('YYYY-MM-DD') : null, parseFloat(row.days)];
 	};
 
-	return _connect().spread(query).then(confirm).then(process);
+	return _.reduce(result.rows, function(memo, row) {
+
+		var matchingRow = _.find(memo, function(storyRow) {
+
+			return _.first(storyRow) == row.story_id; 
+		});
+
+		if (matchingRow) {
+
+			_.last(matchingRow).push(buildPair(row));
+		}
+		else {
+
+			memo.push([row.story_id, [buildPair(row)]]);
+		}
+		return memo;
+	}, []);
 };
 
 var getStoriesTimeSpent = function(storyIds, range) {
@@ -238,18 +236,32 @@ var getStoriesTimeSpent = function(storyIds, range) {
 
 	var text = [
 
-		'SELECT s._id AS id, COALESCE(SUM(t_s.days), 0) AS calculation FROM stories AS s',
-		'LEFT OUTER JOIN tasks AS t ON (s._id=t.story_id)',
-		'LEFT OUTER JOIN times_spent AS t_s ON (t._id=t_s.task_id AND t_s.date >= $1 AND t_s.date <= $2)',
-		idClause,
-		'GROUP BY s._id',
-		'ORDER BY s._id'
+    "SELECT s._id AS story_id, t_s.date AS date, COALESCE(SUM(t_s.days), 0) AS days",
+    'FROM stories AS s',
+    'LEFT OUTER JOIN tasks AS t ON (s._id=t.story_id)',
+    'LEFT OUTER JOIN times_spent AS t_s ON (t._id=t_s.task_id AND t_s.date >= $1 AND t_s.date <= $2)',
+    idClause,
+    'GROUP BY s._id, t_s.date',
+    'ORDER BY s._id, date'
 	].join(' ');
 
-	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
-	var confirm = u.partial(_confirmCalculation, storyIds, 'Could not calculate spent times for the specified story ids');
+	var handleEmptyValues = function(result) {
 
-	return _connect().spread(query).then(confirm).then(_processCalculation);
+		return _.map(result, function(storyEntry) {
+
+			return [_.first(storyEntry), _.reduce(_.last(storyEntry), function(memo, pair) { 
+
+				if (_.first(pair) !== null) memo.push(pair); return memo; 
+			},
+			[])];
+		});
+	};
+
+	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
+	var confirm = u.partial(_confirmPairs, storyIds);
+	var process = _.compose(handleEmptyValues, _foldToDateDayPairs);
+
+	return _connect().spread(query).then(confirm).then(process);
 };
 
 var getStoriesTaskCount = function(storyIds) {
@@ -265,9 +277,24 @@ var getStoriesTaskCount = function(storyIds) {
 	].join(' ');
 
 	var query = u.partial(_query, {text: text, values: storyIds || []});
-	var confirm = u.partial(_confirmCalculation, storyIds, 'Could not calculate task count for the specified story ids');
+	var confirm = function(result) {
 
-	return _connect().spread(query).then(confirm).then(_processCalculation);
+		if (storyIds && result.rowCount != storyIds.length) {
+
+			throw new Error('Could not calculate task count for the specified story ids');
+		}
+		return result;
+	};
+	var process = function(result) {
+
+		rows = result.rows;
+		return _.map(rows, function(row) {
+
+			return [row.id.toString(), parseFloat(row.calculation)];
+		});
+	};
+
+	return _connect().spread(query).then(confirm).then(process);
 };
 
 var cleanup = function() {

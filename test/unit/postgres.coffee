@@ -395,13 +395,12 @@ describe 'postgres', ->
 
 					expect(do @subject).to.eventually.deep.equal([
 						['1', [
-							['2013-01-01', 2],
+							['2013-01-01', 3],
 							['2013-01-02', 3],
 							['2013-01-03', 10],
-							['initial', 1]
 						]], 
 						['3', [
-							['initial', 5]
+							['2013-01-01', 5]
 						]]
 					])				
 				context 'when faulty ids are specified', ->
@@ -421,16 +420,15 @@ describe 'postgres', ->
 
 						expect(do @subject).to.eventually.deep.equal([
 							["1", [
-								["2013-01-01", 2],
+								["2013-01-01", 3],
 								["2013-01-02", 3],
-								["2013-01-03", 10],
-								["initial", 1]
+								["2013-01-03", 10]
 							]],
 							["2", [
-								["initial",1]
+								["2013-01-01",1]
 							]],
 							["3", [
-								["initial",5]
+								["2013-01-01",5]
 							]]
 						])
 				context 'when empty stories are specified', ->
@@ -440,7 +438,7 @@ describe 'postgres', ->
 						@args[0] = ['3']
 					it 'returns the estimation for those stories', ->
 
-						expect(do @subject).to.eventually.deep.equal([['3', [['initial', 5]]]])
+						expect(do @subject).to.eventually.deep.equal([['3', [['2013-01-01', 5]]]])
 		describe 'task count', ->
 
 			beforeEach prepareTasks
@@ -496,7 +494,15 @@ describe 'postgres', ->
 						postgres.getStoriesTimeSpent @args...
 				it 'returns correct calculations', ->
 
-					expect(do @subject).to.eventually.deep.equal([['1', 5], ['2', 1]])
+					expect(do @subject).to.eventually.deep.equal([
+						['1', [
+							['2014-01-01', 2],
+							['2014-01-02', 3],
+						]], 
+						['2', [
+							['2014-01-03', 1],
+						]]
+					])
 				context 'when no ids are specified', ->
 
 					before ->
@@ -505,7 +511,17 @@ describe 'postgres', ->
 
 					it 'returns calculations for all stories', ->
 
-						expect(do @subject).to.eventually.deep.equal([['1', 5], ['2', 1], ['3', 0]])
+						expect(do @subject).to.eventually.deep.equal([
+							['1', [
+								['2014-01-01', 2],
+								['2014-01-02', 3],
+							]], 
+							['2', [
+								['2014-01-03', 1],
+							]],
+							['3', [
+							]]
+						])
 				context 'when faulty ids are specified', ->
 
 					before ->
@@ -521,4 +537,20 @@ describe 'postgres', ->
 						@args[0] = ['3']
 					it 'returns 0 for that story', ->
 
-						expect(do @subject).to.eventually.deep.equal([['3', 0]])
+						expect(do @subject).to.eventually.deep.equal([['3', []]])
+
+bla = (ms, cb) ->
+
+	console.log "called with #{ms}ms"
+	if (ms > 0)
+	
+		setTimeout -> 
+
+			bla ms - 100, cb
+		, 100
+	else
+
+		do cb
+
+
+

@@ -281,12 +281,10 @@ var sprintViewQuery = function(id) {
   })
   .then(function (result) {
 
-    console.log('remaining_times:' + JSON.stringify(result).magenta);
     remaining_times = result;
     return tischDB.getStoriesTimeSpent(storyIds, range);
   }).then(function (result) {
 
-    console.log('times_spent:' + JSON.stringify(result).magenta);
     times_spent = result;
     return tischDB.getStoriesTaskCount(storyIds);
   })
