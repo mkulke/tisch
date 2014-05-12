@@ -13,15 +13,16 @@ class StoryModel extends Model
 
   buildRemainingTime: (remainingTime, range) ->
 
-    dates = (key for key of remainingTime when range.start <= key <= range.end).sort()
+    withinRange = (date) ->
 
-    if dates.length == 0
+      range.start <= date <= range.end
 
-      remainingTime.initial
+    lastDate = _.chain(remainingTime).keys().filter(withinRange).sort().last().value()
+    if lastDate
+      remainingTime[lastDate]
     else
-
-      latest = dates[dates.length - 1]
-      remainingTime[latest] 
+      # TODO: make this configurable
+      1
 
   _collectIndices: (range, indices, property) =>
 

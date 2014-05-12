@@ -1,97 +1,38 @@
-###describe 'StoryViewModel.openSelectorPopup', ->
+expect = chai.expect
 
-  before ->
-
-    class StubViewModel extends StoryViewModel
-
-      constructor: ->
-
-        @view = {set: ->}
-    @viewModel = new StubViewModel
-    @model = new Model
-    @viewModel.model = @model 
-    sinon.stub @viewModel.view, 'set'
-    sinon.stub @model, 'getSprints', (successCb) -> successCb 'stub'
-
-  after ->
-
-    @model.getSprints.restore()
-    @viewModel.view.set.restore()
-
-  it 'should call StoryModel.getSprints when the popup is a sprint-selector', ->
-
-    @viewModel.openSelectorPopup {}, 'sprint-selector'
-    assert @model.getSprints.called, 'getSprints not called'
-
-  it 'should set view sprints with the returned sprints on a successful reload', ->
-
-    assert @viewModel.view.set.calledWith('sprints', 'stub'), 'view set not called with the correct arguments'
-
-describe 'StoryViewModel.selectPopupItem', ->
-
-  before ->
-
-    class StubViewModel extends StoryViewModel
-
-      constructor: ->
-
-        @view = {set: (->), get: -> 'abc'}
-    @viewModel = new StubViewModel
-    @storyModel = new StoryModel [], {title: 'xyz'}
-    @viewModel.model = @storyModel
-    sinon.stub @viewModel.view, 'set'
-  after ->
-
-    @storyModel.update.restore()
-    @storyModel.getSprint.restore()
-    @viewModel.view.set.restore()
-
-  it 'should call StoryModel.update when the popup is a color selector', ->
-
-    sinon.stub @storyModel, 'update', (key, successCb) -> successCb {rev: 1, value: 'blue'}
-    @viewModel.selectPopupItem {}, {selector_id: 'color-selector', value: 'blue'}
-    assert @storyModel.update.calledWith('color'), 'update not called with the correct arguments'
-
-  it 'should set the view rev and value after a successful request', ->
-
-    assert @viewModel.view.set.calledTwice, 'view is not called twice'    
-
-  it 'should call StoryModel.update and StoryModel.getSprint when the popup is a story selector', ->
-
-    @viewModel.view.set.reset()
-    @storyModel.update.restore()
-    sinon.stub @storyModel, 'update', (key, successCb) -> successCb {rev: 1, value: 'abc'}
-    sinon.stub @storyModel, 'getSprint', (value, successCb) -> successCb 'stub' 
-    @viewModel.selectPopupItem {}, {selector_id: 'sprint-selector', value: 'abc'}
-    assert @storyModel.update.calledWith('sprint_id'), 'update not called with the correct arguments'
-    assert @storyModel.getSprint.calledWith('abc'), 'getSprint not called with the correct arguments'
-
-  it 'should set the view rev, value and story after successful requests', ->
-
-    assert @viewModel.view.set.calledThrice, 'view is not called three times'###
-
-describe 'StoryModel.buildRemainingTime', ->
+describe 'StoryModel#buildRemainingTime', ->
 
   before ->
 
     @model = new StoryModel
-  it 'should return the initial remaining time when there are no date/number pairs', ->
+  context 'when there are no data/number pairs specified', ->
 
-    ret = @model.buildRemainingTime {initial: 9.5}, {} 
-    assert.equal ret, 9.5
-  it 'should return the initial remaining time when none of the date/number pairs is within in the sprint', ->
+    before ->
 
-    remainingTime =
+      @subject = ->
 
-      initial: 10
-      '2010-01-02': 8 
-      '2010-01-04': 7
-      '2010-01-11': 6
+        range = start: '2010-01-05', end: '2010-01-10'
+        @model.buildRemainingTime {}, range
+    it 'returns 1', ->
 
-    range = start: '2010-01-05', end: '2010-01-10'
+      expect(do @subject).to.eq(1)
+  context 'when none of the date/number pairs is within in the sprint', ->
 
-    ret = @model.buildRemainingTime remainingTime, range
-    assert.equal ret, 10
+    before ->
+
+      @subject = ->
+
+        remainingTime =
+
+          '2010-01-02': 8 
+          '2010-01-04': 7
+          '2010-01-11': 6
+        range = start: '2010-01-05', end: '2010-01-10'
+        @model.buildRemainingTime remainingTime, range        
+
+    it 'returns 1', ->
+
+      expect(do @subject).to.eq(1)
   it 'should return the number of the last date within in the sprint', ->
 
     remainingTime =

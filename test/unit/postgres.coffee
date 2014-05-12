@@ -366,6 +366,38 @@ describe 'postgres', ->
 
 			expectItToBeSortable table: 'tasks', column: 'priority', orderedValues: [3, 4, 5, 6]
 
+			context 'when tasks have remaining time values', ->
+
+				beforeEach prepareRemainingTimes
+
+				before ->
+
+					@args = [{'_id': 3}]
+
+				expectItToReturnRows n: 1
+
+				it 'returns objects with remaining time objects', ->
+
+					expect(do @subject).to.eventually.satisfy (rows) ->
+
+						expect(rows[0]).to.have.property('remaining_time').to.deep.equal('2013-01-03': 10)
+
+			context 'when tasks have time spent values', ->
+
+				beforeEach prepareTimesSpent
+
+				before ->
+
+					@args = [{'_id': 2}]
+
+				expectItToReturnRows n: 1
+
+				it 'returns objects with time spent objects', ->
+
+					expect(do @subject).to.eventually.satisfy (rows) ->
+
+						expect(rows[0]).to.have.property('time_spent').to.deep.equal('2014-01-03': 1)
+
 		describe 'findSingleTask', ->
 
 			before ->
@@ -376,6 +408,33 @@ describe 'postgres', ->
 					postgres.findSingleTask @id
 
 			do expectItToReturnOneRow
+
+			context 'when the task has remaining time values', ->
+
+				before ->
+
+					@id = '1'
+
+				beforeEach prepareRemainingTimes
+				it 'returns an object which contains a remaining_time object', ->
+
+					expect(do @subject).to.eventually.have.property('remaining_time').to.deep.equal 
+						'2013-01-01': 2
+						'2013-01-02': 3
+						'2013-01-15': 1
+			context 'when the task has spent time values', ->
+
+				before ->
+
+					@id = '1'
+
+				beforeEach prepareTimesSpent
+				it 'returns an object which contains a time_spent object', ->
+
+					expect(do @subject).to.eventually.have.property('time_spent').to.deep.equal
+						'2014-01-01': 2
+						'2014-01-02': 3
+						'2014-01-15': 1					
 	describe 'calculation', ->
 
 		describe 'remaining times', ->
@@ -538,19 +597,6 @@ describe 'postgres', ->
 					it 'returns 0 for that story', ->
 
 						expect(do @subject).to.eventually.deep.equal([['3', []]])
-
-bla = (ms, cb) ->
-
-	console.log "called with #{ms}ms"
-	if (ms > 0)
-	
-		setTimeout -> 
-
-			bla ms - 100, cb
-		, 100
-	else
-
-		do cb
 
 
 
