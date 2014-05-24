@@ -84,21 +84,46 @@ class StoryModel extends Model
     # for each task, the results are accumulated. Finally, if no 1st sprint day value was 
     # found, it is prepended with the stories estimation. 
 
-    getAndAdd = (index, count, remainingTime) =>
+    closestDate = (date, remainingTime) ->
 
-      count += @getClosestValueByDateIndex remainingTime, index, range.start
+      equalOrOlder = (matchDate) ->
 
-    toD3 = (index) ->
+        range.start <= matchDate <= date
 
-      {date: index, value: _.reduce remainingTimes, partial(getAndAdd, index), 0}
+      _.chain(remainingTime).keys().filter(equalOrOlder).sort().last().value()
 
-    prepend = (data) ->
+    withinRange = (date) ->
 
-      if _.first(data)?.date != range.start
+      range.start <= date <= range.end
 
-        data.unshift {date: range.start, value: estimation}
+    dates = _.chain(remainingTimes)
+      .map(_.keys)
+      .flatten()
+      .unique()
+      .filter(withinRange)
+      .union([range.start])
+      .sort()
+      .value()
+    
+    toD3 = (date) ->
 
-    _.chain(remainingTimes).reduce(partial(@_collectIndices, range), []).map(toD3).tap(prepend).value()
+      value = _.reduce(remainingTimes, (memo, remainingTime) ->
+
+        memo += if _.has(remainingTime, date)
+          remainingTime[date]
+        else
+          # tasks without a defined rt have one. TODO: make configurable
+          closest = closestDate(date, remainingTime)
+          if closest?
+            remainingTime[closest]
+          else
+            1
+      , 0)
+      date: date, value: if remainingTimes.length > 0
+        value
+      else
+        estimation
+    _.map dates, toD3
 
 class StoryViewModel extends ViewModel
 

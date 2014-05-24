@@ -1,2 +1,3 @@
 - On Firefox the chart rendering does not work.
 - When server is down and the description is edited on a task view, there is an exception (besides the error popup).
+- The rt calculation of stories in sprint views is not correct. uses story estimation maybe?

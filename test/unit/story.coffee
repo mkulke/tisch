@@ -95,22 +95,22 @@ describe 'StoryModel.buildRemainingTimeChartData', ->
 
   it 'should return the story\'s estimation, if there are no remaining_time values specified', ->
 
-    remainingTimes = [{initial: 1}] 
+    remainingTimes = [{}] 
     chartData = @model.buildRemainingTimeChartData 1, remainingTimes, @range
     assert.deepEqual chartData, [{date: '2010-01-01', value: 1}]    
   it 'should return the story\'s estimation, if none of the remaining_time values specified are within the sprint range', ->
 
-    remainingTimes = [{initial: 1, '2010-01-09': 1, '2010-01-10': 1.5, '2010-01-10': 0.5}] 
+    remainingTimes = [{'2010-01-09': 1, '2010-01-10': 1.5, '2010-01-10': 0.5}] 
     chartData = @model.buildRemainingTimeChartData 1, remainingTimes, @range
     assert.deepEqual chartData, [{date: '2010-01-01', value: 1}] 
   it 'should return add up remaining_time values from several tasks', ->
 
     remainingTimes = [
 
-      {initial: 1, '2010-01-01': 2, '2010-01-02': 1.5, '2010-01-04': 0.5}
-      {initial: 1, '2010-01-01': 1, '2010-01-02': 0.5, '2010-01-03': 0.25}
+      {'2010-01-01': 2, '2010-01-02': 1.5, '2010-01-04': 0.5}
+      {'2010-01-01': 1, '2010-01-02': 0.5, '2010-01-03': 0.25}
     ]
-    chartData = @model.buildRemainingTimeChartData 1, remainingTimes, @range
+    chartData = @model.buildRemainingTimeChartData(1, remainingTimes, @range)
     assert.deepEqual chartData, [
       {date: '2010-01-01', value: 3}, 
       {date: '2010-01-02', value: 2},
@@ -119,20 +119,19 @@ describe 'StoryModel.buildRemainingTimeChartData', ->
     ]
   it 'should exclude remaining_time values, which are not within sprint range', ->
 
-    remainingTimes = [{initial: 1, '2010-01-02': 0.75, '2010-01-09': 0.25}]
+    remainingTimes = [{'2010-01-02': 0.75, '2010-01-09': 0.25}]
     chartData = @model.buildRemainingTimeChartData 1, remainingTimes, @range
     assert.deepEqual chartData, [{date: '2010-01-01', value: 1}, {date: '2010-01-02', value: 0.75}]
   it 'should sort remaining_time values', ->
 
-    remainingTimes = [{initial: 1, '2010-01-02': 0.5, '2010-01-01': 0.75}]
+    remainingTimes = [{'2010-01-02': 0.5, '2010-01-01': 0.75}]
     chartData = @model.buildRemainingTimeChartData 1, remainingTimes, @range
     assert.deepEqual chartData, [{date: '2010-01-01', value: 0.75}, {date: '2010-01-02', value: 0.5}]
-  it 'should set the 1st sprint date to the story\'s estimation, if not present in remaining_time values', ->
+  it 'should initialize the first sprint date with 1, if not present in remaining_time values', ->
 
-    remainingTimes = [{initial: 1, '2010-01-02': 1.5, '2010-01-03': 0.5}]
+    remainingTimes = [{'2010-01-02': 1.5, '2010-01-03': 0.5}]
     chartData = @model.buildRemainingTimeChartData 2.5, remainingTimes, @range
-    assert.deepEqual chartData, [{date: '2010-01-01', value: 2.5}, {date: '2010-01-02', value: 1.5}, {date: '2010-01-03', value: 0.5}]
-
+    assert.deepEqual chartData, [{date: '2010-01-01', value: 1}, {date: '2010-01-02', value: 1.5}, {date: '2010-01-03', value: 0.5}]
 
 describe 'StoryModel.buildTimeSpentChartData', ->
 
