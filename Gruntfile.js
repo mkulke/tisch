@@ -82,6 +82,7 @@ module.exports = function(grunt) {
     mocha_phantomjs: {
 
       all: ['test/unit/*.html'],
+      task: ['test/unit/task.html'],
       story: ['test/unit/story.html'],
       sprint: ['test/unit/sprint.html']
     },
@@ -128,6 +129,7 @@ module.exports = function(grunt) {
   grunt.registerTask('unit', ['coffee', 'mocha_phantomjs:all']);
   grunt.registerTask('unit_story', ['coffee', 'mocha_phantomjs:story']);
   grunt.registerTask('unit_sprint', ['coffee', 'mocha_phantomjs:sprint']);
+  grunt.registerTask('unit_task', ['coffee', 'mocha_phantomjs:task']);
   grunt.registerTask('functional_task', ['shell:create_db_objects', 'ghost:task', 'shell:cleanup_db_objects']);
   grunt.registerTask('functional_story', ['shell:create_db_objects', 'ghost:story', 'shell:cleanup_db_objects']);
   grunt.registerTask('functional_sprint', ['shell:create_db_objects', 'ghost:sprint', 'shell:cleanup_db_objects']);

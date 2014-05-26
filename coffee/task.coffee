@@ -13,6 +13,12 @@ class TaskModel extends Model
       else if current > inclusiveEnd then inclusiveEnd 
       else current
     dateIndex.format(common.DATE_DB_FORMAT)
+  getClosestValueByDateIndex: (object, index, startIndex) ->
+    
+    isWithinRange = (key) ->
+      index >= key >= startIndex
+    _.mixin toValue: partial(_.result, object)
+    _.chain(object).keys().filter(isWithinRange).sort().last().toValue().value()
   set: (key, value, index) =>
 
     if index? then @[@type][key][index] = value

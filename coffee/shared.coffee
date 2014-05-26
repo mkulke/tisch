@@ -376,24 +376,6 @@ class Model
 
         # TODO: i18n
         errorCb? (if errorThrown == "" then 'Error: Unknown communications problem with server.' else errorThrown)
-
-  getClosestValueByDateIndex: (object, index, startIndex) ->
-
-    if object[index]?
-
-      object[index]
-    else
-
-      sortedKeys = Object.keys(object).sort()
-      filteredKeys = sortedKeys.filter (key) -> 
-
-        index > key >= startIndex
-      if filteredKeys.length > 0 
-
-        object[filteredKeys.pop()]
-      else
-
-        object.initial
   get: (key) => @[@type]?[key]
   set: (key, value) => @[@type]?[value]
   buildSprintRange: (sprintStart, sprintLength) ->
