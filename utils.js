@@ -20,6 +20,20 @@ var curry2 = function (fn) {
   };
 };
 
+var curry3 = function (fn) {
+
+  return function(arg3) {
+
+    return function(arg2) {
+
+      return function(arg1) {
+
+        return fn(arg1, arg2, arg3);
+      };
+    };
+  };
+};
+
 var equals = function(a, b) {
 
   return a === b;
@@ -27,4 +41,5 @@ var equals = function(a, b) {
 
 exports.partial = partial;
 exports.curry2 = curry2;
+exports.curry3 = curry3;
 exports.equals = equals;

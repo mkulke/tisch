@@ -5,6 +5,8 @@ var _ = require('underscore')._;
 var moment = require('moment');
 var u = require('./utils.js');
 
+var curry2 = u.curry2, curry3 = u.curry3;
+
 var connectionString = config.db.postgres.uri + config.db.postgres.name;
 
 var _connect = function() {
@@ -169,47 +171,101 @@ var getStoriesRemainingTime = function(storyIds, range) {
 
 	var idClause = _buildIdClause(storyIds, 2);
 
-	// The query gets remaining time date/days pairs per story and sums days up per date & story. 
+	// The query gets remaining time date/days pairs. 
 	// When a task has no remaining time pair yet, a virtual one w/ sprint start and 1 is created.
 	// When a story has no task, the story's estimation value is used.
   // TODO: make initial remaining time on task configurable.
+
 	var text = [
 
-		"SELECT s._id AS story_id, COALESCE(r_t.date, $1) AS date, COALESCE(SUM(r_t.days), s.estimation) AS days",
-		'FROM stories AS s',
+		'SELECT s._id AS story_id, t._id AS task_id, COALESCE(r_t.date, $1) AS date, COALESCE(r_t.days, s.estimation) AS days',
+		'FROM stories AS s', 
 		'LEFT OUTER JOIN tasks AS t ON (t.story_id = s._id)',
 		'LEFT OUTER JOIN (',
-		"  SELECT t2._id AS task_id, r_t2._id AS rt_id, COALESCE(r_t2.date, $1) AS date, COALESCE(r_t2.days, 1) AS days",
-		'  FROM tasks AS t2',
-		'  LEFT OUTER JOIN remaining_times AS r_t2 ON (t2._id = r_t2.task_id)',
-		'  WHERE (r_t2.date >= $1 AND r_t2.date <= $2) OR r_t2.date IS NULL',
+		'	SELECT t2._id AS task_id, r_t2._id AS rt_id, COALESCE(r_t2.date, $1) AS date, COALESCE(r_t2.days, 1) AS days', 
+		' FROM tasks AS t2',
+		' LEFT OUTER JOIN remaining_times AS r_t2 ON (t2._id = r_t2.task_id)',
+		' WHERE (r_t2.date >= $1 AND r_t2.date <= $2) OR r_t2.date IS NULL',
 		') AS r_t ON (t._id = r_t.task_id)',
 		idClause,
-		'GROUP BY s._id, r_t.date',
-		'ORDER BY s._id'
+		'ORDER BY s._id, t._id'
 	].join(' ');
+
+	var sum = function (result) {
+
+		var rows = result.rows;
+		var hasNoTask = _.compose(_.isNull, curry2(_.result)('task_id'));
+		var partionedRows = _.partition(rows, hasNoTask);
+		var rowsWithTasks = _.last(partionedRows);
+		var rowsWithoutTasks = _.first(partionedRows);
+
+		var summedUpPairs = _.map(rowsWithoutTasks, function (row) {
+			return [row.story_id, [_buildPair(row)]];
+		});
+
+		_.mixin({maxDate: _.compose(_.last, curry2(_.sortBy)('date'))});
+
+		var storyPairs = _.chain(rowsWithTasks).groupBy('story_id').pairs().value();
+		var storiesWithTasks = _.map(storyPairs, function (pair) {
+
+			var storyId = _.first(pair);
+			var taskRows = _.last(pair);
+			_.each(taskRows, function (row) {
+
+				row.date = _dateToString(row.date);
+				row.days = parseFloat(row.days);
+			});
+
+			var dates = _.chain(taskRows).pluck('date').map(_dateToString).union([range.start]).sort().value();
+
+			return [storyId, _.map(dates, function (date) {
+
+				var isNewer = function (row) {
+					return row.date > date;
+				};
+
+				var rowsByTask = _.groupBy(taskRows, 'task_id');
+
+				var days = _.reduce(rowsByTask, function (memo, rows) {
+
+					var maxRow = _.chain(rows).reject(isNewer).maxDate().value();
+					return memo + (maxRow ? maxRow.days : 1); 
+				}, 0);
+
+				return [date, days];
+			})];
+		});
+
+		return _.sortBy(summedUpPairs.concat(storiesWithTasks), _.first);
+	};
 
 	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
 	var confirm = u.partial(_confirmPairs, storyIds);
+	var process = sum;
 
-	return _connect().spread(query).then(confirm).then(_foldToDateDayPairs);
+	return _connect().spread(query).then(confirm).then(process);
 };
 
-var _confirmPairs = function(storyIds, result) {
+var _confirmPairs = function (storyIds, result) {
 
-		if (storyIds && _.chain(result.rows).pluck('story_id').uniq().value().length != storyIds.length) {
+		if (storyIds && _.chain(result.rows).pluck('story_id').uniq().value().length !== storyIds.length) {
 
 			throw new Error('Could not calculate values for the specified story ids');
 		}
 		return result;
 };
 
+var _dateToString = function (date) {
+
+	return moment(date).format('YYYY-MM-DD');
+};
+
+var _buildPair = function(row) {
+
+	return [row.date ? _dateToString(row.date) : null, parseFloat(row.days)];
+};
+
 var _foldToDateDayPairs = function(result) {
-
-	var buildPair = function(row) {
-
-		return [row.date ? moment(row.date).format('YYYY-MM-DD') : null, parseFloat(row.days)];
-	};
 
 	return _.reduce(result.rows, function(memo, row) {
 
@@ -220,11 +276,11 @@ var _foldToDateDayPairs = function(result) {
 
 		if (matchingRow) {
 
-			_.last(matchingRow).push(buildPair(row));
+			_.last(matchingRow).push(_buildPair(row));
 		}
 		else {
 
-			memo.push([row.story_id, [buildPair(row)]]);
+			memo.push([row.story_id, [_buildPair(row)]]);
 		}
 		return memo;
 	}, []);
