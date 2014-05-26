@@ -13,23 +13,6 @@ class TaskModel extends Model
       else if current > inclusiveEnd then inclusiveEnd 
       else current
     dateIndex.format(common.DATE_DB_FORMAT)
-  getClosestValueByDateIndex: (object, index, startIndex) ->
-
-    if object[index]?
-
-      object[index]
-    else
-
-      sortedKeys = Object.keys(object).sort()
-      filteredKeys = sortedKeys.filter (key) -> 
-
-        index > key >= startIndex
-      if filteredKeys.length > 0 
-
-        object[filteredKeys.pop()]
-      else
-
-        object.initial
   set: (key, value, index) =>
 
     if index? then @[@type][key][index] = value
@@ -145,7 +128,6 @@ class TaskViewModel extends ViewModel
       {name: 'description', throttled: true}
       {name: 'color'}
       {name: 'story_id'}
-      {name: 'initial_estimation', throttled: true, time: true}
       {name: 'remaining_time'}
       {name: 'time_spent'}
     ], (object, property) ->

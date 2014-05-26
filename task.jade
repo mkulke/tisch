@@ -34,13 +34,6 @@ html
 								div(data-bind="click: $parent.selectStory, text: label").line
 					.attribute
 						span.label
-							=messages.en.INITIAL_ESTIMATION+':'
-						input(data-bind="value: writable.initial_estimation, valueUpdate: ['afterkeydown','propertychange','input']", name="initial_estimation", autocomplete="off")
-						span(data-bind="visible: writable.initial_estimation.hasError").error-popup
-							.content.error
-								=messages.en.VALID_TIME_MESSAGE
-					.attribute
-						span.label
 							=messages.en.REMAINING_TIME
 						span#remaining_time-index.popup-selector.date-selector
 							|(
