@@ -206,7 +206,7 @@ var getStoriesRemainingTime = function(storyIds, range) {
 		_.mixin({maxDate: _.compose(_.last, curry2(_.sortBy)('date'))});
 
 		var storyPairs = _.chain(rowsWithTasks).groupBy('story_id').pairs().value();
-		var storiesWithTasks = _.map(storyPairs, function (pair) {
+		summedUpPairs = summedUpPairs.concat(_.map(storyPairs, function (pair) {
 
 			var storyId = _.first(pair);
 			var taskRows = _.last(pair);
@@ -229,14 +229,15 @@ var getStoriesRemainingTime = function(storyIds, range) {
 				var days = _.reduce(rowsByTask, function (memo, rows) {
 
 					var maxRow = _.chain(rows).reject(isNewer).maxDate().value();
+					// TODO: make configurable
 					return memo + (maxRow ? maxRow.days : 1); 
 				}, 0);
 
 				return [date, days];
 			})];
-		});
+		}));
 
-		return _.sortBy(summedUpPairs.concat(storiesWithTasks), _.first);
+		return _.sortBy(summedUpPairs, _.first);
 	};
 
 	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
