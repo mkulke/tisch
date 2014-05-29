@@ -87,7 +87,7 @@ describe 'Model.getStories', ->
     @model.getStories 'y', 'z', ->
     assert.equal @requests.length, 1
     request = @requests[0]
-    assert.equal request.url, '/story'
+    assert.equal request.url, '/stories'
     assert.equal request.method, 'GET'
     assert.equal request.requestHeaders.parent_id, 'y'
     assert.equal request.requestHeaders.sort_by, 'z'

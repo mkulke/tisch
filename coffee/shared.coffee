@@ -333,10 +333,10 @@ class Model
       success: (data, textStatus, jqXHR) -> 
 
         successCb? data
-      error: (data, textStatus, jqXHR) -> 
+      error: (jqXHR, textStatus, errorThrown) -> 
 
         #TODO: proper errmsg
-        console.log 'error: #{data}'    
+        console.log "error: #{errorThrown}"    
 
   createTask: partial create, 'task'
   createStory: partial create, 'story'
@@ -346,10 +346,9 @@ class Model
   removeSprint: partial remove, 'sprint'
   getTask: partial get, 'task'
   getStory: partial get, 'story'
-  getSprint: partial get, 'sprint'
   #getTasks: partial getMultiple, 'task'
-  getStories: partial getMultiple, 'story'
-  getSprints: partial getMultiple, 'sprint', null
+  getStories: partial(getMultiple, 'stories')
+  getSprints: partial getMultiple, 'sprints', null
 
   update: (object, key, type, successCb, errorCb) =>
 

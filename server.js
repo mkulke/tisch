@@ -363,25 +363,26 @@ var processRequest = function(request, response) {
   var html = ((request.headers.accept !== undefined) && (request.headers.accept.match(/application\/json/) !== null)) ? false : true;
   var respond = html ? u.partial(respondWithHtml, response, type) : u.partial(respondWithJson, response);
 
-  // simple json get requests
-  if ((!html) && (method == 'GET') && (_.contains(['task', 'story', 'sprint'], type))) {
+  // simple json get requests, TODO: refactor, horrible mess :)
+  if ((!html) && (method == 'GET') && (_.contains(['task', 'story', 'stories', 'sprint', 'sprints'], type))) {
 
-    filter = {};
+    filter = null;
     if (request.headers.parent_id) {
 
       if (type == 'task') {
 
-        filter.story_id = ObjectID(request.headers.parent_id);
+        filter = {story_id: request.headers.parent_id};
       }
-      else if (type == 'story') {
+      else if (type == 'stories') {
 
-        filter.sprint_id = ObjectID(request.headers.parent_id);
+        filter = {sprint_id: request.headers.parent_id};
       }
     }
 
-    var sort = {};
+    var sort = null;
     if (request.headers.sort_by) {
 
+      sort = {};
       sort[request.headers.sort_by] = 1;
     }
     
