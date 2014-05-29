@@ -62,6 +62,36 @@ class TaskViewModel extends ViewModel
         write value   
     indexed
 
+  # shared write for indexed properties (remaining_time & time_spent)
+  _writeIndexed: (property, observableObject, observableIndex, valueString) =>
+
+    # we need to manually notify the subsribers, b/c the object itsself does not change
+    object = observableObject()
+    index = observableIndex()
+
+    setValue = (value) =>
+
+      if value?
+      
+        @model.task[property][index] = value
+        object[index] = value
+      else
+
+        delete @model.task[property][index]
+        delete object[index]
+      observableObject.notifySubscribers object
+
+    oldValue = object[index]
+    value = parseFloat valueString, 10
+    if oldValue != value
+
+      setValue value
+      @model.update @model.task, property, 'task', null, (message) =>
+
+        setValue oldValue
+        @modal 'error-dialog'
+        @errorMessage message
+
   # TODO: as mixin plz
   showColorSelector: =>
 
@@ -193,27 +223,6 @@ class TaskViewModel extends ViewModel
           newIndex = @model.getDateIndex @sprint.start(), @sprint.length()
           indexObservable newIndex
 
-    # shared write for indexed properties (remaining_time & time_spent)
-    writeIndexed = (property, observableObject, observableIndex, valueString) =>
-
-      # we need to manually notify the subsribers, b/c the object itsself does not change
-      object = observableObject()
-      index = observableIndex()
-      oldValue = object[index]
-      value = parseFloat valueString, 10
-      if oldValue != value
-
-        @model.task[property][index] = value      
-        object[index] = value
-        observableObject.notifySubscribers(object)
-        @model.update @model.task, property, 'task', null, (message) =>
-
-          @model.task[property][index] = oldValue
-          object[index] = oldValue
-          observableObject.notifySubscribers(object)
-          @modal 'error-dialog'
-          @errorMessage message
-
     formatDateIndex = (dateIndex) -> 
 
       moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
@@ -230,7 +239,7 @@ class TaskViewModel extends ViewModel
     readRemainingTime = =>
 
       @model.getClosestValueByDateIndex @writable.remaining_time(), @remainingTimeIndex(), @sprint.computed.range().start
-    @indexedRemainingTime = @_createIndexedComputed readRemainingTime, partial(writeIndexed, 'remaining_time', @writable.remaining_time, @remainingTimeIndex), @
+    @indexedRemainingTime = @_createIndexedComputed readRemainingTime, partial(@_writeIndexed, 'remaining_time', @writable.remaining_time, @remainingTimeIndex), @
 
     # time_spent
 
@@ -245,7 +254,7 @@ class TaskViewModel extends ViewModel
 
       value = @writable.time_spent()[@timeSpentIndex()]
       if value? then value else 0
-    @indexedTimeSpent = @_createIndexedComputed readTimeSpent, partial(writeIndexed, 'time_spent', @writable.time_spent, @timeSpentIndex), @
+    @indexedTimeSpent = @_createIndexedComputed readTimeSpent, partial(@_writeIndexed, 'time_spent', @writable.time_spent, @timeSpentIndex), @
 
     # markdown
 
