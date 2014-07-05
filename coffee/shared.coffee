@@ -375,6 +375,35 @@ class Model
 
         # TODO: i18n
         errorCb? (if errorThrown == "" then 'Error: Unknown communications problem with server.' else errorThrown)
+  persist: (object, options = {}) =>
+
+    key = options.key
+    type = options.type
+    data = {key: key, value: object[key]}
+    data.index = index if index?
+
+    getRev = ->
+
+      object._rev
+
+    $.ajaxq 'client', 
+
+      url: "/#{type}/#{object._id}"
+      type: 'POST'
+      headers: {property: key, sessionid: @sessionid}
+      contentType: 'application/json'
+      dataType: 'json'
+      data: JSON.stringify(data)
+      beforeSend: (jqXHR, settings) ->
+
+        jqXHR.setRequestHeader 'rev', getRev()
+      success: (data, textStatus, jqXHR) ->
+
+        object._rev = data.rev
+        options.successCb? data
+      error: (jqXHR, textStatus, errorThrown) ->
+
+        options.errorCb? errorThrown
   get: (key) => @[@type]?[key]
   set: (key, value) => @[@type]?[value]
   buildSprintRange: (sprintStart, sprintLength) ->

@@ -86,7 +86,8 @@ class TaskViewModel extends ViewModel
     if oldValue != value
 
       setValue value
-      @model.update @model.task, property, 'task', null, (message) =>
+      @model.persist @model.task, property: property, type: 'task', index: index, onError: (message) =>
+      #@model.update @model.task, property, 'task', null, (message) =>
 
         setValue oldValue
         @modal 'error-dialog'

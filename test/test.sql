@@ -39,6 +39,31 @@ RETURN NEW;
 END;
 $$;
 
+--
+-- Name: upsert_rt(key date, data integer, tid integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION upsert_rt(key date, data integer, t_id integer, t_rev integer) RETURNS VOID 
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    PERFORM * FROM tasks WHERE _id = t_id AND _rev = t_rev;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'task with id % and rev % not found', t_id, t_rev;
+    END IF;
+    LOOP
+        UPDATE remaining_times SET days = data WHERE date = key AND task_id = t_id;
+        IF found THEN
+            RETURN;
+        END IF;
+        BEGIN
+            INSERT INTO remaining_times(date, days, task_id) VALUES (key, data, t_id);
+            RETURN;
+        EXCEPTION WHEN unique_violation THEN
+        END;
+    END LOOP;
+END;
+$$;
 
 SET default_tablespace = '';
 

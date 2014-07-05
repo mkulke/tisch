@@ -398,7 +398,20 @@ var processRequest = function(request, response) {
 
     rev = extractRev(request.headers);
 
-    query = (request.body.key == 'story_id') ? u.partial(tischDB.updateTaskAssignment, id, request.body.value, rev) : u.partial(tischDB.updateTask, id, rev, request.body.key, request.body.value);
+    if (request.body.key == 'remaining_time') {
+
+      query = u.partial(tischDB.upsert )
+    }
+    else (request.body.key == 'story_id')  {
+
+      throw new Error("not implemented yet");
+      //Need to change priority
+      //query = (request.body.key == 'story_id') ? u.partial(tischDB.updateTaskAssignment, id, request.body.value, rev) : u.partial(tischDB.updateTask, id, rev, request.body.key, request.body.value);
+    }
+    else {
+
+      query = u.partial(tischDB.updateTask, id, rev, request.body.key, request.body.value);  
+    }
     answer = u.partial(postAnswer, request.body.key, 'story_id', u.partial(respondWithJson, response));
   }
   else if ((type == 'task') && (request.method == 'PUT')) {

@@ -21,6 +21,19 @@ query = (queryString, cb) ->
 			do done
 			cb err, result
 
+countRows = (table) ->
+
+	deferred = Q.defer()
+	query "SELECT count(*) FROM #{table}", (err, result) ->
+		
+		if err || result.rowCount != 1
+
+			deferred.reject 'error while counting'
+		else 
+			deferred.resolve parseInt(result.rows[0].count, 10)
+		
+	deferred.promise
+		
 issueQuery = (queryString, next) ->
 
 	query queryString, (err) ->
@@ -196,7 +209,7 @@ describe 'postgres', ->
 	before prepare
 	after cleanup
 
-	describe 'sprint', ->
+	describe 'sprint functions', ->
 
 		beforeEach prepareSprints
 		afterEach cleanupSprints
@@ -310,7 +323,7 @@ describe 'postgres', ->
 					postgres.findSingleSprint @id
 
 			do expectItToReturnOneRow
-	describe 'story', ->
+	describe 'story functions', ->
 
 		beforeEach prepareStories
 		afterEach cleanupSprints
@@ -348,7 +361,7 @@ describe 'postgres', ->
 					postgres.findSingleSprint @id
 
 			do expectItToReturnOneRow
-	describe 'task', ->
+	describe 'task functions', ->
 
 		beforeEach prepareTasks
 		afterEach cleanupSprints
@@ -434,8 +447,47 @@ describe 'postgres', ->
 					expect(do @subject).to.eventually.have.property('time_spent').to.deep.equal
 						'2014-01-01': 2
 						'2014-01-02': 3
-						'2014-01-15': 1					
-	describe 'calculation', ->
+						'2014-01-15': 1
+		describe 'updateTask',  ->
+
+			context 'when updating color', ->
+
+				before ->
+
+					@subject = ->
+
+						postgres.updateTask 4, 1, 'color', 'blue'
+
+				it 'returns the modifed task', ->
+
+					expect(do @subject).to.eventually.satisfy (task) ->
+
+						task['color'] == 'blue'
+
+			context 'when updating remaining_times', ->
+
+				beforeEach prepareRemainingTimes
+
+				context 'and the specified date does not exist for the task yet',	->
+
+					before ->
+
+				 		@subject = ->
+
+				 			postgres.updateTask 4, 1, 'remaining_time', 5, '2014-01-05'
+			 		it 'adds a row to the remaining times rable', ->
+
+			 			expect(@subject().then(_.partial(countRows, 'remaining_times'))).to.eventually.equal 5
+			 	context 'and the task already has an entry for the specified date', ->
+
+					before ->
+
+				 		@subject = ->
+
+				 			postgres.updateTask 4, 1, 'remaining_time', 5, '2014-01-01'
+			 		it 'updates the row in the rt table'
+
+	describe 'calculation functions', ->
 
 		describe 'remaining times', ->
 
@@ -597,6 +649,3 @@ describe 'postgres', ->
 					it 'returns 0 for that story', ->
 
 						expect(do @subject).to.eventually.deep.equal([['3', []]])
-
-
-

@@ -406,6 +406,49 @@ var findSingleTask = function(id) {
 		.then(process);
 };
 
+var updateIndexed = function(id, rev, column, value, index) {
+	
+	var verify = function() {
+		return Q.fcall(function() {
+
+		if (!_.contains(['remaining_time'], column)) {
+
+			throw new Error('querying column ' + column + ' is not allowed on table');
+		}
+		});
+	};
+	var query = u.partial(_query, {text: "SELECT upsert_rt($1, $2, $3, $4)", values: [index, value, id, rev]});
+	//var query = u.partial(_query, "SELECT upsert_rt('" + index + "'::date, " + [value, id, rev].join(', ') + ")");
+	var confirm = function(result) {
+
+		var count = result.rowCount;
+		if (count !== 1) {
+
+			throw new Error([count, 'entries have been updated'].join(' '));
+		}
+		return result;
+	};
+	var process = _.compose(_.first, _getRows);
+
+	return verify()
+		.then(_connect)
+		.spread(query)
+		.then(confirm)
+		.then(process);
+};
+
+var updateTask = function(id, rev, column, value, index) {
+
+	var argumentsWithoutIndex;
+
+	if (_.contains(['remaining_time'], column)) {
+		return updateIndexed.apply(this, arguments);
+	} else {
+		argumentsWithoutIndex = ['tasks'].concat(Array.prototype.slice.call(arguments, 0, 5));
+		return _update.apply(this, argumentsWithoutIndex);
+	}
+};
+
 var findTasks = function(filter, sort) {
 
 	var table = 'tasks';
@@ -484,7 +527,7 @@ exports.find = _find;
 exports.findSingleTask = findSingleTask;
 exports.updateSprint = u.partial(_update, 'sprints');
 exports.updateStory = u.partial(_update, 'stories');
-exports.updateTask = u.partial(_update, 'tasks');
+exports.updateTask = updateTask;
 exports.getStoriesRemainingTime = getStoriesRemainingTime;
 exports.getStoriesTimeSpent = getStoriesTimeSpent;
 exports.getStoriesTaskCount = getStoriesTaskCount;
