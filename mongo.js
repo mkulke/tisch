@@ -13,7 +13,7 @@ function partial(fn) {
 
   var aps = Array.prototype.slice;
   var args = aps.call(arguments, 1);
-  
+
   return function() {
 
     return fn.apply(this, args.concat(aps.call(arguments)));
@@ -74,7 +74,7 @@ _processMapReduceRow = function(row) {
 var getTimeSpent = function(type, parentType, parentIds, range) {
 
   var mapFn, reduceFn, deferred, objectIds;
-  
+
   deferred = Q.defer();
   objectIds = parentIds.map(ObjectID);
 
@@ -282,7 +282,7 @@ var getMaxPriority = function(type, parentType, parentId) {
 
       var priority = 1;
       if (result.length == 1) {
-      
+
         priority = Math.ceil(result[0].max_priority + 1);
       }
 
@@ -425,7 +425,7 @@ var remove = function(type, filter, failOnNoDeletion) {
       deferred.reject(new Error(messages.en.ERROR_REMOVE));
     }
     else {
-    
+
       deferred.resolve(result);
     }
   });
@@ -475,7 +475,7 @@ var find = function(type, filter, sort) {
 
       deferred.reject(new Error(err));
     } else {
-    
+
       deferred.resolve(result);
     }
   });
@@ -486,16 +486,16 @@ var findOne = function(type, id) {
 
   var deferred = Q.defer();
   db().collection(type).findOne({_id: ObjectID(id)}, function(err, result) {
-  
+
     if (err) {
-    
+
       deferred.reject(new Error(err));
     }
     else if (!result) {
 
       deferred.reject(new Error("Query returned no result."));
     } else {
-    
+
       deferred.resolve(result);
     }
   });
@@ -507,7 +507,7 @@ var findAndModify = function(type, id, rev, key, value) {
   var deferred = Q.defer();
 
   var data = {
-  
+
     $set: {},
     $inc: {_rev: 1}
   };
@@ -516,7 +516,7 @@ var findAndModify = function(type, id, rev, key, value) {
   db().collection(type).findAndModify({_id: ObjectID(id), _rev: rev}, [], data, {new: true}, function(err, result) {
 
     if (err) {
-      
+
       deferred.reject(new Error(err));
     }
     else if (!result) {
@@ -534,7 +534,7 @@ var findAndModify = function(type, id, rev, key, value) {
 var cleanup = function() {
 
 	try {
-	
+
 		db().close();
 	}
 	catch (exception) {}

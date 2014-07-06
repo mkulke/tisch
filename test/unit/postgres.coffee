@@ -25,15 +25,15 @@ countRows = (table) ->
 
 	deferred = Q.defer()
 	query "SELECT count(*) FROM #{table}", (err, result) ->
-		
+
 		if err || result.rowCount != 1
 
 			deferred.reject 'error while counting'
-		else 
+		else
 			deferred.resolve parseInt(result.rows[0].count, 10)
-		
+
 	deferred.promise
-		
+
 issueQuery = (queryString, next) ->
 
 	query queryString, (err) ->
@@ -45,8 +45,8 @@ prepareSprints = (next) ->
 
 	queryString = """
 
-		INSERT INTO 
-		sprints 
+		INSERT INTO
+		sprints
 		(_id, _rev, title, description, color, start, length)
 		VALUES
 		(1, 3, 'Sprint A', 'bla', 'red', '2013-01-01', 14),
@@ -60,8 +60,8 @@ prepareStories = (next) ->
 
 	queryString = """
 
-		INSERT INTO 
-		stories 
+		INSERT INTO
+		stories
 		(_id, _rev, title, color, estimation, priority, sprint_id)
 		VALUES
 		(1, 3, 'Story A', 'yellow', 5, 3, 1),
@@ -75,8 +75,8 @@ prepareTasks = (next) ->
 
 	queryString = """
 
-		INSERT INTO 
-		tasks 
+		INSERT INTO
+		tasks
 		(_id, _rev, summary, color, priority, story_id)
 		VALUES
 		(1, 3, 'Task A', 'red', 3, 1),
@@ -161,7 +161,7 @@ describe 'postgres', ->
 
 				it 'throws an error', ->
 
-					expect(do @subject).to.be.rejectedWith(Error)	
+					expect(do @subject).to.be.rejectedWith(Error)
 
 			context 'which is ascending', ->
 
@@ -228,7 +228,7 @@ describe 'postgres', ->
 			expectItToBeSortable table: 'sprints', column: 'color', orderedValues: ['green', 'orange', 'red']
 
 			context 'when a filtering parameter is specified', ->
-			
+
 				before ->
 
 					@args = [{color: 'orange'}]
@@ -276,7 +276,7 @@ describe 'postgres', ->
 					postgres.updateSprint @id, @rev, @column, @value
 			context 'when all parameters are supplied', ->
 
-				before -> 
+				before ->
 
 					@args = [@id, @rev, @column, @value]
 				it 'returns the modifed sprint', ->
@@ -287,7 +287,7 @@ describe 'postgres', ->
 				it 'modifies the sprint in the db', ->
 
 					expect(@subject().then(=> Q.nfcall(query, "SELECT * FROM sprints WHERE _id=#{@id}"))).to.eventually.satisfy (result) =>
-						
+
 					 	result.rows[0][@column] == @value
 			context 'when an illegal column is specified', ->
 
@@ -295,10 +295,10 @@ describe 'postgres', ->
 
 					@column = 'wrong'
 				it 'throws an error', ->
-			
+
 					expect(do @subject).to.be.rejectedWith(Error)
 			context 'when the wrong revision is specified', ->
-		
+
 				before ->
 
 					@rev = @rev + 1
@@ -431,7 +431,7 @@ describe 'postgres', ->
 				beforeEach prepareRemainingTimes
 				it 'returns an object which contains a remaining_time object', ->
 
-					expect(do @subject).to.eventually.have.property('remaining_time').to.deep.equal 
+					expect(do @subject).to.eventually.have.property('remaining_time').to.deep.equal
 						'2013-01-01': 2
 						'2013-01-02': 3
 						'2013-01-15': 1
@@ -509,11 +509,11 @@ describe 'postgres', ->
 							['2013-01-01', 4],
 							['2013-01-02', 5],
 							['2013-01-03', 14],
-						]], 
+						]],
 						['3', [
 							['2013-01-01', 5]
 						]]
-					])				
+					])
 				context 'when faulty ids are specified', ->
 
 					before ->
@@ -609,7 +609,7 @@ describe 'postgres', ->
 						['1', [
 							['2014-01-01', 2],
 							['2014-01-02', 3],
-						]], 
+						]],
 						['2', [
 							['2014-01-03', 1],
 						]]
@@ -626,7 +626,7 @@ describe 'postgres', ->
 							['1', [
 								['2014-01-01', 2],
 								['2014-01-02', 3],
-							]], 
+							]],
 							['2', [
 								['2014-01-03', 1],
 							]],

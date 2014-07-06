@@ -171,7 +171,7 @@ var getStoriesRemainingTime = function(storyIds, range) {
 
 	var idClause = _buildIdClause(storyIds, 2);
 
-	// The query gets remaining time date/days pairs. 
+	// The query gets remaining time date/days pairs.
 	// When a task has no remaining time pair yet, a virtual one w/ sprint start and 1 is created.
 	// When a story has no task, the story's estimation value is used.
   // TODO: make initial remaining time on task configurable.
@@ -179,10 +179,10 @@ var getStoriesRemainingTime = function(storyIds, range) {
 	var text = [
 
 		'SELECT s._id AS story_id, t._id AS task_id, COALESCE(r_t.date, $1) AS date, COALESCE(r_t.days, s.estimation) AS days',
-		'FROM stories AS s', 
+		'FROM stories AS s',
 		'LEFT OUTER JOIN tasks AS t ON (t.story_id = s._id)',
 		'LEFT OUTER JOIN (',
-		'	SELECT t2._id AS task_id, r_t2._id AS rt_id, COALESCE(r_t2.date, $1) AS date, COALESCE(r_t2.days, 1) AS days', 
+		'	SELECT t2._id AS task_id, r_t2._id AS rt_id, COALESCE(r_t2.date, $1) AS date, COALESCE(r_t2.days, 1) AS days',
 		' FROM tasks AS t2',
 		' LEFT OUTER JOIN remaining_times AS r_t2 ON (t2._id = r_t2.task_id)',
 		' WHERE (r_t2.date >= $1 AND r_t2.date <= $2) OR r_t2.date IS NULL',
@@ -230,7 +230,7 @@ var getStoriesRemainingTime = function(storyIds, range) {
 
 					var maxRow = _.chain(rows).reject(isNewer).maxDate().value();
 					// TODO: make configurable
-					return memo + (maxRow ? maxRow.days : 1); 
+					return memo + (maxRow ? maxRow.days : 1);
 				}, 0);
 
 				return [date, days];
@@ -407,7 +407,7 @@ var findSingleTask = function(id) {
 };
 
 var updateIndexed = function(id, rev, column, value, index) {
-	
+
 	var verify = function() {
 		return Q.fcall(function() {
 
@@ -418,7 +418,6 @@ var updateIndexed = function(id, rev, column, value, index) {
 		});
 	};
 	var query = u.partial(_query, {text: "SELECT upsert_rt($1, $2, $3, $4)", values: [index, value, id, rev]});
-	//var query = u.partial(_query, "SELECT upsert_rt('" + index + "'::date, " + [value, id, rev].join(', ') + ")");
 	var confirm = function(result) {
 
 		var count = result.rowCount;

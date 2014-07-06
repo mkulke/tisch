@@ -129,7 +129,7 @@ function respondWithHtml(response, type, result) {
 
 var respondWithJson = function(response, result) {
 
-  // TODO: robustness      
+  // TODO: robustness
   var headers = {'Content-Type': 'application/json'};
 
   response.writeHead(200, headers);
@@ -269,7 +269,7 @@ var sprintViewQuery = function(id) {
 
     stories = result;
     storyIds = _.chain(stories).pluck('_id').invoke('toString').value();
-    
+
     // TODO: remove literals
     range = {
 
@@ -385,7 +385,7 @@ var processRequest = function(request, response) {
       sort = {};
       sort[request.headers.sort_by] = 1;
     }
-    
+
     query = (id) ? u.partial(tischDB.findOne, type, id) : u.partial(tischDB.find, type, filter, sort);
     answer = u.partial(respondWithJson, response);
   }
@@ -398,11 +398,7 @@ var processRequest = function(request, response) {
 
     rev = extractRev(request.headers);
 
-    if (request.body.key == 'remaining_time') {
-
-      query = u.partial(tischDB.upsert )
-    }
-    else (request.body.key == 'story_id')  {
+    if (request.body.key == 'story_id')  {
 
       throw new Error("not implemented yet");
       //Need to change priority
@@ -410,7 +406,7 @@ var processRequest = function(request, response) {
     }
     else {
 
-      query = u.partial(tischDB.updateTask, id, rev, request.body.key, request.body.value);  
+      query = u.partial(tischDB.updateTask, id, rev, request.body.key, request.body.value, request.body.index);
     }
     answer = u.partial(postAnswer, request.body.key, 'story_id', u.partial(respondWithJson, response));
   }
@@ -423,7 +419,7 @@ var processRequest = function(request, response) {
     answer = u.partial(putAnswer, u.partial(respondWithJson, response));
   }
   else if ((type == 'task') && (request.method == 'DELETE')) {
-      
+
     rev = extractRev(request.headers);
 
     query = u.partial(removeTaskQuery, id, rev);
@@ -504,7 +500,7 @@ var processRequest = function(request, response) {
     answer = u.partial(putAnswer, u.partial(respondWithJson, response));
   }
   else if ((type == 'sprint') && (request.method == 'DELETE')) {
-  
+
     rev = extractRev(request.headers);
 
     query = function() {
@@ -527,7 +523,7 @@ var processRequest = function(request, response) {
           return {deleted: object, parent_id: object.sprint_id};
         }));
 
-        // remove all the stories' tasks 
+        // remove all the stories' tasks
         return Q.all(_.map(result, function(story) {
 
           return tischDB.findAndRemoveTasks({story_id: story._id})
@@ -607,7 +603,7 @@ app.start = function() {
 
     var port = (process.env.NODE_ENV == 'test') ? 8001 : 8000;
     var server = http.createServer(app).listen(port, function() {
-    
+
       console.log('Server listening on port ' + port);
       tischRT.listen(server);
     });
