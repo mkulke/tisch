@@ -100,7 +100,7 @@ module.exports = function(grunt) {
 
         command: 'mongo test test/functional/cleanup_db_objects.js',
         options: {
-          
+
           failOnError: true
         }
       },
@@ -121,7 +121,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-env');
 
   grunt.registerTask('server', function() {
-  
+
     grunt.log.writeln('Starting tisch server.');
     require('./server.js').start();
   });
