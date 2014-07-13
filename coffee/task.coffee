@@ -7,18 +7,19 @@ class TaskModel extends Model
     current = new moment()
     start = new moment sprintStart
     inclusiveEnd = start.clone().add('days', sprintLength - 1)
-    dateIndex = 
+    dateIndex =
 
       if current < start then start
-      else if current > inclusiveEnd then inclusiveEnd 
+      else if current > inclusiveEnd then inclusiveEnd
       else current
     dateIndex.format(common.DATE_DB_FORMAT)
-  getClosestValueByDateIndex: (object, index, startIndex) ->
-    
+  getClosestValueByDateIndex: (object, start, end) ->
+
+    # TODO: make default configurable
     isWithinRange = (key) ->
-      index >= key >= startIndex
+      end >= key >= start
     _.mixin toValue: partial(_.result, object)
-    _.chain(object).keys().filter(isWithinRange).sort().last().toValue().value()
+    _.chain(object).keys().filter(isWithinRange).sort().last().toValue().value() || 1
   set: (key, value, index) =>
 
     if index? then @[@type][key][index] = value
@@ -43,9 +44,9 @@ class TaskViewModel extends ViewModel
     # Create a throttled observable and a writable computed. In the write fn there is a immediate
     # regex validation, the hasError observable property is set accordingly. Then the throttled
     # observable is updated, which triggers a subscribe fn to be called. In that fn the actual
-    # write fn is called when the hasError observable property is false. 
+    # write fn is called when the hasError observable property is false.
 
-    throttled = ko.observable().extend({throttle: common.KEYUP_UPDATE_DELAY})   
+    throttled = ko.observable().extend({throttle: common.KEYUP_UPDATE_DELAY})
     indexed = ko.computed
 
       read: read
@@ -59,7 +60,7 @@ class TaskViewModel extends ViewModel
 
       if !indexed.hasError()
 
-        write value   
+        write value
     indexed
 
   # shared write for indexed properties (remaining_time & time_spent)
@@ -72,7 +73,7 @@ class TaskViewModel extends ViewModel
     setValue = (value) =>
 
       if value?
-      
+
         @model.task[property][index] = value
         object[index] = value
       else
@@ -84,11 +85,8 @@ class TaskViewModel extends ViewModel
     oldValue = object[index]
     value = parseFloat valueString, 10
     if oldValue != value
-
       setValue value
       @model.persist @model.task, property: property, type: 'task', index: index, onError: (message) =>
-      #@model.update @model.task, property, 'task', null, (message) =>
-
         setValue oldValue
         @modal 'error-dialog'
         @errorMessage message
@@ -102,7 +100,7 @@ class TaskViewModel extends ViewModel
     @modal null
     @writable.color color
 
-  showStorySelector: => 
+  showStorySelector: =>
 
     @model.getStories @model.story.sprint_id, 'title', (stories) =>
 
@@ -110,14 +108,14 @@ class TaskViewModel extends ViewModel
 
         {id: story._id, label: story.title}
       @modal 'story-selector'
-  
+
   selectStory: (selected) =>
 
     @modal null
     @writable.story_id selected.id
     # story specific stuff
 
-  showRemainingTimeDatePicker: => 
+  showRemainingTimeDatePicker: =>
 
     @modal 'remaining_time-index'
 
@@ -126,14 +124,14 @@ class TaskViewModel extends ViewModel
     # TODO: i18n
     @_afterConfirm 'Are you sure? The task will be permanently removed.', =>
 
-      @model.removeTask @model.task, => 
+      @model.removeTask @model.task, =>
 
         window.location.replace '/story/' + @story.computed.id()
       , @showErrorDialog
 
   constructor: (@model) ->
 
-    super(@model)   
+    super(@model)
 
     #_.bindAll @, _.functions(markdownMixin)...
 
@@ -141,7 +139,7 @@ class TaskViewModel extends ViewModel
 
     @breadcrumbs =
 
-      story: 
+      story:
 
         id: @model.story._id
         readonly:
@@ -180,15 +178,15 @@ class TaskViewModel extends ViewModel
 
       @model.getStory value, @_replaceStory, @_showError
 
-    @story = 
+    @story =
 
-      computed: 
+      computed:
 
-        id: ko.computed => 
+        id: ko.computed =>
 
           @writable.story_id()
       readonly:
-      
+
         title: ko.observable @model.story.title
         sprint_id: ko.observable @model.story.sprint_id
 
@@ -224,13 +222,13 @@ class TaskViewModel extends ViewModel
           newIndex = @model.getDateIndex @sprint.start(), @sprint.length()
           indexObservable newIndex
 
-    formatDateIndex = (dateIndex) -> 
+    formatDateIndex = (dateIndex) ->
 
       moment(dateIndex).format(common.DATE_DISPLAY_FORMAT)
 
     initialDateIndex = @model.getDateIndex @sprint.readonly.start(), @sprint.readonly.length()
 
-    # remaining_time   
+    # remaining_time
 
     @remainingTimeIndex = ko.observable initialDateIndex
     @remainingTimeIndexFormatted = ko.computed =>
@@ -239,13 +237,13 @@ class TaskViewModel extends ViewModel
 
     readRemainingTime = =>
 
-      @model.getClosestValueByDateIndex @writable.remaining_time(), @remainingTimeIndex(), @sprint.computed.range().start
+      @model.getClosestValueByDateIndex @writable.remaining_time(), @sprint.computed.range().start, @remainingTimeIndex()
     @indexedRemainingTime = @_createIndexedComputed readRemainingTime, partial(@_writeIndexed, 'remaining_time', @writable.remaining_time, @remainingTimeIndex), @
 
     # time_spent
 
     @timeSpentIndex = ko.observable initialDateIndex
-    @timeSpentIndexFormatted = ko.computed =>    
+    @timeSpentIndexFormatted = ko.computed =>
 
       formatDateIndex @timeSpentIndex()
 
@@ -270,7 +268,7 @@ class TaskViewModel extends ViewModel
     wires.push storyWire = @_createUpdateWire(@model.story, @story.readonly)
     wires.push @_createUpdateWire(_.pick(@model.story, '_id'), @breadcrumbs.story.readonly)
     wires.push @_createUpdateWire(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
-    
+
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
