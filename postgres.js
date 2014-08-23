@@ -9,14 +9,20 @@ var curry2 = u.curry2, curry3 = u.curry3;
 
 var connectionString = config.db.postgres.uri + config.db.postgres.name;
 
-var _connect = function() {
+var COLUMNS = {
+	REMAINING_TIME: 'remaining_time',
+	TIME_SPENT: 'time_spent'
+};
 
+var TABLES = {
+	TASKS: 'tasks'
+};
+
+var _connect = function() {
 	var deferred = Q.defer();
 
 	pg.connect(connectionString, function(err, client, done) {
-
     if (err) {
-
       deferred.reject(new Error(err));
     }
 
@@ -26,13 +32,10 @@ var _connect = function() {
 };
 
 var _query = function(query, client, done) {
-
 	var deferred = Q.defer();
 
 	client.query(query, function(err, result) {
-
 		if (err) {
-
 			deferred.reject(new Error(err));
 		}
 
@@ -43,31 +46,24 @@ var _query = function(query, client, done) {
 };
 
 var _verifyTable = function(table) {
-
 	return Q.fcall(function() {
-
 		allowedTables = ['sprints', 'stories', 'tasks'];
 
 		if (!_.contains(allowedTables, table)) {
-
 			throw new Error('querying table ' + table + ' is not allowed.');
 		}
 	});
 };
 
 var _verifyColumn = function(table, column) {
-
 	return Q.fcall(function() {
-
 		allowedColumns = {
-
 			'sprints': ['description', 'color', 'title', 'start', 'length'],
 			'stories': ['description', 'color', 'title', 'estimation', 'priority', 'sprint_id'],
 			'tasks': ['description', 'color', 'summary', 'priority', 'story_id']
 		};
 
 		if (!_.has(allowedColumns, table) || !_.contains(allowedColumns[table], column)) {
-
 			throw new Error('querying column ' + column + ' is not allowed on table ' + table);
 		}
 	});
@@ -113,15 +109,13 @@ var _find = function(table, filter, sort) {
 };
 
 var _findOne = function(table, id) {
-
 	var verifyTable = u.partial(_verifyTable, table);
 	var query = u.partial(_query, {text: "SELECT * FROM " + table + " WHERE _id = $1", values: [id]});
 	var process = function(result) {
-
 		if (result.rows.length != 1) {
-
 			throw new Error('id ' + id + ' does not exist on table ' + table);
 		}
+
 		return result.rows[0];
 	};
 
@@ -131,22 +125,35 @@ var _findOne = function(table, id) {
 		.then(process);
 };
 
+
 var _update = function(table, id, rev, column, value) {
-
 	var verify = u.partial(_verifyColumn, table, column);
-	var query = u.partial(_query, {text: "UPDATE " + table + " SET " + column + "=$3, _rev=_rev+1 WHERE _id=$1 AND _rev=$2 RETURNING *", values: [id, rev, value]});
+
+	var queryText = 'UPDATE ' + table + ' SET ' + column + '=$3, _rev=' + table + '._rev+1 ' +
+		((table === TABLES.TASKS) ?
+			'FROM enrich_task($1) AS enriched WHERE tasks._id=$1 AND tasks._rev=$2 RETURNING tasks.*, enriched.t_s_dates, enriched.r_t_days, enriched.r_t_dates, enriched.r_t_days' :
+			'WHERE _id=$1 AND _rev=$2 RETURNING *'
+		);
+
+	var query = u.partial(_query, {text: queryText, values: [id, rev, value]});
+
 	var confirm = function(result) {
-
 		var count = result.rowCount;
-		if (count !== 1) {
 
+		if (count !== 1) {
 			throw new Error([count, 'entries have been updated'].join(' '));
 		}
+
 		return result;
 	};
-	var process = _.compose(_.first, _getRows);
 
-	return verify().then(_connect).spread(query).then(confirm).then(process);
+	var process = table === TABLES.TASKS ? _.partial(_processTaskRow, id) : _.compose(_.first, _getRows);
+
+	return verify()
+		.then(_connect)
+		.spread(query)
+		.then(confirm)
+		.then(process);
 };
 
 var _confirmCalculation = function(ids, errorMessage, result) {
@@ -362,43 +369,35 @@ var cleanup = function() {
 	});
 };
 
-var findSingleTask = function(id) {
+var _processTaskRow = function(id, result) {
+	var row, task, remaining_time, time_spent;
 
+	var buildObject = function(dates, days) {
+		return _.object(_.chain(dates).compact().map(function(date) {
+			return moment(date);
+		}).invoke('format', 'YYYY-MM-DD').value(), days);
+	};
+
+	if (result.rows.length != 1) {
+		throw new Error('id ' + id + ' does not exist on table ' + table);
+	}
+	row = result.rows[0];
+
+	remaining_time = buildObject(row.r_t_dates, row.r_t_days);
+	time_spent = buildObject(row.t_s_dates, row.t_s_days);
+	task = _.omit(row, ['r_t_dates', 'r_t_days', 't_s_dates', 't_s_days']);
+	task.remaining_time = remaining_time;
+	task.time_spent = time_spent;
+	return task;
+};
+
+var findSingleTask = function(id) {
 	var table = 'tasks';
 	var verifyTable = u.partial(_verifyTable, table);
-	var text = [
-		'SELECT t.*, ARRAY_AGG(r_t.date) AS r_t_dates, ARRAY_AGG(r_t.days) AS r_t_days, ARRAY_AGG(t_s.date) AS t_s_dates, ARRAY_AGG(t_s.days) AS t_s_days FROM tasks AS t ',
-		'LEFT OUTER JOIN remaining_times as r_t ON (r_t.task_id=t._id)',
-		'LEFT OUTER JOIN times_spent AS t_s ON (t_s.task_id=t._id)',
-		'WHERE t._id=$1 GROUP BY t._id'
-	].join(' ');
+	var text = 'SELECT * FROM enrich_task($1)';
 
-	var query = u.partial(_query, {text: text, values: [id]});
-	var process = function(result) {
-
-		var row, task, remaining_time, time_spent;
-
-		var buildObject = function(dates, days) {
-
-			return _.object(_.chain(dates).compact().map(function(date) {
-
-				return moment(date);
-			}).invoke('format', 'YYYY-MM-DD').value(), days);
-		};
-
-		if (result.rows.length != 1) {
-
-			throw new Error('id ' + id + ' does not exist on table ' + table);
-		}
-		row = result.rows[0];
-
-		remaining_time = buildObject(row.r_t_dates, row.r_t_days);
-		time_spent = buildObject(row.t_s_dates, row.t_s_days);
-		task = _.omit(row, ['r_t_dates', 'r_t_days', 't_s_dates', 't_s_days']);
-		task.remaining_time = remaining_time;
-		task.time_spent = time_spent;
-		return task;
-	};
+	var query = _.partial(_query, {text: text, values: [id]});
+	var process = _.partial(_processTaskRow, id);
 
 	return verifyTable()
 		.then(_connect)
@@ -407,27 +406,29 @@ var findSingleTask = function(id) {
 };
 
 var updateIndexed = function(id, rev, column, value, index) {
-
 	var verify = function() {
 		return Q.fcall(function() {
-
-		if (!_.contains(['remaining_time'], column)) {
-
-			throw new Error('querying column ' + column + ' is not allowed on table');
-		}
+			if (!_.contains([COLUMNS.REMAINING_TIME, COLUMNS.TIME_SPENT], column)) {
+				throw new Error('querying column ' + column + ' is not allowed on table');
+			}
 		});
 	};
-	var query = u.partial(_query, {text: "SELECT upsert_rt($1, $2, $3, $4)", values: [index, value, id, rev]});
+
+	var sqlFn = (column === COLUMNS.REMAINING_TIME) ? 'upsert_rt' : 'upsert_ts';
+
+	var query = u.partial(_query, {text: 'SELECT * FROM ' + sqlFn + '($1, $2, $3, $4)', values: [index, value, id, rev]});
+
 	var confirm = function(result) {
-
 		var count = result.rowCount;
-		if (count !== 1) {
 
+		if (count !== 1) {
 			throw new Error([count, 'entries have been updated'].join(' '));
 		}
+
 		return result;
 	};
-	var process = _.compose(_.first, _getRows);
+
+	var process = _.partial(_processTaskRow, id);
 
 	return verify()
 		.then(_connect)
@@ -440,10 +441,12 @@ var updateTask = function(id, rev, column, value, index) {
 
 	var argumentsWithoutIndex;
 
-	if (_.contains(['remaining_time'], column)) {
+	if (_.contains([COLUMNS.REMAINING_TIME, COLUMNS.TIME_SPENT], column)) {
 		return updateIndexed.apply(this, arguments);
 	} else {
 		argumentsWithoutIndex = ['tasks'].concat(Array.prototype.slice.call(arguments, 0, 5));
+
+
 		return _update.apply(this, argumentsWithoutIndex);
 	}
 };

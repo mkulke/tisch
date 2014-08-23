@@ -26,6 +26,38 @@ COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 SET search_path = public, pg_catalog;
 
 --
+-- Name: enriched_task; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE enriched_task AS (
+        _id integer,
+        _rev integer,
+        summary character varying(64),
+        description text,
+        color character varying(8),
+        priority integer,
+        story_id integer,
+        r_t_dates date[],
+        r_t_days real[],
+        t_s_dates date[],
+        t_s_days real[]
+);
+
+--
+-- Name: enrich_task(integer); Type: FUNCTION; Schema: public; Owner: mkulke
+--
+
+CREATE FUNCTION enrich_task(id integer) RETURNS enriched_task
+    LANGUAGE plpgsql
+    AS $_$
+DECLARE
+  ret enriched_task;
+BEGIN
+SELECT t.*, ARRAY_AGG(r_t.date) AS r_t_dates, ARRAY_AGG(r_t.days) AS r_t_days, ARRAY_AGG(t_s.date) AS t_s_dates, ARRAY_AGG(t_s.days) AS t_s_days FROM tasks AS t  LEFT OUTER JOIN remaining_times as r_t ON (r_t.task_id=t._id) LEFT OUTER JOIN times_spent AS t_s ON (t_s.task_id=t._id) WHERE t._id=$1 GROUP BY t._id INTO ret;
+RETURN ret;
+END;$_$;
+
+--
 -- Name: inc_rev(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -35,17 +67,19 @@ CREATE FUNCTION inc_rev() RETURNS trigger
 BEGIN
 IF (TG_OP='INSERT') THEN tid=NEW.task_id; ELSE tid=OLD.task_id; END IF;
 UPDATE tasks SET _rev=_rev+1 WHERE _id=tid;
-RETURN NEW;                        
+RETURN NEW;
 END;
 $$;
 
 --
--- Name: upsert_rt(key date, data integer, tid integer); Type: FUNCTION; Schema: public; Owner: -
+-- Name: upsert_rt(key date, data real, tid integer); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION upsert_rt(key date, data integer, t_id integer, t_rev integer) RETURNS VOID 
+CREATE FUNCTION upsert_rt(key date, data real, t_id integer, t_rev integer) RETURNS enriched_task
     LANGUAGE plpgsql
     AS $$
+DECLARE
+    ret enriched_task;
 BEGIN
     PERFORM * FROM tasks WHERE _id = t_id AND _rev = t_rev;
     IF NOT FOUND THEN
@@ -54,11 +88,43 @@ BEGIN
     LOOP
         UPDATE remaining_times SET days = data WHERE date = key AND task_id = t_id;
         IF found THEN
-            RETURN;
+            SELECT * FROM enrich_task(t_id) INTO ret;
+            RETURN ret;
         END IF;
         BEGIN
             INSERT INTO remaining_times(date, days, task_id) VALUES (key, data, t_id);
-            RETURN;
+            SELECT * FROM enrich_task(t_id) INTO ret;
+            RETURN ret;
+        EXCEPTION WHEN unique_violation THEN
+        END;
+    END LOOP;
+END;
+$$;
+
+--
+-- Name: upsert_ts(key date, data real, tid integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION upsert_ts(key date, data real, t_id integer, t_rev integer) RETURNS enriched_task
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    ret enriched_task;
+BEGIN
+    PERFORM * FROM tasks WHERE _id = t_id AND _rev = t_rev;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'task with id % and rev % not found', t_id, t_rev;
+    END IF;
+    LOOP
+        UPDATE times_spent SET days = data WHERE date = key AND task_id = t_id;
+        IF found THEN
+            SELECT * FROM enrich_task(t_id) INTO ret;
+            RETURN ret;
+        END IF;
+        BEGIN
+            INSERT INTO times_spent(date, days, task_id) VALUES (key, data, t_id);
+            SELECT * FROM enrich_task(t_id) INTO ret;
+            RETURN ret;
         EXCEPTION WHEN unique_violation THEN
         END;
     END LOOP;
@@ -70,13 +136,13 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
--- Name: remaining_times; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: remaining_times; Type: TABLE; Schema: public; Owner: -; Tablespace:
 --
 
 CREATE TABLE remaining_times (
     _id bigint NOT NULL,
     date date NOT NULL,
-    days integer NOT NULL,
+    days real NOT NULL,
     task_id integer NOT NULL
 );
 
@@ -101,7 +167,7 @@ ALTER SEQUENCE remaining_times__id_seq OWNED BY remaining_times._id;
 
 
 --
--- Name: sprints; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: sprints; Type: TABLE; Schema: public; Owner: -; Tablespace:
 --
 
 CREATE TABLE sprints (
@@ -135,7 +201,7 @@ ALTER SEQUENCE sprints__id_seq OWNED BY sprints._id;
 
 
 --
--- Name: stories; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: stories; Type: TABLE; Schema: public; Owner: -; Tablespace:
 --
 
 CREATE TABLE stories (
@@ -182,7 +248,7 @@ CREATE SEQUENCE stories_id_seq
 
 
 --
--- Name: tasks; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: tasks; Type: TABLE; Schema: public; Owner: -; Tablespace:
 --
 
 CREATE TABLE tasks (
@@ -216,13 +282,13 @@ ALTER SEQUENCE tasks__id_seq OWNED BY tasks._id;
 
 
 --
--- Name: times_spent; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: times_spent; Type: TABLE; Schema: public; Owner: -; Tablespace:
 --
 
 CREATE TABLE times_spent (
     _id bigint NOT NULL,
     date date NOT NULL,
-    days integer NOT NULL,
+    days real NOT NULL,
     task_id integer NOT NULL
 );
 
@@ -364,7 +430,7 @@ SELECT pg_catalog.setval('times_spent__id_seq', 2, true);
 
 
 --
--- Name: remaining_times_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: remaining_times_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
 --
 
 ALTER TABLE ONLY remaining_times
@@ -372,7 +438,7 @@ ALTER TABLE ONLY remaining_times
 
 
 --
--- Name: remaining_times_task_id_date_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: remaining_times_task_id_date_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
 --
 
 ALTER TABLE ONLY remaining_times
@@ -380,7 +446,7 @@ ALTER TABLE ONLY remaining_times
 
 
 --
--- Name: sprints_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: sprints_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
 --
 
 ALTER TABLE ONLY sprints
@@ -388,7 +454,7 @@ ALTER TABLE ONLY sprints
 
 
 --
--- Name: stories_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: stories_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
 --
 
 ALTER TABLE ONLY stories
@@ -396,7 +462,7 @@ ALTER TABLE ONLY stories
 
 
 --
--- Name: stories_sprint_id_priority_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: stories_sprint_id_priority_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
 --
 
 ALTER TABLE ONLY stories
@@ -404,7 +470,7 @@ ALTER TABLE ONLY stories
 
 
 --
--- Name: tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
 --
 
 ALTER TABLE ONLY tasks
@@ -412,7 +478,7 @@ ALTER TABLE ONLY tasks
 
 
 --
--- Name: tasks_story_id_priority_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: tasks_story_id_priority_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
 --
 
 ALTER TABLE ONLY tasks
@@ -420,7 +486,7 @@ ALTER TABLE ONLY tasks
 
 
 --
--- Name: times_spent_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: times_spent_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
 --
 
 ALTER TABLE ONLY times_spent
@@ -428,7 +494,7 @@ ALTER TABLE ONLY times_spent
 
 
 --
--- Name: times_spent_task_id_date_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: times_spent_task_id_date_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
 --
 
 ALTER TABLE ONLY times_spent

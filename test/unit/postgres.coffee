@@ -164,33 +164,25 @@ describe 'postgres', ->
 
             _.pluck(rows, options.column)[0] == _.first(options.orderedValues)
       context 'which is descending', ->
-
         before ->
-
           object = {}
           object[options.column] = 0
           @args = [null, object]
 
         it "returns sorted #{options.table} in descending order", ->
-
           expect(do @subject).to.eventually.satisfy (rows) ->
-
             _.pluck(rows, options.column)[0] == _.last(options.orderedValues)
+
   expectItToReturnOneRow = ->
-
     it 'returns a single row', ->
-
       expect(do @subject).to.eventually.satisfy (object) =>
-
         object._id == @id
+
     context 'with an invalid id', ->
-
       before ->
-
         @id = 'wrong'
 
       it 'throws an error', ->
-
         expect(do @subject).to.be.rejectedWith(Error)
 
   before prepare
@@ -402,7 +394,7 @@ describe 'postgres', ->
 
       before ->
 
-        @id = '1'
+        @id = 1
         @subject = ->
 
           postgres.findSingleTask @id
@@ -436,24 +428,40 @@ describe 'postgres', ->
             '2014-01-02': 3
             '2014-01-15': 1
     describe 'updateTask',  ->
-
       context 'when updating color', ->
-
         before ->
-
           @subject = ->
-
             postgres.updateTask 4, 1, 'color', 'blue'
 
         it 'returns the modifed task', ->
-
           expect(do @subject).to.eventually.satisfy (task) ->
-
             task['color'] == 'blue'
 
-      context 'when updating remaining_times', ->
+        it 'returns a task with a remaining_time property', ->
+          expect(do @subject).to.eventually.have.property 'remaining_time'
 
+      context 'when updating time_spent', ->
+        before ->
+          @subject = ->
+            postgres.updateTask 3, 1, 'time_spent', 1.5, '2010-01-01'
+
+        it 'returns the modified (enriched) task', ->
+          expect(do @subject).to.eventually.satisfy (task) ->
+            _.isEqual task.time_spent,
+              '2010-01-01': 1.5
+
+      context 'when updating remaining_times', ->
         beforeEach prepareRemainingTimes
+
+        before ->
+          @subject = ->
+            postgres.updateTask 3, 2, 'remaining_time', 1, '2010-01-01'
+
+        it 'returns the modified (enriched) task', ->
+          expect(do @subject).to.eventually.satisfy (task) ->
+            _.isEqual task.remaining_time,
+              '2010-01-01': 1,
+              '2013-01-03': 10
 
         context 'and the task already has an entry for the specified date', ->
 

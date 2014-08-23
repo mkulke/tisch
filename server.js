@@ -73,7 +73,7 @@ var complainWithJson = function(err) {
 
 var postAnswer = function(key, parentKey, respond, result) {
 
-  // TODO: rubustness
+  // TODO: rubustness, id to string necessary?
   var changes = {id: result._id.toString(), rev: result._rev, key: key, value: result[key]};
   if (parentKey !== null) {
 

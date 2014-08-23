@@ -2,8 +2,8 @@ partial = (fn) ->
 
   aps = Array.prototype.slice
   args = aps.call arguments, 1
-  
-  -> 
+
+  ->
 
     fn.apply @, args.concat(aps.call(arguments))
 
@@ -26,7 +26,7 @@ curry2 = (fn) ->
 curry3 = (fn) ->
 
   (arg3) ->
-    
+
     (arg2) ->
 
       (arg1) ->
@@ -113,7 +113,7 @@ class SocketIO
 
       _.extend wire, {index: _.uniqueId()}
       server: _.omit wire, 'handler'
-      client: {index: wire.index, handler: wire.handler} 
+      client: {index: wire.index, handler: wire.handler}
     @server.emit 'register', _.pluck registrations, 'server'
     @_registrations = @_registrations.concat _.pluck registrations, 'client'
 
@@ -143,7 +143,7 @@ class SocketIO
       @_registrations = []
     @server.on 'disconnect', onDisconnect
 
-class Chart 
+class Chart
 
   constructor: (lines = []) ->
 
@@ -180,10 +180,10 @@ class Chart
 
     @svg.append("svg:path").attr('class', "#{line} line") for line in lines
 
-    @svg.append("g")         
+    @svg.append("g")
       .attr("class", "y axis")
       .attr("transform", "translate(20, 0)")
-    @svg.append("g")         
+    @svg.append("g")
       .attr("class", "x axis")
       .attr("transform", "translate(0, #{height - 20})")
 
@@ -222,7 +222,7 @@ class Chart
     _.each object, (data, path) =>
 
       circles = @svg.selectAll("circle.#{path}").data(data)
-  
+
       onXScale = _.compose @xScale, @dateFn
       onYScale = _.compose @yScale, @valueFn
 
@@ -273,10 +273,10 @@ class Model
       beforeSend: (jqXHR, settings) =>
 
         jqXHR.setRequestHeader 'rev', getRev()
-      success: (data, textStatus, jqXHR) -> 
+      success: (data, textStatus, jqXHR) ->
 
         successCb? data
-      error: (jqXHR, textStatus, errorThrown) -> 
+      error: (jqXHR, textStatus, errorThrown) ->
 
         errorCb? (if errorThrown == "" then 'Error: Unknown communications problem with server.' else errorThrown)
   create = (type, parentId, successCb, errorCb) ->
@@ -291,10 +291,10 @@ class Model
       url: "/#{type}"
       type: 'PUT'
       headers: headers
-      success: (data, textStatus, jqXHR) -> 
+      success: (data, textStatus, jqXHR) ->
 
         successCb? data.new
-      error: (jqXHR, textStatus, errorThrown) -> 
+      error: (jqXHR, textStatus, errorThrown) ->
 
         # TODO: proper err msg
         #msgFunction = common.constants.en_US["ERROR_CREATE_#{type}"]
@@ -306,10 +306,10 @@ class Model
       url: "/#{type}/#{id}"
       type: 'GET'
       dataType: 'json'
-      success: (data, textStatus, jqXHR) -> 
+      success: (data, textStatus, jqXHR) ->
 
         successCb? data
-      error: (jqXHR, textStatus, errorThrown) -> 
+      error: (jqXHR, textStatus, errorThrown) ->
 
         #TODO: proper errmsg
         errorCb? errorThrown
@@ -317,7 +317,7 @@ class Model
 
     headers = {}
 
-    if parentId? 
+    if parentId?
 
       _.extend headers, {parent_id: parentId}
     if sortBy?
@@ -330,19 +330,19 @@ class Model
       type: 'GET'
       headers: headers
       dataType: 'json'
-      success: (data, textStatus, jqXHR) -> 
+      success: (data, textStatus, jqXHR) ->
 
         successCb? data
-      error: (jqXHR, textStatus, errorThrown) -> 
+      error: (jqXHR, textStatus, errorThrown) ->
 
         #TODO: proper errmsg
-        console.log "error: #{errorThrown}"    
+        console.log "error: #{errorThrown}"
 
   createTask: partial create, 'task'
   createStory: partial create, 'story'
   createSprint: partial create, 'sprint', null
   removeTask: partial remove, 'task'
-  removeStory: partial remove, 'story'  
+  removeStory: partial remove, 'story'
   removeSprint: partial remove, 'sprint'
   getTask: partial get, 'task'
   getStory: partial get, 'story'
@@ -356,8 +356,7 @@ class Model
 
       object._rev
 
-    $.ajaxq 'client', 
-
+    $.ajaxq 'client',
       url: "/#{type}/#{object._id}"
       type: 'POST'
       headers: {property: key, sessionid: @sessionid}
@@ -376,34 +375,30 @@ class Model
         # TODO: i18n
         errorCb? (if errorThrown == "" then 'Error: Unknown communications problem with server.' else errorThrown)
   persist: (object, options = {}) =>
-
-    key = options.key
     type = options.type
-    data = {key: key, value: object[key]}
-    data.index = index if index?
+    data = if options.index?
+      key: options.property
+      value: object[options.property]?[options.index]
+      index: options.index
+    else
+      key: options.property
+      value: object[options.property]
 
-    getRev = ->
-
-      object._rev
-
-    $.ajaxq 'client', 
-
+    $.ajaxq 'client',
       url: "/#{type}/#{object._id}"
       type: 'POST'
-      headers: {property: key, sessionid: @sessionid}
+      headers: {property: options.property, sessionid: @sessionid}
       contentType: 'application/json'
       dataType: 'json'
       data: JSON.stringify(data)
       beforeSend: (jqXHR, settings) ->
-
-        jqXHR.setRequestHeader 'rev', getRev()
+        jqXHR.setRequestHeader 'rev', do ->
+          object._rev
       success: (data, textStatus, jqXHR) ->
-
         object._rev = data.rev
         options.successCb? data
       error: (jqXHR, textStatus, errorThrown) ->
-
-        options.errorCb? errorThrown
+        options.onError errorThrown if _.isFunction(options.onError)
   get: (key) => @[@type]?[key]
   set: (key, value) => @[@type]?[value]
   buildSprintRange: (sprintStart, sprintLength) ->
@@ -426,13 +421,13 @@ class ViewModel
       value = if options.time == true then parseFloat value, 10 else value
       if !instantaneousProperty.hasError?() && object[property] != value
 
-        updateModelFn observable, object, property, value      
+        updateModelFn observable, object, property, value
 
     if options.throttled == true
 
       observable = ko.computed(instantaneousProperty).extend({throttle: common.KEYUP_UPDATE_DELAY})
       observable.subscribe partial(update, observable)
-    else 
+    else
 
       instantaneousProperty.subscribe partial(update, instantaneousProperty)
 
@@ -484,8 +479,8 @@ class ViewModel
     if event.keyCode == 27 && @modal != null
 
       @modal null
-  
-  confirmError: => 
+
+  confirmError: =>
 
     @modal null
 
@@ -519,7 +514,7 @@ class ViewModel
       target.subscribe(validate)
       target
 
-    ko.bindingHandlers.datepicker = 
+    ko.bindingHandlers.datepicker =
 
       init: (element, valueAccessor, allBindingsAccessor) =>
 
@@ -532,13 +527,13 @@ class ViewModel
           prevText: '<div class="arrow left"></div>'
           dateFormat: $.datepicker.ISO_8601
           gotoCurrent: true
-          onSelect: (dateText, inst) => 
+          onSelect: (dateText, inst) =>
 
             @modal null
             observable = valueAccessor()
             observable dateText
 
-        if allBindingsAccessor().datepickerMin? 
+        if allBindingsAccessor().datepickerMin?
 
           options.minDate = new Date(allBindingsAccessor().datepickerMin)
         if allBindingsAccessor().datepickerMax?
@@ -564,9 +559,9 @@ class ViewModel
     @common = common
 
     @modal = ko.observable null
-    
+
     # we need that recalculation, so the footer stays on bottom even
-    # with the absolute positionen popups.  
+    # with the absolute positionen popups.
     @modal.subscribe (value) ->
 
       if value?
