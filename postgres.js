@@ -5,7 +5,7 @@ var _ = require('underscore')._;
 var moment = require('moment');
 var u = require('./utils.js');
 
-var curry2 = u.curry2, curry3 = u.curry3;
+var curry2 = u.curry2, curry3 = u.curry3, partial = u.partial;
 
 var connectionString = config.db.postgres.uri + config.db.postgres.name;
 
@@ -24,8 +24,10 @@ var TABLES = {
 };
 
 var ERRORS = {
-	ILLEGAL_COLUMN: new Error('Illegal column')
-}
+	ILLEGAL_COLUMN: new Error('Illegal column'),
+	ILLEGAL_TABLE: new Error('Illegal table'),
+	WRONG_RESULT: new Error('Wrong result')
+};
 
 var _connect = function() {
 	var deferred = Q.defer();
@@ -62,6 +64,11 @@ var _verifyTable = function(table) {
 			throw new Error('querying table ' + table + ' is not allowed.');
 		}
 	});
+};
+
+// TODO: move the hardcoded stuff into some schema document or sth.
+var _isTableLegal = function(table) {
+	return _.chain(TABLES).values().contains(table).value();
 };
 
 // TODO: move the hardcoded stuff into some schema document or sth.
@@ -116,12 +123,12 @@ var _find = function(table, filter, sort) {
 	var orderClauses = sort ? _.map(sort, toOrderClause) : null;
 	var orderText = sort ? 'ORDER BY ' + orderClauses.join(', ') : '';
 
-	var verifyTable = u.partial(_verifyTable, table);
-	var verifyColumn = u.partial(_verifyColumn, table);
+	var verifyTable = partial(_verifyTable, table);
+	var verifyColumn = partial(_verifyColumn, table);
 	var verifyFilterColumns = filter ? Q.all(_.chain(filter).keys().map(verifyColumn).value()) : Q.resolve;
 	var verifySortColumns = sort ? Q.all(_.chain(sort).keys().map(verifyColumn).value()) : Q.resolve;
 
-	var query = u.partial(_query, {text: [selectText, whereText, orderText].join(' '), values: whereValues});
+	var query = partial(_query, {text: [selectText, whereText, orderText].join(' '), values: whereValues});
 	var process = _getRows;
 
 	return verifyTable()
@@ -133,8 +140,8 @@ var _find = function(table, filter, sort) {
 };
 
 var _findOne = function(table, id) {
-	var verifyTable = u.partial(_verifyTable, table);
-	var query = u.partial(_query, {text: "SELECT * FROM " + table + " WHERE _id = $1", values: [id]});
+	var verifyTable = partial(_verifyTable, table);
+	var query = partial(_query, {text: "SELECT * FROM " + table + " WHERE _id = $1", values: [id]});
 	var process = function(result) {
 		if (result.rows.length != 1) {
 			throw new Error('id ' + id + ' does not exist on table ' + table);
@@ -151,7 +158,7 @@ var _findOne = function(table, id) {
 
 
 var _update = function(table, id, rev, column, value) {
-	var verify = u.partial(_verifyColumn, table, column);
+	var verify = partial(_verifyColumn, table, column);
 
 	var queryText = 'UPDATE ' + table + ' SET ' + column + '=$3, _rev=' + table + '._rev+1 ' +
 		((table === TABLES.TASKS) ?
@@ -159,7 +166,7 @@ var _update = function(table, id, rev, column, value) {
 			'WHERE _id=$1 AND _rev=$2 RETURNING *'
 		);
 
-	var query = u.partial(_query, {text: queryText, values: [id, rev, value]});
+	var query = partial(_query, {text: queryText, values: [id, rev, value]});
 
 	var confirm = function(result) {
 		var count = result.rowCount;
@@ -271,8 +278,8 @@ var getStoriesRemainingTime = function(storyIds, range) {
 		return _.sortBy(summedUpPairs, _.first);
 	};
 
-	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
-	var confirm = u.partial(_confirmPairs, storyIds);
+	var query = partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
+	var confirm = partial(_confirmPairs, storyIds);
 	var process = sum;
 
 	return _connect().spread(query).then(confirm).then(process);
@@ -345,8 +352,8 @@ var getStoriesTimeSpent = function(storyIds, range) {
 		});
 	};
 
-	var query = u.partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
-	var confirm = u.partial(_confirmPairs, storyIds);
+	var query = partial(_query, {text: text, values: [range.start, range.end].concat(storyIds || [])});
+	var confirm = partial(_confirmPairs, storyIds);
 	var process = _.compose(handleEmptyValues, _foldToDateDayPairs);
 
 	return _connect().spread(query).then(confirm).then(process);
@@ -364,7 +371,7 @@ var getStoriesTaskCount = function(storyIds) {
 		'ORDER BY s._id'
 	].join(' ');
 
-	var query = u.partial(_query, {text: text, values: storyIds || []});
+	var query = partial(_query, {text: text, values: storyIds || []});
 	var confirm = function(result) {
 
 		if (storyIds && result.rowCount != storyIds.length) {
@@ -417,7 +424,7 @@ var _processTaskRow = function(id, result) {
 
 var findSingleTask = function(id) {
 	var table = 'tasks';
-	var verifyTable = u.partial(_verifyTable, table);
+	var verifyTable = partial(_verifyTable, table);
 	var text = 'SELECT * FROM enrich_task($1)';
 
 	var query = _.partial(_query, {text: text, values: [id]});
@@ -440,7 +447,7 @@ var updateIndexed = function(id, rev, column, value, index) {
 
 	var sqlFn = (column === COLUMNS.REMAINING_TIME) ? 'upsert_rt' : 'upsert_ts';
 
-	var query = u.partial(_query, {text: 'SELECT * FROM ' + sqlFn + '($1, $2, $3, $4)', values: [index, value, id, rev]});
+	var query = partial(_query, {text: 'SELECT * FROM ' + sqlFn + '($1, $2, $3, $4)', values: [index, value, id, rev]});
 
 	var confirm = function(result) {
 		var count = result.rowCount;
@@ -503,12 +510,12 @@ var findTasks = function(filter, sort) {
 
 	var groupText = 'GROUP BY t._id';
 
-	var verifyTable = u.partial(_verifyTable, table);
-	var verifyColumn = u.partial(_verifyColumn, table);
+	var verifyTable = partial(_verifyTable, table);
+	var verifyColumn = partial(_verifyColumn, table);
 	var verifyFilterColumns = filter ? Q.all(_.chain(filter).keys().map(verifyColumn).value()) : Q.resolve;
 	var verifySortColumns = sort ? Q.all(_.chain(sort).keys().map(verifyColumn).value()) : Q.resolve;
 
-	var query = u.partial(_query, {text: [selectText, whereText, groupText, orderText].join(' '), values: whereValues});
+	var query = partial(_query, {text: [selectText, whereText, groupText, orderText].join(' '), values: whereValues});
 
 	var process = function(result) {
 
@@ -541,7 +548,7 @@ var findTasks = function(filter, sort) {
 		.then(process);
 };
 
-var _add = function(table, isChild, data) {
+var _add = function(table, data) {
 	var columns, values, verify, parameters, queryText, query, process, isColumnLegal;
 
 	columns = _.keys(data);
@@ -551,19 +558,14 @@ var _add = function(table, isChild, data) {
 		return '$' + number;
 	}).value();
 
-	/*if (isChild) {
-		columns = columns.concat([COLUMNS.PRIORITY]);
-		parameters = parameters.concat(['ROUND(MAX(' + COLUMNS.PRIORITY + ')) + 1']);
-	}*/
-
-	isColumnLegal = u.partial(_isColumnLegal, table);
+	isColumnLegal = partial(_isColumnLegal, table);
 	if (_.chain(columns).map(isColumnLegal).some(u.isFalsy).value()) {
 		return Q.reject(ERRORS.ILLEGAL_COLUMN);
 	}
 
 	queryText = 'INSERT INTO ' + table + ' (' + columns.join(',') + ') VALUES (' + parameters.join(',') + ') RETURNING *';
 
-	query = u.partial(_query, {text: queryText, values: values});
+	query = partial(_query, {text: queryText, values: values});
 
 	process = function(result) {
 		if (result.rows.length != 1) {
@@ -573,27 +575,43 @@ var _add = function(table, isChild, data) {
 		return _.extend(result.rows[0], {remaining_time: {}, time_spent: {}});
 	};
 
-	return _connect()
-		.spread(query)
-		.then(process)
-		.fail(function (error) {
-			console.log(error);
-		});
+	return _connect().spread(query).then(process);
+};
+
+var _remove = function(table, id) {
+	var queryText, query, process;
+	if (!_isTableLegal(table)) {
+		return Q.reject(ERRORS.ILLEGAL_TABLE);
+	}
+
+	queryText = 'DELETE FROM ' + table + ' WHERE _id = $1 RETURNING *';
+	query = partial(_query, {text: queryText, values: [id]});
+
+	process = function(result) {
+		if (result.rows.length != 1) {
+			throw ERRORS.WRONG_RESULT;
+		}
+
+		return _.extend(result.rows[0], {remaining_time: {}, time_spent: {}});
+	};
+
+	return _connect().spread(query).then(process);
 };
 
 exports.init = Q.resolve;
 exports.cleanup = cleanup;
-exports.addTask = u.partial(_add, 'tasks', true);
-exports.findSprints = u.partial(_find, 'sprints');
-exports.findSingleSprint = u.partial(_findOne, 'sprints');
-exports.findStories = u.partial(_find, 'stories');
-exports.findSingleStory = u.partial(_findOne, 'stories');
+exports.addTask = partial(_add, 'tasks');
+exports.findSprints = partial(_find, 'sprints');
+exports.findSingleSprint = partial(_findOne, 'sprints');
+exports.findStories = partial(_find, 'stories');
+exports.findSingleStory = partial(_findOne, 'stories');
 exports.findOne = _findOne;
 exports.findTasks = findTasks;
 exports.find = _find;
 exports.findSingleTask = findSingleTask;
-exports.updateSprint = u.partial(_update, 'sprints');
-exports.updateStory = u.partial(_update, 'stories');
+exports.removeTask = partial(_remove, 'tasks');
+exports.updateSprint = partial(_update, 'sprints');
+exports.updateStory = partial(_update, 'stories');
 exports.updateTask = updateTask;
 exports.getStoriesRemainingTime = getStoriesRemainingTime;
 exports.getStoriesTimeSpent = getStoriesTimeSpent;

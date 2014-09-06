@@ -367,6 +367,12 @@ describe 'postgres', ->
           expect(result).to.have.property '_id'
           expect(result).to.have.property '_rev', 1
 
+      it 'adds a row to the tasks table', (done) ->
+        @subject().then ->
+          query 'SELECT count(*) FROM tasks', (err, result) ->
+            expect(result.rows[0]).to.have.property('count', '5')
+            do done
+
       context 'and there is an illegal column in the initial data', ->
         before ->
           _.extend @initialData, illegal: 'yes'
@@ -374,11 +380,39 @@ describe 'postgres', ->
         it 'throws an error', ->
           expect(do @subject).to.eventually.be.rejectedWith(Error)
     describe 'removeTask', ->
-      it 'removes the task'
+      before ->
+        @id = 1
 
-      it "removes all the task's remaining_time and time_spent entries"
+        @subject = ->
+          postgres.removeTask @id
 
-      it 'returns the removed task'
+      it 'is succesful', ->
+        expect(do @subject).to.eventually.be.fulfilled
+
+      it 'removes a row from the tasks table', (done) ->
+        @subject().then ->
+          query 'SELECT count(*) FROM tasks', (err, result) ->
+            expect(result.rows[0]).to.have.property('count', '3')
+            do done
+      context 'when there are remaining_times associated', ->
+        beforeEach prepareRemainingTimes
+
+        it "removes them", (done) ->
+          @subject().then ->
+            query 'SELECT count(*) FROM remaining_times', (err, result) ->
+              expect(result.rows[0]).to.have.property('count', '1')
+              do done
+      context 'when there are times_spent associated', ->
+        beforeEach prepareTimesSpent
+
+        it "removes them", (done) ->
+          @subject().then ->
+            query 'SELECT count(*) FROM times_spent', (err, result) ->
+              expect(result.rows[0]).to.have.property('count', '1')
+              do done
+
+      it 'returns the removed task', ->
+        expect(do @subject).to.eventually.have.property '_id', '1'
 
     describe 'findTasks', ->
       before ->
@@ -424,31 +458,29 @@ describe 'postgres', ->
       do expectItToReturnOneRow
 
       context 'when the task has remaining time values', ->
-
         before ->
-
           @id = '1'
 
         beforeEach prepareRemainingTimes
-        it 'returns an object which contains a remaining_time object', ->
 
+        it 'returns an object which contains a remaining_time object', ->
           expect(do @subject).to.eventually.have.property('remaining_time').to.deep.equal
             '2013-01-01': 2
             '2013-01-02': 3
             '2013-01-15': 1
+
       context 'when the task has spent time values', ->
-
         before ->
-
           @id = '1'
 
         beforeEach prepareTimesSpent
-        it 'returns an object which contains a time_spent object', ->
 
+        it 'returns an object which contains a time_spent object', ->
           expect(do @subject).to.eventually.have.property('time_spent').to.deep.equal
             '2014-01-01': 2
             '2014-01-02': 3
             '2014-01-15': 1
+
     describe 'updateTask',  ->
       context 'when updating color', ->
         before ->
@@ -521,7 +553,7 @@ describe 'postgres', ->
             @subject = ->
 
               postgres.updateTask 4, 1, 'remaining_time', 5, '2014-01-05'
-          it 'adds a row to the remaining times rable', (done) ->
+          it 'adds a row to the remaining times table', (done) ->
 
             @subject().then ->
 

@@ -1,14 +1,14 @@
 expect = chai.expect
 
 describe 'TaskModel#getDateIndex', ->
-  beforeEach ->
+  before ->
     taskModel = new TaskModel
     sprint = {start: '2013-01-01', length: 7}
     @subject = ->
       taskModel.getDateIndex sprint.start, sprint.length
 
-  afterEach ->
-    @clock.restore()
+  after ->
+    @clock?.restore()
 
   context 'when the current date is after the sprint', ->
     before ->
@@ -32,14 +32,17 @@ describe 'TaskModel#getDateIndex', ->
       expect(do @subject).to.eq '2013-01-03'
 
 describe 'TaskModel#getClosestValueByDateIndex', ->
-  beforeEach ->
+  before ->
     taskModel = new TaskModel
-    @subject = =>
+
+    @indexedTimes =
+      '2014-01-02': 2
+      '2014-01-04': 3
+
+    @start = '2014-01-01'
+
+    @subject = ->
       taskModel.getClosestValueByDateIndex @indexedTimes, @start, @end
-     @indexedTimes =
-        '2014-01-02': 2
-        '2014-01-04': 3
-      @start = '2014-01-01'
 
   context 'when end is after the most recent time entry', ->
     before ->

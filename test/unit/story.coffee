@@ -1,20 +1,16 @@
 expect = chai.expect
 
 describe 'StoryModel#buildRemainingTime', ->
-
   before ->
-
     @model = new StoryModel
+
   context 'when there are no data/number pairs specified', ->
-
     before ->
-
       @subject = ->
-
         range = start: '2010-01-05', end: '2010-01-10'
         @model.buildRemainingTime {}, range
-    it 'returns 1', ->
 
+    it 'returns 1', ->
       expect(do @subject).to.eq(1)
   context 'when none of the date/number pairs is within in the sprint', ->
 
@@ -24,11 +20,11 @@ describe 'StoryModel#buildRemainingTime', ->
 
         remainingTime =
 
-          '2010-01-02': 8 
+          '2010-01-02': 8
           '2010-01-04': 7
           '2010-01-11': 6
         range = start: '2010-01-05', end: '2010-01-10'
-        @model.buildRemainingTime remainingTime, range        
+        @model.buildRemainingTime remainingTime, range
 
     it 'returns 1', ->
 
@@ -38,7 +34,7 @@ describe 'StoryModel#buildRemainingTime', ->
     remainingTime =
 
       initial: 10
-      '2010-01-02': 8 
+      '2010-01-02': 8
       '2010-01-04': 7
       '2010-01-08': 6
       '2010-01-10': 5
@@ -56,14 +52,14 @@ describe 'StoryModel.buildTimeSpent', ->
   it 'should return 0 when there are no date/number pairs', ->
 
     range = start: '2010-01-05', end: '2010-01-10'
-    ret = @model.buildTimeSpent {}, range 
+    ret = @model.buildTimeSpent {}, range
     assert.equal ret, 0
   it 'should return 0 when none of the date/number pairs is within in the sprint', ->
 
     timeSpent =
 
       initial: 0
-      '2010-01-02': 1 
+      '2010-01-02': 1
       '2010-01-04': 2
       '2010-01-11': 3
 
@@ -95,14 +91,14 @@ describe 'StoryModel.buildRemainingTimeChartData', ->
 
   it 'should return the story\'s estimation, if there are no remaining_time values specified', ->
 
-    remainingTimes = [{}] 
+    remainingTimes = [{}]
     chartData = @model.buildRemainingTimeChartData 1, remainingTimes, @range
-    assert.deepEqual chartData, [{date: '2010-01-01', value: 1}]    
+    assert.deepEqual chartData, [{date: '2010-01-01', value: 1}]
   it 'should return the story\'s estimation, if none of the remaining_time values specified are within the sprint range', ->
 
-    remainingTimes = [{'2010-01-09': 1, '2010-01-10': 1.5, '2010-01-10': 0.5}] 
+    remainingTimes = [{'2010-01-09': 1, '2010-01-10': 1.5, '2010-01-10': 0.5}]
     chartData = @model.buildRemainingTimeChartData 1, remainingTimes, @range
-    assert.deepEqual chartData, [{date: '2010-01-01', value: 1}] 
+    assert.deepEqual chartData, [{date: '2010-01-01', value: 1}]
   it 'should return add up remaining_time values from several tasks', ->
 
     remainingTimes = [
@@ -112,7 +108,7 @@ describe 'StoryModel.buildRemainingTimeChartData', ->
     ]
     chartData = @model.buildRemainingTimeChartData(1, remainingTimes, @range)
     assert.deepEqual chartData, [
-      {date: '2010-01-01', value: 3}, 
+      {date: '2010-01-01', value: 3},
       {date: '2010-01-02', value: 2},
       {date: '2010-01-03', value: 1.75},
       {date: '2010-01-04', value: 0.75},

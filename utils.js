@@ -38,7 +38,7 @@ var equals = function(a, b) {
 };
 
 var isFalsy = function(a) {
-  return a == false;
+  return a == false; // jshint ignore:line
 };
 
 exports.isFalsy = isFalsy;

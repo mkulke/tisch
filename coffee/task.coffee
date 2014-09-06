@@ -1,27 +1,26 @@
 class TaskModel extends Model
-
   type: 'task'
-  constructor: (@task, @story, @sprint) ->
-  getDateIndex: (sprintStart, sprintLength) ->
 
+  constructor: (@task, @story, @sprint) ->
+
+  getDateIndex: (sprintStart, sprintLength) ->
     current = new moment()
     start = new moment sprintStart
     inclusiveEnd = start.clone().add('days', sprintLength - 1)
     dateIndex =
-
       if current < start then start
       else if current > inclusiveEnd then inclusiveEnd
       else current
     dateIndex.format(common.DATE_DB_FORMAT)
-  getClosestValueByDateIndex: (object, start, end) ->
 
+  getClosestValueByDateIndex: (object, start, end) ->
     # TODO: make default configurable
     isWithinRange = (key) ->
       end >= key >= start
     _.mixin toValue: partial(_.result, object)
     _.chain(object).keys().filter(isWithinRange).sort().last().toValue().value() || 1
-  set: (key, value, index) =>
 
+  set: (key, value, index) =>
     if index? then @[@type][key][index] = value
     else @[@type][key] = value
 
