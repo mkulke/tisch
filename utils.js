@@ -2,7 +2,7 @@ var partial = function (fn) {
 
   var aps = Array.prototype.slice;
   var args = aps.call(arguments, 1);
-  
+
   return function() {
 
     return fn.apply(this, args.concat(aps.call(arguments)));
@@ -21,7 +21,6 @@ var curry2 = function (fn) {
 };
 
 var curry3 = function (fn) {
-
   return function(arg3) {
 
     return function(arg2) {
@@ -35,10 +34,14 @@ var curry3 = function (fn) {
 };
 
 var equals = function(a, b) {
-
   return a === b;
 };
 
+var isFalsy = function(a) {
+  return a == false;
+};
+
+exports.isFalsy = isFalsy;
 exports.partial = partial;
 exports.curry2 = curry2;
 exports.curry3 = curry3;

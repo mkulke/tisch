@@ -59,17 +59,15 @@ prepareStories = (next) ->
   prepareSprints u.partial(issueQuery, queryString, next)
 
 prepareTasks = (next) ->
-
   queryString = """
-
     INSERT INTO
     tasks
-    (_id, _rev, summary, color, priority, story_id)
+    (_rev, summary, color, priority, story_id)
     VALUES
-    (1, 3, 'Task A', 'red', 3, 1),
-    (2, 6, 'Task B', 'orange', 4, 2),
-    (3, 1, 'Task C', 'purple', 5, 1),
-    (4, 1, 'Task D', 'green', 6, 1)
+    (3, 'Task A', 'red', 3, 1),
+    (6, 'Task B', 'orange', 4, 2),
+    (1, 'Task C', 'purple', 5, 1),
+    (1, 'Task D', 'green', 6, 1)
   """
 
   prepareStories u.partial(issueQuery, queryString, next)
@@ -106,9 +104,12 @@ prepareRemainingTimes = (next) ->
 
   prepareTasks u.partial(issueQuery, queryString, next)
 
-cleanupSprints = (next) ->
+resetTaskSequence = (next) ->
+  issueQuery "ALTER SEQUENCE tasks__id_seq RESTART WITH 1", next
 
-  issueQuery 'DELETE FROM sprints', next
+cleanupSprints = (next) ->
+  queryString = 'DELETE FROM sprints'
+  resetTaskSequence u.partial(issueQuery, queryString, next)
 
 prepare = (next) ->
 
@@ -331,27 +332,58 @@ describe 'postgres', ->
             _.pluck(rows, 'color')[0] == 'green'
 
     describe 'findSingleStory', ->
-
       before ->
-
         @id = '3'
         @subject = ->
-
           postgres.findSingleSprint @id
 
       do expectItToReturnOneRow
   describe 'task functions', ->
-
     beforeEach prepareTasks
     afterEach cleanupSprints
 
-    describe 'findTasks', ->
-
+    describe 'addTask', ->
       before ->
+        @initialData =
+          description: 'test'
+          color: 'green'
+          summary: 'test'
+          story_id: 3
 
+        @subject = ->
+          postgres.addTask @initialData
+
+      it 'is succesful', ->
+        expect(do @subject).to.eventually.be.fulfilled
+
+      it 'returns an object with an empty remaining time property', ->
+        expect(do @subject).to.eventually.have.property('remaining_time').to.deep.equal {}
+
+      it 'returns an object with an empty time spent property', ->
+        expect(do @subject).to.eventually.have.property('time_spent').to.deep.equal {}
+
+      it 'returns an object with correct _id and _rev propertie', ->
+        expect(do @subject).to.eventually.satisfy (result) ->
+          expect(result).to.have.property '_id'
+          expect(result).to.have.property '_rev', 1
+
+      context 'and there is an illegal column in the initial data', ->
+        before ->
+          _.extend @initialData, illegal: 'yes'
+
+        it 'throws an error', ->
+          expect(do @subject).to.eventually.be.rejectedWith(Error)
+    describe 'removeTask', ->
+      it 'removes the task'
+
+      it "removes all the task's remaining_time and time_spent entries"
+
+      it 'returns the removed task'
+
+    describe 'findTasks', ->
+      before ->
         @args = []
         @subject = ->
-
           postgres.findTasks @args...
 
       expectItToReturnRows n: 4
@@ -359,41 +391,31 @@ describe 'postgres', ->
       expectItToBeSortable table: 'tasks', column: 'priority', orderedValues: [3, 4, 5, 6]
 
       context 'when tasks have remaining time values', ->
-
         beforeEach prepareRemainingTimes
 
         before ->
-
           @args = [{'_id': 3}]
 
         expectItToReturnRows n: 1
 
         it 'returns objects with remaining time objects', ->
-
           expect(do @subject).to.eventually.satisfy (rows) ->
-
             expect(rows[0]).to.have.property('remaining_time').to.deep.equal('2013-01-03': 10)
 
       context 'when tasks have time spent values', ->
-
         beforeEach prepareTimesSpent
 
         before ->
-
           @args = [{'_id': 2}]
 
         expectItToReturnRows n: 1
 
         it 'returns objects with time spent objects', ->
-
           expect(do @subject).to.eventually.satisfy (rows) ->
-
             expect(rows[0]).to.have.property('time_spent').to.deep.equal('2014-01-03': 1)
 
     describe 'findSingleTask', ->
-
       before ->
-
         @id = 1
         @subject = ->
 
@@ -479,11 +501,8 @@ describe 'postgres', ->
                 expect(result.rows[0]).to.have.property('days', 5)
                 do done
           it 'increases the rev for the respective task', (done) ->
-
             @subject().then ->
-
               query 'SELECT _rev FROM tasks WHERE _id = 3', (err, result) ->
-
                 expect(result.rows[0]).to.have.property('_rev', 3)
                 do done
           it 'does not add a row to the remaining times table', (done) ->
@@ -519,24 +538,19 @@ describe 'postgres', ->
                 expect(result.rows[0]).to.have.property('_rev', 2)
                 do done
         context 'and the task does not exist', ->
-
           before ->
-
             @subject = ->
-
               postgres.updateTask 10, 1, 'remaining_time', 5, '2014-01-05'
-          it 'throws an exception', ->
 
+          it 'throws an exception', ->
             expect(do @subject).to.eventually.be.rejectedWith(Error)
+
         context "and the specified task's rev is wrong", ->
-
           before ->
-
             @subject = ->
-
               postgres.updateTask 4, 2, 'remaining_time', 5, '2014-01-05'
-          it 'throws an exception', ->
 
+          it 'throws an exception', ->
             expect(do @subject).to.eventually.be.rejectedWith(Error)
 
   describe 'calculation functions', ->

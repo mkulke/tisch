@@ -311,6 +311,23 @@ CREATE SEQUENCE times_spent__id_seq
 
 ALTER SEQUENCE times_spent__id_seq OWNED BY times_spent._id;
 
+--
+-- Name: tasks_priority_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE tasks_priority_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: tasks_priority_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE tasks_priority_seq OWNED BY tasks.priority;
 
 --
 -- Name: _id; Type: DEFAULT; Schema: public; Owner: -
@@ -338,6 +355,13 @@ ALTER TABLE ONLY stories ALTER COLUMN _id SET DEFAULT nextval('stories__id_seq':
 --
 
 ALTER TABLE ONLY tasks ALTER COLUMN _id SET DEFAULT nextval('tasks__id_seq'::regclass);
+
+
+--
+-- Name: _id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY tasks ALTER COLUMN priority SET DEFAULT nextval('tasks_priority_seq'::regclass);
 
 
 --

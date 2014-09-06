@@ -11,12 +11,21 @@ var connectionString = config.db.postgres.uri + config.db.postgres.name;
 
 var COLUMNS = {
 	REMAINING_TIME: 'remaining_time',
-	TIME_SPENT: 'time_spent'
+	TIME_SPENT: 'time_spent',
+	PRIORITY: 'priority',
+	DESCRIPTION: 'description',
+	COLOR: 'color',
+	SUMMARY: 'summary',
+	STORY_ID: 'story_id'
 };
 
 var TABLES = {
 	TASKS: 'tasks'
 };
+
+var ERRORS = {
+	ILLEGAL_COLUMN: new Error('Illegal column')
+}
 
 var _connect = function() {
 	var deferred = Q.defer();
@@ -39,8 +48,8 @@ var _query = function(query, client, done) {
 			deferred.reject(new Error(err));
 		}
 
-		done();
 		deferred.resolve(result);
+		done();
 	});
 	return deferred.promise;
 };
@@ -53,6 +62,21 @@ var _verifyTable = function(table) {
 			throw new Error('querying table ' + table + ' is not allowed.');
 		}
 	});
+};
+
+// TODO: move the hardcoded stuff into some schema document or sth.
+var _isColumnLegal = function(table, column) {
+	var allowedColumns = {
+		tasks: [
+			COLUMNS.DESCRIPTION,
+			COLUMNS.COLOR,
+			COLUMNS.SUMMARY,
+			COLUMNS.PRIORITY,
+			COLUMNS.STORY_ID
+		]
+	};
+
+	return _.has(allowedColumns, table) && _.contains(allowedColumns[table], column);
 };
 
 var _verifyColumn = function(table, column) {
@@ -517,8 +541,49 @@ var findTasks = function(filter, sort) {
 		.then(process);
 };
 
+var _add = function(table, isChild, data) {
+	var columns, values, verify, parameters, queryText, query, process, isColumnLegal;
+
+	columns = _.keys(data);
+	values = _.values(data);
+
+	parameters = _.chain(_.range(1, values.length + 1)).invoke('toString').map(function(number) {
+		return '$' + number;
+	}).value();
+
+	/*if (isChild) {
+		columns = columns.concat([COLUMNS.PRIORITY]);
+		parameters = parameters.concat(['ROUND(MAX(' + COLUMNS.PRIORITY + ')) + 1']);
+	}*/
+
+	isColumnLegal = u.partial(_isColumnLegal, table);
+	if (_.chain(columns).map(isColumnLegal).some(u.isFalsy).value()) {
+		return Q.reject(ERRORS.ILLEGAL_COLUMN);
+	}
+
+	queryText = 'INSERT INTO ' + table + ' (' + columns.join(',') + ') VALUES (' + parameters.join(',') + ') RETURNING *';
+
+	query = u.partial(_query, {text: queryText, values: values});
+
+	process = function(result) {
+		if (result.rows.length != 1) {
+			throw new Error('id ' + id + ' does not exist on table ' + table);
+		}
+
+		return _.extend(result.rows[0], {remaining_time: {}, time_spent: {}});
+	};
+
+	return _connect()
+		.spread(query)
+		.then(process)
+		.fail(function (error) {
+			console.log(error);
+		});
+};
+
 exports.init = Q.resolve;
 exports.cleanup = cleanup;
+exports.addTask = u.partial(_add, 'tasks', true);
 exports.findSprints = u.partial(_find, 'sprints');
 exports.findSingleSprint = u.partial(_findOne, 'sprints');
 exports.findStories = u.partial(_find, 'stories');
