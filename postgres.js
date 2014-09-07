@@ -578,14 +578,14 @@ var _add = function(table, data) {
 	return _connect().spread(query).then(process);
 };
 
-var _remove = function(table, id) {
+var _remove = function(table, id, rev) {
 	var queryText, query, process;
 	if (!_isTableLegal(table)) {
 		return Q.reject(ERRORS.ILLEGAL_TABLE);
 	}
 
-	queryText = 'DELETE FROM ' + table + ' WHERE _id = $1 RETURNING *';
-	query = partial(_query, {text: queryText, values: [id]});
+	queryText = 'DELETE FROM ' + table + ' WHERE _id = $1 AND _rev = $2 RETURNING *';
+	query = partial(_query, {text: queryText, values: [id, rev]});
 
 	process = function(result) {
 		if (result.rows.length != 1) {

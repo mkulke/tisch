@@ -382,9 +382,10 @@ describe 'postgres', ->
     describe 'removeTask', ->
       before ->
         @id = 1
+        @rev = 3
 
         @subject = ->
-          postgres.removeTask @id
+          postgres.removeTask @id, @rev
 
       it 'is succesful', ->
         expect(do @subject).to.eventually.be.fulfilled
@@ -397,6 +398,9 @@ describe 'postgres', ->
       context 'when there are remaining_times associated', ->
         beforeEach prepareRemainingTimes
 
+        before ->
+          @rev = 6
+
         it "removes them", (done) ->
           @subject().then ->
             query 'SELECT count(*) FROM remaining_times', (err, result) ->
@@ -404,6 +408,9 @@ describe 'postgres', ->
               do done
       context 'when there are times_spent associated', ->
         beforeEach prepareTimesSpent
+
+        before ->
+          @rev = 6
 
         it "removes them", (done) ->
           @subject().then ->
