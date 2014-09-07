@@ -1,30 +1,23 @@
 {
 	"templates": {
-
 		"task": {
-
-		  "description": "", 
-		  "initial_estimation": 1,
-		  "remaining_time": {"initial": 1},
-		  "time_spent": {"initial": 0}, 
+		  "description": "",
 		  "summary": "New Task",
 		  "color": "blue",
 		  "story_id": null
 		},
 		"story": {
-      
-      "description": "", 
+      "description": "",
       "estimation": 5,
-      "color": "yellow", 
+      "color": "yellow",
       "title": "New Story",
       "sprint_id": null
     },
     "sprint": {
-
     	"description": "Sprint description",
       "start": null,
       "length": 14,
-      "color": "blue", 
+      "color": "blue",
       "title": "New Sprint"
     }
 	}
