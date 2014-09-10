@@ -30,11 +30,11 @@ class StoryModel extends Model
 
       range.start <= value <= range.end
 
-    _.chain(property).keys().filter(inRange).union(indices).sort().value()    
+    _.chain(property).keys().filter(inRange).union(indices).sort().value()
 
   buildTimeSpentChartData: (timesSpent, range) ->
 
-    # This functions collect the dates from all time_spent objects while discarding 
+    # This functions collect the dates from all time_spent objects while discarding
     # the out-of-sprint values. Then for every found date all task values for that
     # date are accumulated. Finally, if no 1st sprint day value was found and it is
     # not empty, it is prepended with a zero value.
@@ -42,7 +42,7 @@ class StoryModel extends Model
     add = (index, memo, timeSpent) ->
 
       time = timeSpent[index]
-      if time? 
+      if time?
 
         memo + time
       else
@@ -79,10 +79,10 @@ class StoryModel extends Model
 
   buildRemainingTimeChartData: (estimation, remainingTimes, range) ->
 
-    # This functions collect the dates from all remaining_time objects while discarding 
+    # This functions collect the dates from all remaining_time objects while discarding
     # the out-of-sprint values. Then for every found date a value is fetched/calculated
-    # for each task, the results are accumulated. Finally, if no 1st sprint day value was 
-    # found, it is prepended with the stories estimation. 
+    # for each task, the results are accumulated. Finally, if no 1st sprint day value was
+    # found, it is prepended with the stories estimation.
 
     closestDate = (date, remainingTime) ->
 
@@ -104,7 +104,7 @@ class StoryModel extends Model
       .union([range.start])
       .sort()
       .value()
-    
+
     toD3 = (date) ->
 
       value = _.reduce(remainingTimes, (memo, remainingTime) ->
@@ -148,7 +148,7 @@ class StoryViewModel extends ViewModel
       story_id: ko.observable task.story_id
       color: ko.observable task.color
       remaining_time: remainingTime
-      time_spent: ko.observable task.time_spent  
+      time_spent: ko.observable task.time_spent
 
     computed =
 
@@ -165,7 +165,7 @@ class StoryViewModel extends ViewModel
       readonly: readonly
       writable: writable
 
-    @_setupMarkdown.call observables, writable.description   
+    @_setupMarkdown.call observables, writable.description
     observables
 
   _replaceSprint: (sprint) =>
@@ -179,7 +179,7 @@ class StoryViewModel extends ViewModel
   showColorSelector: =>
 
     @modal 'color-selector'
-  
+
   selectColor: (color) =>
 
     @modal null
@@ -187,7 +187,7 @@ class StoryViewModel extends ViewModel
 
   sprints: ko.observable()
 
-  showSprintSelector: => 
+  showSprintSelector: =>
 
     @model.getSprints null, (sprints) =>
 
@@ -195,7 +195,7 @@ class StoryViewModel extends ViewModel
 
         {id: sprint._id, label: sprint.title}
       @modal 'sprint-selector'
-    
+
   selectSprint: (selected) =>
 
     @modal null
@@ -204,7 +204,7 @@ class StoryViewModel extends ViewModel
       @writable.sprint_id sprint._id
       @_replaceSprint sprint
     , @_showError
-  
+
   addTask: =>
 
     @model.createTask @model.story._id, partial(@_addChild, @tasks), @showErrorDialog
@@ -227,7 +227,7 @@ class StoryViewModel extends ViewModel
     # TODO: i18n
     @_afterConfirm 'Are you sure? The story and its tasks will be permanently removed.', =>
 
-      @model.removeStory @model.story, => 
+      @model.removeStory @model.story, =>
 
         window.location.replace '/sprint/' + @sprint.computed.id()
       , @showErrorDialog
@@ -243,7 +243,7 @@ class StoryViewModel extends ViewModel
   _refreshChart: =>
 
     # TODO: chart render issues when sprint range is modified.
-    @chart.refresh 
+    @chart.refresh
 
       'remaining-time': @stats.computed.remainingTimeChartData()
       'time-spent': @stats.computed.timeSpentChartData()
@@ -257,7 +257,7 @@ class StoryViewModel extends ViewModel
 
     super(@model)
 
-    # explicitely do not bind the markdown mixin fns, as call() for childs in _createObservables 
+    # explicitely do not bind the markdown mixin fns, as call() for childs in _createObservables
     # will fail. it's questionably wheter binding is needed for those fns...
     _.bindAll @, _.functions(parentMixin)..., _.functions(sortableMixin)...
 
@@ -265,7 +265,7 @@ class StoryViewModel extends ViewModel
 
     @breadcrumbs =
 
-      sprint: 
+      sprint:
 
         id: @model.sprint._id
         readonly:
@@ -320,24 +320,21 @@ class StoryViewModel extends ViewModel
 
     # stats
 
-    @stats = 
-
+    @stats =
       computed:
-
         allRemainingTime: ko.computed =>
-
-          _.reduce @tasks(), (count, task) =>
-
+          num = _.reduce @tasks(), (count, task) =>
             count + @model.buildRemainingTime task.readonly.remaining_time(), @sprint.computed.range()
-          , 0      
+          , 0
+          Math.round(num * 100) / 100
+
         allTimeSpent: ko.computed =>
-
-          _.reduce @tasks(), (count, task) => 
-
+          num = _.reduce @tasks(), (count, task) =>
             count + @model.buildTimeSpent task.readonly.time_spent(), @sprint.computed.range()
           ,0
-        remainingTimeChartData: ko.computed =>
+          Math.round(num * 100) / 100
 
+        remainingTimeChartData: ko.computed =>
           remainingTimes = _.chain(@tasks()).pluck('readonly').pluck('remaining_time').invoke('call').value()
           @model.buildRemainingTimeChartData @writable.estimation(), remainingTimes, @sprint.computed.range()
 
@@ -350,11 +347,10 @@ class StoryViewModel extends ViewModel
     @_refreshChart()
 
     @stats.computed.remainingTimeChartData.subscribe (value) =>
-
       @_refreshChart()
-    @stats.computed.timeSpentChartData.subscribe (value) =>
 
-      @_refreshChart()      
+    @stats.computed.timeSpentChartData.subscribe (value) =>
+      @_refreshChart()
 
     # markdown
 
@@ -370,7 +366,7 @@ class StoryViewModel extends ViewModel
     wires.push sprintWire = @_createUpdateWire(@model.sprint, @sprint.readonly)
     wires.push @_createUpdateWire(_.pick(@model.sprint, '_id'), @breadcrumbs.sprint.readonly)
     wires = wires.concat _.chain(@tasks()).map(partial(@_createChildWires, @tasks)).flatten().value()
-    
+
     socket = new SocketIO()
     socket.connect (sessionid) =>
 
@@ -382,7 +378,7 @@ class StoryViewModel extends ViewModel
         socket.unregisterWires sprintWire
         sprintWire.id = value
         socket.registerWires sprintWire
-        
+
       @model.sessionid = sessionid
       socket.registerWires wires
 
