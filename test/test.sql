@@ -35,7 +35,7 @@ CREATE TYPE enriched_task AS (
         summary character varying(64),
         description text,
         color character varying(8),
-        priority integer,
+        priority double precision,
         story_id integer,
         r_t_dates date[],
         r_t_days real[],
@@ -257,7 +257,7 @@ CREATE TABLE tasks (
     summary character varying(64) NOT NULL,
     description text DEFAULT ''::text NOT NULL,
     color character varying(8) NOT NULL,
-    priority integer NOT NULL,
+    priority double NOT NULL,
     story_id integer NOT NULL
 );
 
