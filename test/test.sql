@@ -257,7 +257,7 @@ CREATE TABLE tasks (
     summary character varying(64) NOT NULL,
     description text DEFAULT ''::text NOT NULL,
     color character varying(8) NOT NULL,
-    priority double NOT NULL,
+    priority double precision NOT NULL,
     story_id integer NOT NULL
 );
 
