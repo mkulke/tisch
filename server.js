@@ -399,16 +399,7 @@ var processRequest = function(request, response) {
 
     rev = extractRev(request.headers);
 
-    if (request.body.key == 'story_id')  {
-
-      throw new Error("not implemented yet");
-      //Need to change priority
-      //query = (request.body.key == 'story_id') ? partial(tischDB.updateTaskAssignment, id, request.body.value, rev) : partial(tischDB.updateTask, id, rev, request.body.key, request.body.value);
-    }
-    else {
-
-      query = partial(tischDB.updateTask, id, rev, request.body.key, request.body.value, request.body.index);
-    }
+    query = partial(tischDB.updateTask, id, rev, request.body.key, request.body.value, request.body.index);
     answer = partial(postAnswer, request.body.key, 'story_id', partial(respondWithJson, response));
   }
   else if ((type == 'task') && (request.method == 'PUT')) {

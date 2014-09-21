@@ -51,11 +51,12 @@ CREATE FUNCTION enrich_task(id integer) RETURNS enriched_task
     LANGUAGE plpgsql
     AS $_$
 DECLARE
-  ret enriched_task;
+    ret enriched_task;
 BEGIN
-SELECT t.*, ARRAY_AGG(r_t.date) AS r_t_dates, ARRAY_AGG(r_t.days) AS r_t_days, ARRAY_AGG(t_s.date) AS t_s_dates, ARRAY_AGG(t_s.days) AS t_s_days FROM tasks AS t  LEFT OUTER JOIN remaining_times as r_t ON (r_t.task_id=t._id) LEFT OUTER JOIN times_spent AS t_s ON (t_s.task_id=t._id) WHERE t._id=$1 GROUP BY t._id INTO ret;
-RETURN ret;
-END;$_$;
+    SELECT t.*, ARRAY_AGG(r_t.date) AS r_t_dates, ARRAY_AGG(r_t.days) AS r_t_days, ARRAY_AGG(t_s.date) AS t_s_dates, ARRAY_AGG(t_s.days) AS t_s_days FROM tasks AS t  LEFT OUTER JOIN remaining_times as r_t ON (r_t.task_id=t._id) LEFT OUTER JOIN times_spent AS t_s ON (t_s.task_id=t._id) WHERE t._id=$1 GROUP BY t._id INTO ret;
+    RETURN ret;
+END;
+$_$;
 
 --
 -- Name: inc_rev(); Type: FUNCTION; Schema: public; Owner: -
@@ -63,13 +64,16 @@ END;$_$;
 
 CREATE FUNCTION inc_rev() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$              DECLARE tid integer;
+    AS $$
+DECLARE
+    tid integer;
 BEGIN
-IF (TG_OP='INSERT') THEN tid=NEW.task_id; ELSE tid=OLD.task_id; END IF;
-UPDATE tasks SET _rev=_rev+1 WHERE _id=tid;
-RETURN NEW;
+    IF (TG_OP='INSERT') THEN tid=NEW.task_id; ELSE tid=OLD.task_id; END IF;
+    UPDATE tasks SET _rev=_rev+1 WHERE _id=tid;
+    RETURN NEW;
 END;
 $$;
+
 
 --
 -- Name: upsert_rt(key date, data real, tid integer); Type: FUNCTION; Schema: public; Owner: -

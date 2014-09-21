@@ -20,7 +20,8 @@ var COLUMNS = {
 };
 
 var TABLES = {
-	TASKS: 'tasks'
+	TASKS: 'tasks',
+	STORIES: 'stories'
 };
 
 var ERRORS = {
@@ -33,11 +34,11 @@ var _connect = function() {
 	var deferred = Q.defer();
 
 	pg.connect(connectionString, function(err, client, done) {
-    if (err) {
-      deferred.reject(new Error(err));
-    }
+		if (err) {
+			deferred.reject(new Error(err));
+		}
 
-    deferred.resolve([client, done]);
+		deferred.resolve([client, done]);
 	});
 	return deferred.promise;
 };
@@ -156,11 +157,14 @@ var _findOne = function(table, id) {
 		.then(process);
 };
 
-
 var _update = function(table, id, rev, column, value) {
 	var verify = partial(_verifyColumn, table, column);
 
-	var queryText = 'UPDATE ' + table + ' SET ' + column + '=$3, _rev=' + table + '._rev+1 ' +
+	var queryText = 'UPDATE ' + table + ' SET ' + column + '=$3, _rev=' + table + '._rev+1' +
+		((_.contains(['story_id'], column)) ?
+			", priority=nextval('" + table + "_priority_seq') " :
+			' '
+		) +
 		((table === TABLES.TASKS) ?
 			'FROM enrich_task($1) AS enriched WHERE tasks._id=$1 AND tasks._rev=$2 RETURNING tasks.*, enriched.t_s_dates, enriched.r_t_days, enriched.r_t_dates, enriched.r_t_days' :
 			'WHERE _id=$1 AND _rev=$2 RETURNING *'
@@ -212,7 +216,7 @@ var getStoriesRemainingTime = function(storyIds, range) {
 	// The query gets remaining time date/days pairs.
 	// When a task has no remaining time pair yet, a virtual one w/ sprint start and 1 is created.
 	// When a story has no task, the story's estimation value is used.
-  // TODO: make initial remaining time on task configurable.
+	// TODO: make initial remaining time on task configurable.
 
 	var text = [
 
@@ -331,13 +335,13 @@ var getStoriesTimeSpent = function(storyIds, range) {
 
 	var text = [
 
-    "SELECT s._id AS story_id, t_s.date AS date, COALESCE(SUM(t_s.days), 0) AS days",
-    'FROM stories AS s',
-    'LEFT OUTER JOIN tasks AS t ON (s._id=t.story_id)',
-    'LEFT OUTER JOIN times_spent AS t_s ON (t._id=t_s.task_id AND t_s.date >= $1 AND t_s.date <= $2)',
-    idClause,
-    'GROUP BY s._id, t_s.date',
-    'ORDER BY s._id, date'
+		"SELECT s._id AS story_id, t_s.date AS date, COALESCE(SUM(t_s.days), 0) AS days",
+		'FROM stories AS s',
+		'LEFT OUTER JOIN tasks AS t ON (s._id=t.story_id)',
+		'LEFT OUTER JOIN times_spent AS t_s ON (t._id=t_s.task_id AND t_s.date >= $1 AND t_s.date <= $2)',
+		idClause,
+		'GROUP BY s._id, t_s.date',
+		'ORDER BY s._id, date'
 	].join(' ');
 
 	var handleEmptyValues = function(result) {
@@ -476,7 +480,6 @@ var updateTask = function(id, rev, column, value, index) {
 		return updateIndexed.apply(this, arguments);
 	} else {
 		argumentsWithoutIndex = ['tasks'].concat(Array.prototype.slice.call(arguments, 0, 5));
-
 
 		return _update.apply(this, argumentsWithoutIndex);
 	}
