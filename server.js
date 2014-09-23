@@ -13,9 +13,9 @@ var moment = require('moment');
 var colors = require('colors');
 var _ = require('underscore')._;
 var config = require('./config/' + (process.env.NODE_ENV || 'development') + '.json');
-var tischDB = require('./' + (config.db.backend || 'mongo' ) + '.js');
+var tischDB = require('./lib/' + (config.db.backend || 'mongo' ) + '.js');
 var tischRT = require('./rt.js');
-var u = require('./utils.js');
+var u = require('./lib/utils.js');
 
 var cwd = process.cwd();
 var options = { pretty: false, filename: 'sprint.jade' };
