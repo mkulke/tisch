@@ -4,6 +4,7 @@ var Q = require('q');
 var db = require('../lib/postgres.js');
 
 router.route('/task').get(function(req, res) {
+	console.log('user ' + req.user.email + ' is calling /api/task');
 	db.findTasks()
 	.then(function(tasks) {
 		return res.json(tasks);
