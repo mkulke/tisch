@@ -107,7 +107,7 @@ module.exports = function(grunt) {
     },
     jshint: {
 
-      src: ['*.js']
+      src: ['*.js', 'lib/*.js', 'routes/*.js']
     },
   });
 
