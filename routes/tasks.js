@@ -30,4 +30,10 @@ router.route('/task').post(function(req, res) {
 	.fail(_.partial(respondWithError, res));
 });
 
+router.route('/task/:id').delete(function(req, res) {
+	db.removeTask(req.params.id, req.get('Rev'))
+	.then(_.partial(respondWithResult, res))
+	.fail(_.partial(respondWithError, res));
+});
+
 module.exports = router;
