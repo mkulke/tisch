@@ -4,8 +4,8 @@ _ = require('underscore')._
 chai = require('chai')
 chaiAsPromised = require('chai-as-promised')
 exec = require('child_process').exec
-postgres = require('../../postgres.js')
-u = require('../../utils.js')
+postgres = require('../../lib/postgres.js')
+u = require('../../lib/utils.js')
 
 assert = chai.assert
 expect = chai.expect
