@@ -30,6 +30,5 @@ app.post('/authenticate', function (req, res) {
 
   res.json({ token: token });
 });
-app.login
 
 module.exports = app;
