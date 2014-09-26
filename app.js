@@ -7,7 +7,7 @@ var jwt = require('jsonwebtoken');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
-app.use('/api', expressJwt({secret: 'secret'}));
+app.put('/api', expressJwt({secret: 'secret'}));
 app.use('/api', tasks);
 
 app.post('/authenticate', function (req, res) {
@@ -30,5 +30,6 @@ app.post('/authenticate', function (req, res) {
 
   res.json({ token: token });
 });
+app.login
 
 module.exports = app;
