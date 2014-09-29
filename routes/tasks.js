@@ -5,6 +5,7 @@ var db = require('../lib/postgres.js');
 var respondWithError = require('../lib/utils.js').respondWithError;
 var respondWithResult = require('../lib/utils.js').respondWithResult;
 var constants = require('../lib/constants.json');
+var addSelfLink = require('../lib/utils.js').addSelfLink;
 
 router.route('/task').get(function(req, res) {
 	db.findTasks()
@@ -14,7 +15,15 @@ router.route('/task').get(function(req, res) {
 
 router.route('/task/:id').get(function(req, res) {
 	db.findSingleTask(req.params.id)
-	.then(_.partial(respondWithResult, res))
+	.then(_.partial(addSelfLink, req))
+	.then(function(result) {
+		result.links.push({
+			rel: 'story',
+			href: req.protocol + '://' + req.get('host') + '/api/story/' + result.story_id
+		})
+		return result;
+	})
+	.then( _.partial(respondWithResult, res))
 	.fail(_.partial(respondWithError, res));
 });
 
