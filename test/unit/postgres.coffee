@@ -495,11 +495,11 @@ describe 'postgres', ->
             '2014-01-02': 3
             '2014-01-15': 1
 
-    describe 'updateTask',  ->
+    describe 'updateTaskProperty',  ->
       context 'when updating color', ->
         before ->
           @subject = ->
-            postgres.updateTask 4, 1, 'color', 'blue'
+            postgres.updateTaskProperty 4, 1, 'color', 'blue'
 
         it 'returns the modifed task', ->
           expect(do @subject).to.eventually.satisfy (task) ->
@@ -508,10 +508,11 @@ describe 'postgres', ->
         it 'returns a task with a remaining_time property', ->
           expect(do @subject).to.eventually.have.property 'remaining_time'
 
+    describe 'updateIndexedTaskProperty', ->
       context 'when updating time_spent', ->
         before ->
           @subject = ->
-            postgres.updateTask 3, 1, 'time_spent', 1.5, '2010-01-01'
+            postgres.updateIndexedTaskProperty 3, 1, 'time_spent', 1.5, '2010-01-01'
 
         it 'returns the modified (enriched) task', ->
           expect(do @subject).to.eventually.satisfy (task) ->
@@ -523,7 +524,7 @@ describe 'postgres', ->
 
         before ->
           @subject = ->
-            postgres.updateTask 3, 2, 'remaining_time', 1, '2010-01-01'
+            postgres.updateIndexedTaskProperty 3, 2, 'remaining_time', 1, '2010-01-01'
 
         it 'returns the modified (enriched) task', ->
           expect(do @subject).to.eventually.satisfy (task) ->
@@ -532,61 +533,49 @@ describe 'postgres', ->
               '2013-01-03': 10
 
         context 'and the task already has an entry for the specified date', ->
-
           before ->
-
             @subject = ->
+              postgres.updateIndexedTaskProperty 3, 2, 'remaining_time', 5, '2013-01-03'
 
-              postgres.updateTask 3, 2, 'remaining_time', 5, '2013-01-03'
           it 'updates the row in the remaining times table', (done) ->
-
             @subject().then ->
-
               query "SELECT days FROM remaining_times WHERE task_id = 3 AND date = '2013-01-03'", (err, result) ->
-
                 expect(result.rows[0]).to.have.property('days', 5)
                 do done
+
           it 'increases the rev for the respective task', (done) ->
             @subject().then ->
               query 'SELECT _rev FROM tasks WHERE _id = 3', (err, result) ->
                 expect(result.rows[0]).to.have.property('_rev', 3)
                 do done
+
           it 'does not add a row to the remaining times table', (done) ->
-
             @subject().then ->
-
               query 'SELECT count(*) FROM remaining_times', (err, result) ->
-
                 expect(result.rows[0]).to.have.property('count', '4')
                 do done
 
         context 'and the specified date does not exist for the task yet', ->
-
           before ->
-
             @subject = ->
+              postgres.updateIndexedTaskProperty 4, 1, 'remaining_time', 5, '2014-01-05'
 
-              postgres.updateTask 4, 1, 'remaining_time', 5, '2014-01-05'
           it 'adds a row to the remaining times table', (done) ->
-
             @subject().then ->
-
               query 'SELECT count(*) FROM remaining_times', (err, result) ->
-
                 expect(result.rows[0]).to.have.property('count', '5')
                 do done
+
           it 'increases the rev for the respective task', (done) ->
-
             @subject().then ->
-
               query 'SELECT _rev FROM tasks WHERE _id = 4', (err, result) ->
-
                 expect(result.rows[0]).to.have.property('_rev', 2)
                 do done
+
         context 'and the task does not exist', ->
           before ->
             @subject = ->
-              postgres.updateTask 10, 1, 'remaining_time', 5, '2014-01-05'
+              postgres.updateIndexedTaskProperty 10, 1, 'remaining_time', 5, '2014-01-05'
 
           it 'throws an exception', ->
             expect(do @subject).to.eventually.be.rejectedWith(Error)
@@ -594,7 +583,7 @@ describe 'postgres', ->
         context "and the specified task's rev is wrong", ->
           before ->
             @subject = ->
-              postgres.updateTask 4, 2, 'remaining_time', 5, '2014-01-05'
+              postgres.updateIndexedTaskProperty 4, 2, 'remaining_time', 5, '2014-01-05'
 
           it 'throws an exception', ->
             expect(do @subject).to.eventually.be.rejectedWith(Error)

@@ -445,16 +445,16 @@ var findSingleTask = function(id) {
 		.then(process);
 };
 
-var updateIndexed = function(id, rev, column, value, index) {
+var updateIndexedTaskProperty = function(id, rev, property, value, index) {
 	var verify = function() {
 		return Q.fcall(function() {
-			if (!_.contains([COLUMNS.REMAINING_TIME, COLUMNS.TIME_SPENT], column)) {
-				throw new Error('querying column ' + column + ' is not allowed on table');
+			if (!_.contains([COLUMNS.REMAINING_TIME, COLUMNS.TIME_SPENT], property)) {
+				throw new Error('querying column ' + property + ' is not allowed on table');
 			}
 		});
 	};
 
-	var sqlFn = (column === COLUMNS.REMAINING_TIME) ? 'upsert_rt' : 'upsert_ts';
+	var sqlFn = (property === COLUMNS.REMAINING_TIME) ? 'upsert_rt' : 'upsert_ts';
 
 	var query = partial(_query, {text: 'SELECT * FROM ' + sqlFn + '($1, $2, $3, $4)', values: [index, value, id, rev]});
 
@@ -477,21 +477,7 @@ var updateIndexed = function(id, rev, column, value, index) {
 		.then(process);
 };
 
-var updateTask = function(id, rev, column, value, index) {
-
-	var argumentsWithoutIndex;
-
-	if (_.contains([COLUMNS.REMAINING_TIME, COLUMNS.TIME_SPENT], column)) {
-		return updateIndexed.apply(this, arguments);
-	} else {
-		argumentsWithoutIndex = ['tasks'].concat(Array.prototype.slice.call(arguments, 0, 5));
-
-		return _update.apply(this, argumentsWithoutIndex);
-	}
-};
-
 var findTasks = function(filter, sort) {
-
 	var table = 'tasks';
 	var selectText = [
 		'SELECT t.*, ARRAY_AGG(r_t.date) AS r_t_dates, ARRAY_AGG(r_t.days) AS r_t_days, ARRAY_AGG(t_s.date) AS t_s_dates, ARRAY_AGG(t_s.days) AS t_s_days FROM tasks AS t ',
@@ -620,7 +606,8 @@ exports.findSingleTask = findSingleTask;
 exports.removeTask = partial(_remove, 'tasks');
 exports.updateSprint = partial(_update, 'sprints');
 exports.updateStory = partial(_update, 'stories');
-exports.updateTask = updateTask;
+exports.updateTaskProperty = partial(_update, 'tasks');
+exports.updateIndexedTaskProperty = updateIndexedTaskProperty;
 exports.getStoriesRemainingTime = getStoriesRemainingTime;
 exports.getStoriesTimeSpent = getStoriesTimeSpent;
 exports.getStoriesTaskCount = getStoriesTaskCount;
