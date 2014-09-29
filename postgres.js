@@ -27,7 +27,8 @@ var TABLES = {
 var ERRORS = {
 	ILLEGAL_COLUMN: new Error('Illegal column'),
 	ILLEGAL_TABLE: new Error('Illegal table'),
-	WRONG_RESULT: new Error('Wrong result')
+	WRONG_RESULT: new Error('Wrong result'),
+	NOT_FOUND: new Error('Resource not found')
 };
 
 var _connect = function() {
@@ -414,9 +415,13 @@ var _processTaskRow = function(id, result) {
 	};
 
 	if (result.rows.length != 1) {
-		throw new Error('id ' + id + ' does not exist on table ' + table);
+		throw ERRORS.WRONG_RESULT;
 	}
+
 	row = result.rows[0];
+	if (row._id === null) {
+		throw ERRORS.NOT_FOUND;
+	}
 
 	remaining_time = buildObject(row.r_t_dates, row.r_t_days);
 	time_spent = buildObject(row.t_s_dates, row.t_s_days);

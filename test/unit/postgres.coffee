@@ -464,6 +464,13 @@ describe 'postgres', ->
 
       do expectItToReturnOneRow
 
+      context 'when the task does not exist', ->
+        before ->
+          @id = '1000'
+
+        it 'throws an exception', ->
+          expect(do @subject).to.eventually.be.rejectedWith(Error)
+
       context 'when the task has remaining time values', ->
         before ->
           @id = '1'
@@ -593,22 +600,17 @@ describe 'postgres', ->
             expect(do @subject).to.eventually.be.rejectedWith(Error)
 
   describe 'calculation functions', ->
-
     describe 'remaining times', ->
-
       beforeEach prepareRemainingTimes
       afterEach cleanupSprints
 
       describe 'getStoriesRemainingTime', ->
-
         before ->
-
           @args = [['1', '3'], {start: '2013-01-01', end: '2013-01-14'}]
           @subject = ->
-
             postgres.getStoriesRemainingTime @args...
-        it 'returns correct calculations', ->
 
+        it 'returns correct calculations', ->
           expect(do @subject).to.eventually.deep.equal([
             ['1', [
               ['2013-01-01', 4],
@@ -619,14 +621,14 @@ describe 'postgres', ->
               ['2013-01-01', 5]
             ]]
           ])
+
         context 'when faulty ids are specified', ->
-
           before ->
-
             @args[0] = ['wrong']
-          it 'throws an error', ->
 
+          it 'throws an error', ->
             expect(do @subject).to.be.rejectedWith(Error)
+
         context 'when no ids are specified', ->
 
           before ->
