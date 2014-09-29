@@ -18,8 +18,14 @@ router.route('/task/:id').get(function(req, res) {
 	.fail(_.partial(respondWithError, res));
 });
 
-router.route('/task/:id').post(function(req, res) {
-	db.updateTask(req.params.id, req.get('Rev'), req.get('Key'), req.get('Value'), req.get('Index'))
+router.route('/task/:id/:property').put(function(req, res) {
+	db.updateTask(req.params.id, req.get('Rev'), req.params.property, req.body.value)
+	.then(_.partial(respondWithResult, res))
+	.fail(_.partial(respondWithError, res));
+});
+
+router.route('/task/:id/:property/:index').put(function(req, res) {
+	db.updateIndexedTaskProperty(req.params.id, req.get('Rev'), req.params.property, req.params.index, req.body.value)
 	.then(_.partial(respondWithResult, res))
 	.fail(_.partial(respondWithError, res));
 });
