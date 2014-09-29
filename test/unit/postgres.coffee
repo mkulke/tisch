@@ -438,11 +438,11 @@ describe 'postgres', ->
             '2014-01-02': 3
             '2014-01-15': 1
 
-    describe 'updateTaskProperty',  ->
+    describe 'updateTask',  ->
       context 'when updating color', ->
         before ->
           @subject = ->
-            postgres.updateTaskProperty 4, 1, 'color', 'blue'
+            postgres.updateTask 4, 1, 'color', 'blue'
 
         it 'returns the modifed task', ->
           expect(do @subject).to.eventually.satisfy (task) ->
