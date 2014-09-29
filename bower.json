@@ -1,0 +1,22 @@
+{
+  "name": "tisch",
+  "version": "0.1.1",
+  "homepage": "https://github.com/mkulke/tisch",
+  "authors": [
+    "Magnus Kulke <mkulke@gmail.com>"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "public/vendor",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "knockout": "~3.2.0",
+    "bootstrap": "~3.2.0"
+  }
+}
