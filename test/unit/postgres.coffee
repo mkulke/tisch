@@ -12,26 +12,19 @@ expect = chai.expect
 chai.use chaiAsPromised
 
 query = (queryString, cb) ->
-
   connectionString = 'postgres://localhost/test'
   pg.connect connectionString, (err, client, done) ->
-
     client.query queryString, (err, result) ->
-
       do done
       cb err, result
 
 issueQuery = (queryString, next) ->
-
   query queryString, (err) ->
-
     next err if err
     do next unless err
 
 prepareSprints = (next) ->
-
   queryString = """
-
     INSERT INTO
     sprints
     (_id, _rev, title, description, color, start, length)
@@ -44,9 +37,7 @@ prepareSprints = (next) ->
   issueQuery queryString, next
 
 prepareStories = (next) ->
-
   queryString = """
-
     INSERT INTO
     stories
     (_id, _rev, title, color, estimation, priority, sprint_id)
@@ -73,9 +64,7 @@ prepareTasks = (next) ->
   prepareStories u.partial(issueQuery, queryString, next)
 
 prepareTimesSpent = (next) ->
-
   queryString = """
-
     INSERT INTO
     times_spent
     (_id, date, days, task_id)
@@ -89,9 +78,7 @@ prepareTimesSpent = (next) ->
   prepareTasks u.partial(issueQuery, queryString, next)
 
 prepareRemainingTimes = (next) ->
-
   queryString = """
-
     INSERT INTO
     remaining_times
     (_id, date, days, task_id)
@@ -112,58 +99,41 @@ cleanupSprints = (next) ->
   resetTaskSequence u.partial(issueQuery, queryString, next)
 
 prepare = (next) ->
-
   exec 'createdb test', (err) ->
-
     console.log("exec error: #{err}") if err
     exec 'psql -d test -f test/test.sql', (err) ->
-
       console.log("exec error: #{err}") if err
       next err
 
 cleanup = (next) ->
-
   postgres.cleanup().then ->
-
     exec 'dropdb test', (err) ->
-
       console.log("exec error: #{err}") if err
       next err
 
 describe 'postgres', ->
-
   expectItToReturnRows = (options) ->
-
     it "returns #{options.n} objects", ->
-
       expect(do @subject).to.eventually.be.an('Array').and.have.length(options.n)
+
   expectItToBeSortable = (options) ->
-
     context 'when a sort parameter is specified', ->
-
       context 'which is invalid', ->
-
         before ->
-
           @args = [null, {wrong: 1}]
-
         it 'throws an error', ->
-
           expect(do @subject).to.be.rejectedWith(Error)
 
       context 'which is ascending', ->
-
         before ->
-
           object = {}
           object[options.column] = 1
           @args = [null, object]
 
         it "returns sorted #{options.table} in ascending order", ->
-
           expect(do @subject).to.eventually.satisfy (rows) ->
-
             _.pluck(rows, options.column)[0] == _.first(options.orderedValues)
+
       context 'which is descending', ->
         before ->
           object = {}
@@ -190,17 +160,13 @@ describe 'postgres', ->
   after cleanup
 
   describe 'sprint functions', ->
-
     beforeEach prepareSprints
     afterEach cleanupSprints
 
     describe 'findSprints', ->
-
       before ->
-
         @args = []
         @subject = ->
-
           postgres.findSprints @args...
 
       expectItToReturnRows n: 3
@@ -208,127 +174,104 @@ describe 'postgres', ->
       expectItToBeSortable table: 'sprints', column: 'color', orderedValues: ['green', 'orange', 'red']
 
       context 'when a filtering parameter is specified', ->
-
         before ->
-
           @args = [{color: 'orange'}]
+
         it 'returns only filtered sprints', ->
-
           expect(do @subject).to.eventually.have.length(1).and.satisfy (rows) ->
-
             _.first(rows).color == 'orange'
+
         context 'and another one is added', ->
-
           before ->
-
             @args = [{length: 14, "_rev": 3}]
+
           it 'returns sprints filtered by both clauses', ->
-
             expect(do @subject).to.eventually.have.length(1)
+
         context 'which is invalid', ->
-
           before ->
-
             @args = [{invalid: false}]
+
           it 'throws an error', ->
-
             expect(do @subject).to.eventually.be.rejectedWith(Error);
+
       context 'when a combination of both filter and sort parameters is specified', ->
-
         before ->
-
           @args = [{length: 14}, {'color': 1}]
+
         it 'returns filtered sorted sprints', ->
-
           expect(do @subject).to.eventually.have.length(2).and.satisfy (rows) ->
-
             _.pluck(rows, 'color')[0] == 'orange'
+
     describe 'updateSprint', ->
-
       before ->
-
         @id = 3
         @rev = 1
         @column = 'color'
         @value = 'red'
         @subject = ->
-
           postgres.updateSprint @id, @rev, @column, @value
+
       context 'when all parameters are supplied', ->
-
         before ->
-
           @args = [@id, @rev, @column, @value]
+
         it 'returns the modifed sprint', ->
-
           expect(do @subject).to.eventually.satisfy (sprint) =>
-
             sprint[@column] == @value
+
         it 'modifies the sprint in the db', ->
-
           expect(@subject().then(=> Q.nfcall(query, "SELECT * FROM sprints WHERE _id=#{@id}"))).to.eventually.satisfy (result) =>
-
             result.rows[0][@column] == @value
+
       context 'when an illegal column is specified', ->
-
         before ->
-
           @column = 'wrong'
-        it 'throws an error', ->
 
+        it 'throws an error', ->
           expect(do @subject).to.be.rejectedWith(Error)
+
       context 'when the wrong revision is specified', ->
-
         before ->
-
           @rev = @rev + 1
-        it 'throws an error', ->
 
+        it 'throws an error', ->
           expect(do @subject).be.rejectedWith(Error)
+
       context 'when a non-existent id is specified', ->
-
         before ->
-
           @id = 'wrong'
+
         it 'throws an error', ->
-
           expect(do @subject).to.be.rejectedWith(Error)
+
     describe 'findSingleSprint', ->
-
       before ->
-
         @id = '3'
         @subject = ->
-
           postgres.findSingleSprint @id
 
       do expectItToReturnOneRow
-  describe 'story functions', ->
 
+  describe 'story functions', ->
     beforeEach prepareStories
     afterEach cleanupSprints
 
     describe 'findStories', ->
-
       before ->
-
         @args = []
         @subject = ->
-
           postgres.findStories @args...
 
       expectItToReturnRows n: 3
 
       expectItToBeSortable table: 'stories', column: 'color', orderedValues: ['blue', 'green', 'yellow']
       context 'when both sorting and filtering options are specified', ->
-
         before ->
-
           @args = [{estimation: 5}, {'color': 1}]
+
         it 'returns filtered sorted stories', ->
-
           expect(do @subject).to.eventually.have.length(2).and.satisfy (rows) ->
-
             _.pluck(rows, 'color')[0] == 'green'
 
     describe 'findSingleStory', ->
@@ -619,12 +562,10 @@ describe 'postgres', ->
             expect(do @subject).to.be.rejectedWith(Error)
 
         context 'when no ids are specified', ->
-
           before ->
-
             @args[0] = null
-          it 'returns the calculations for all stories', ->
 
+          it 'returns the calculations for all stories', ->
             expect(do @subject).to.eventually.deep.equal([
               ["1", [
                 ["2013-01-01", 4],
@@ -638,69 +579,58 @@ describe 'postgres', ->
                 ["2013-01-01",5]
               ]]
             ])
+
         context 'when empty stories are specified', ->
-
           before ->
-
             @args[0] = ['3']
-          it 'returns the estimation for those stories', ->
 
+          it 'returns the estimation for those stories', ->
             expect(do @subject).to.eventually.deep.equal([['3', [['2013-01-01', 5]]]])
     describe 'task count', ->
-
       beforeEach prepareTasks
       afterEach cleanupSprints
 
       describe 'getStoriesTaskCount', ->
-
         before ->
-
           @args = [['1', '2']]
           @subject = ->
-
             postgres.getStoriesTaskCount @args...
+
         it 'returns the number of tasks in the specified stories', ->
-
           expect(do @subject).to.eventually.deep.equal([['1', 3], ['2', 1]])
+
         context 'when faulty ids are specified', ->
-
           before ->
-
             @args = [['wrong', 'false']]
+
           it 'throws an error', ->
-
             expect(do @subject).to.be.rejectedWith(Error)
+
         context 'when no ids are specified', ->
-
           before ->
-
             @args = []
+
           it 'returns calculations for all stories', ->
-
             expect(do @subject).to.eventually.deep.equal([['1', 3], ['2', 1], ['3', 0]])
+
         context 'when empty stories are specified', ->
-
           before ->
-
             @args[0] = ['3']
+
           it 'returns 0 for that story', ->
-
             expect(do @subject).to.eventually.deep.equal([['3', 0]])
-    describe 'times spent', ->
 
+    describe 'times spent', ->
       beforeEach prepareTimesSpent
       afterEach cleanupSprints
 
       describe 'getStoriesTimeSpent', ->
-
         before ->
-
           @args = [['1', '2'], {start: '2014-01-01', end: '2014-01-14'}]
           @subject = ->
-
             postgres.getStoriesTimeSpent @args...
-        it 'returns correct calculations', ->
 
+        it 'returns correct calculations', ->
           expect(do @subject).to.eventually.deep.equal([
             ['1', [
               ['2014-01-01', 2],
@@ -710,14 +640,12 @@ describe 'postgres', ->
               ['2014-01-03', 1],
             ]]
           ])
+
         context 'when no ids are specified', ->
-
           before ->
-
             @args[0] = null
 
           it 'returns calculations for all stories', ->
-
             expect(do @subject).to.eventually.deep.equal([
               ['1', [
                 ['2014-01-01', 2],
@@ -729,19 +657,17 @@ describe 'postgres', ->
               ['3', [
               ]]
             ])
+
         context 'when faulty ids are specified', ->
-
           before ->
-
             @args = [['wrong', 'false'], {start: '2014-01-01', end: '2014-01-14'}]
+
           it 'throws an error', ->
-
             expect(do @subject).to.be.rejectedWith(Error)
+
         context 'when empty stories are specified', ->
-
           before ->
-
             @args[0] = ['3']
-          it 'returns 0 for that story', ->
 
+          it 'returns 0 for that story', ->
             expect(do @subject).to.eventually.deep.equal([['3', []]])
