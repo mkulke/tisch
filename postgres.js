@@ -449,7 +449,7 @@ var updateIndexedTaskProperty = function(id, rev, property, value, index) {
 	var verify = function() {
 		return Q.fcall(function() {
 			if (!_.contains([COLUMNS.REMAINING_TIME, COLUMNS.TIME_SPENT], property)) {
-				throw new Error('querying column ' + property + ' is not allowed on table');
+				throw ERRORS.ILLEGAL_COLUMN;
 			}
 		});
 	};
@@ -606,7 +606,7 @@ exports.findSingleTask = findSingleTask;
 exports.removeTask = partial(_remove, 'tasks');
 exports.updateSprint = partial(_update, 'sprints');
 exports.updateStory = partial(_update, 'stories');
-exports.updateTaskProperty = partial(_update, 'tasks');
+exports.updateTask = partial(_update, 'tasks');
 exports.updateIndexedTaskProperty = updateIndexedTaskProperty;
 exports.getStoriesRemainingTime = getStoriesRemainingTime;
 exports.getStoriesTimeSpent = getStoriesTimeSpent;
