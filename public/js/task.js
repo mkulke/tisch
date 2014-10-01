@@ -1,10 +1,27 @@
 var model = (function () {
   var load = function (id, doneFn) {
-    $.get('/api/task/' + id, doneFn);
+    $.get('/api/task/' + id)
+    .done(doneFn)
+    .fail(function() {
+      // TODO
+    });
   };
 
-  var persist = function(property, value) {
-    console.log('stub for persisting property ' + property + ' with value ' + value + '.');
+  var persist = function(id, rev, property, value) {
+    $.ajax({
+      type: 'PUT',
+      headers: {Rev: rev},
+      url: '/api/task/' + id + '/' + property,
+      contentType: "application/json",
+      data: JSON.stringify({value: value})
+    })
+    .done(function () {
+      console.log('done');
+      // TODO
+    })
+    .fail(function () {
+      // TODO
+    });
   };
 
   return {
@@ -15,7 +32,9 @@ var model = (function () {
 
 var viewModel = (function() {
   var map = function(data) {
-    var mapping, observables;
+    var mapping, observables, self;
+
+    self = this;
 
     mapping = {
       copy: ['_id', '_rev'],
@@ -31,7 +50,9 @@ var viewModel = (function() {
         }
       });
 
-      value.subscribe(_.partial(model.persist, key));
+      value.subscribe(function (newValue) {
+        model.persist(self._id, self._rev, key, newValue);
+      });
     });
     _.extend(this, observables);
   };
