@@ -12,5 +12,6 @@ test/functional/*.coffee.js
 
 test/functional/*.png
 
+public/vendor
 node_modules
 breadcrumb
