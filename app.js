@@ -8,6 +8,8 @@ var app = express();
 app.set('view engine', 'jade');
 
 app.use(express.static(__dirname + '/public/vendor'));
+app.use(express.static(__dirname + '/public/js'));
+app.use(express.static(__dirname + '/public/css'));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
@@ -19,6 +21,5 @@ app.use('/api', sprints);
 app.get('/app', function(req, res){
   res.render('task', {test: 'My string'});
 });
-
 
 module.exports = app;
