@@ -1,5 +1,5 @@
 var model = (function () {
-  var load = function (id, doneFn) {
+  var loadTask = function (id, doneFn) {
     $.get('/api/task/' + id)
     .done(doneFn)
     .fail(function() {
@@ -7,7 +7,7 @@ var model = (function () {
     });
   };
 
-  var persist = function(id, rev, property, value) {
+  var persist = function(id, rev, property, value, doneFn) {
     $.ajax({
       type: 'PUT',
       headers: {Rev: rev},
@@ -15,26 +15,30 @@ var model = (function () {
       contentType: "application/json",
       data: JSON.stringify({value: value})
     })
-    .done(function () {
-      console.log('done');
-      // TODO
-    })
-    .fail(function () {
-      // TODO
+    .done(doneFn)
+    .fail(function (jqXHR, textStatus, errorThrown) {
+      viewModel.error.title('Problem');
+      viewModel.error.message('Could not update the task on the backend: ' + jqXHR.responseText + '.');
+      $('#error-modal').modal();
     });
   };
 
   return {
-    load: load,
+    loadTask: loadTask,
     persist: persist
   };
 })();
 
 var viewModel = (function() {
-  var map = function(data) {
-    var mapping, observables, self;
+  var task = {};
 
-    self = this;
+  var error = {
+    title: ko.observable('Test'),
+    message: ko.observable('Toast')
+  };
+
+  var mapTask = function(data) {
+    var mapping, observables;
 
     mapping = {
       copy: ['_id', '_rev'],
@@ -51,20 +55,24 @@ var viewModel = (function() {
       });
 
       value.subscribe(function (newValue) {
-        model.persist(self._id, self._rev, key, newValue);
+        model.persist(task._id, task._rev, key, newValue, function() {
+          task._rev += 1;
+        });
       });
     });
-    _.extend(this, observables);
+    _.extend(task, observables);
   };
 
   return {
-    map: map
+    error: error,
+    mapTask: mapTask,
+    task: task
   };
 })();
 
 $(function () {
-  model.load(1, function (data) {
-    viewModel.map(data);
+  model.loadTask(1, function (data) {
+    viewModel.mapTask(data);
     ko.applyBindings(viewModel);
   });
 });
