@@ -1,45 +1,32 @@
 module.exports = function(grunt) {
-
   grunt.initConfig({
-
     env: {
-
       test: {
-
         NODE_ENV: 'test'
       }
     },
     pkg: grunt.file.readJSON('package.json'),
     ghost: {
-
       task: {
-
         filesSrc: ['test/functional/task.coffee.js']
       },
       sprint: {
-
         filesSrc: ['test/functional/sprint.coffee.js']
       },
       story: {
-
         filesSrc: ['test/functional/story.coffee.js']
       },
       rt: {
-
         filesSrc: ['test/functional/rt.coffee.js']
       }
     },
     coffee: {
-
       compile: {
-
         options: {
-
           sourceMap: true,
           bare: true
         },
         files: {
-
           'coffee/task.coffee.js': 'coffee/task.coffee',
           'coffee/story.coffee.js': 'coffee/story.coffee',
           'coffee/sprint.coffee.js': 'coffee/sprint.coffee',
@@ -61,53 +48,41 @@ module.exports = function(grunt) {
       },
     },
     watch: {
-
       coffee: {
-
         files: ['coffee/*.coffee', 'test/unit/*.coffee', 'test/functional/*.coffee'],
         tasks: 'coffee'
       }
     },
     mochaTest: {
-
       pg: {
-
         options: {
-
           reporter: 'spec'
         },
         src: ['test/unit/postgres.coffee.js']
       }
     },
     mocha_phantomjs: {
-
       all: ['test/unit/*.html'],
       task: ['test/unit/task.html'],
       story: ['test/unit/story.html'],
       sprint: ['test/unit/sprint.html']
     },
     shell: {
-
       create_db_objects: {
-
         command: 'mongo test test/functional/create_db_objects.js',
         options: {
-
           failOnError: true
         }
       },
       cleanup_db_objects: {
-
         command: 'mongo test test/functional/cleanup_db_objects.js',
         options: {
-
           failOnError: true
         }
       },
     },
     jshint: {
-
-      src: ['*.js', 'lib/*.js', 'routes/*.js']
+      src: ['*.js', 'lib/*.js', 'routes/*.js', 'public/js/*.js']
     },
   });
 
