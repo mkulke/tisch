@@ -15,3 +15,13 @@ block content
             .form-control-wrapper
               textarea(rows="5", data-bind="textInput: description").form-control.empty#textAreaDescription
             span.help-block Add the task description here.
+
+block js
+  script(src='/task.js')
+  script.
+    $(function () {
+      model.loadTask(#{id}, function (data) {
+        viewModel.mapTask(data);
+        ko.applyBindings(viewModel);
+      });
+    });

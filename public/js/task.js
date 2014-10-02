@@ -72,16 +72,9 @@ var viewModel = (function() {
   ViewModel.prototype = {
     constructor: ViewModel,
     error: error,
-    task: task,
-    mapTask: mapTask
+    mapTask: mapTask,
+    task: task
   };
 
   return new ViewModel();
 })();
-
-$(function () {
-  model.loadTask(1, function (data) {
-    viewModel.mapTask(data);
-    ko.applyBindings(viewModel);
-  });
-});

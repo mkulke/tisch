@@ -52,11 +52,13 @@ html
           .modal-footer
             button(type='button', data-dismiss='modal').btn.btn-primary Close
     block content
-    script(src="/knockout/dist/knockout.js")
-    script(src="knockout-mapping/build/output/knockout.mapping-latest.js")
-    script(src="/jquery/dist/jquery.min.js")
-    script(src="/underscore/underscore-min.js")
-    script(src="/underscore-contrib/dist/underscore-contrib.min.js")
-    script(src="/bootstrap/dist/js/bootstrap.min.js")
+
+    script(src='/knockout/dist/knockout.js')
+    script(src='/knockout-mapping/build/output/knockout.mapping-latest.js')
+    script(src='/jquery/dist/jquery.min.js')
+    script(src='/underscore/underscore-min.js')
+    script(src='/underscore-contrib/dist/underscore-contrib.min.js')
+    script(src='/bootstrap/dist/js/bootstrap.min.js')
     script(src='/utils.js')
-    script(src='/task.js')
+
+    block js

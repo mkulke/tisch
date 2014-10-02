@@ -18,8 +18,8 @@ app.use('/api', tasks);
 app.use('/api', stories);
 app.use('/api', sprints);
 
-app.get('/app', function(req, res){
-  res.render('task', {test: 'My string'});
+app.get('/app/task/:id', function(req, res){
+  res.render('task', {id: req.params.id});
 });
 
 module.exports = app;
