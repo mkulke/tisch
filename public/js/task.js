@@ -27,7 +27,7 @@ var model = (function () {
 
   ajaxMixin.extend(Model.prototype);
 
-  return new Model;
+  return new Model();
 })();
 
 var viewModel = (function() {
@@ -76,7 +76,7 @@ var viewModel = (function() {
     mapTask: mapTask
   };
 
-  return new ViewModel;
+  return new ViewModel();
 })();
 
 $(function () {

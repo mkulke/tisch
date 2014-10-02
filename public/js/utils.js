@@ -1,5 +1,5 @@
 var ajaxMixin = (function() {
-	var handleError = function (jqXHR, textStatus, errorThrown) {
+  var handleError = function (jqXHR, textStatus, errorThrown) {
     var message;
 
     if (jqXHR.status === 0) {
@@ -21,11 +21,11 @@ var ajaxMixin = (function() {
     viewModel.error.title('Problem');
     viewModel.error.message(message);
     $('#error-modal').modal();
-	}
+  };
 
-	return {
+  return {
     extend: function(proto) {
-    	proto.handleError = handleError;
-  	}
-	};
+      proto.handleError = handleError;
+    }
+  };
 })();
