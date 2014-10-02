@@ -1,58 +1,49 @@
 var model = (function () {
+  var Model = function () {};
+
   var loadTask = function (id, doneFn) {
     $.get('/api/task/' + id)
     .done(doneFn)
-    .fail(function() {
-      // TODO
-    });
+    .fail(this.handleError);
   };
 
   var persist = function(id, rev, property, value, doneFn) {
     $.ajax({
       type: 'PUT',
       headers: {Rev: rev},
-      url: '/api/tasik/' + id + '/' + property,
+      url: '/api/task/' + id + '/' + property,
       contentType: "application/json",
       data: JSON.stringify({value: value})
     })
     .done(doneFn)
-    .fail(function (jqXHR, textStatus, errorThrown) {
-      var message;
-
-      if (jqXHR.status === 0) {
-        message = 'Could not connect to backend. Verify network.';
-      } else if (jqXHR.status == 404) {
-        message = 'Requested resource not found.';
-      } else if (jqXHR.status == 500) {
-        message = jqXHR.responseText + '.';
-      } else if (errorThrown === 'parsererror') {
-        message = 'JSON parsing error';
-      } else if (errorThrown === 'timeout') {
-        message = 'Connection to backend timed out.';
-      } else if (exception === 'abort') {
-        message = 'The backend transaction has been aborted by the client';
-      } else {
-        message = 'Uncaught Error (' + jqXHR.responseText + ').';
-      }
-
-      viewModel.error.title('Problem');
-      viewModel.error.message(message);
-      $('#error-modal').modal();
-    });
+    .fail(this.handleError);
   };
 
-  return {
+  Model.prototype = {
+    constructor: Model,
     loadTask: loadTask,
     persist: persist
   };
+
+  ajaxMixin.extend(Model.prototype);
+
+  return new Model;
 })();
 
 var viewModel = (function() {
+  var ViewModel = function() {};
+
   var task = {};
 
   var error = {
-    title: ko.observable('Test'),
-    message: ko.observable('Toast')
+    title: ko.observable(),
+    message: ko.observable()
+  };
+
+  var persist = function (key, newValue) {
+    model.persist(task._id, task._rev, key, newValue, function() {
+      task._rev += 1;
+    });
   };
 
   var mapTask = function(data) {
@@ -72,20 +63,20 @@ var viewModel = (function() {
         }
       });
 
-      value.subscribe(function (newValue) {
-        model.persist(task._id, task._rev, key, newValue, function() {
-          task._rev += 1;
-        });
-      });
+      value.subscribe(_.partial(persist, key));
     });
+
     _.extend(task, observables);
   };
 
-  return {
+  ViewModel.prototype = {
+    constructor: ViewModel,
     error: error,
-    mapTask: mapTask,
-    task: task
+    task: task,
+    mapTask: mapTask
   };
+
+  return new ViewModel;
 })();
 
 $(function () {
