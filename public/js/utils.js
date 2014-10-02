@@ -1,4 +1,4 @@
-var ajaxMixin = (function() {
+var ajax = (function() {
   var handleError = function (jqXHR, textStatus, errorThrown) {
     var message;
 
@@ -24,8 +24,6 @@ var ajaxMixin = (function() {
   };
 
   return {
-    extend: function(proto) {
-      proto.handleError = handleError;
-    }
+    handleError: handleError
   };
 })();

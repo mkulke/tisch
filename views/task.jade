@@ -1,8 +1,8 @@
 extends layout
 
 block content
-  div(data-bind='with: task').container
-    form.form-horizontal
+  div(data-bind='if: task._id').container
+    form(data-bind='with: task').form-horizontal
       fieldset
         legend Legend
         .form-group
@@ -20,8 +20,7 @@ block js
   script(src='/task.js')
   script.
     $(function () {
-      model.loadTask(#{id}, function (data) {
-        viewModel.mapTask(data);
+      model.retrieve(#{id}, viewModel.mapTask, function() {
         ko.applyBindings(viewModel);
       });
     });

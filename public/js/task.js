@@ -1,10 +1,9 @@
 var model = (function () {
-  var Model = function () {};
-
-  var loadTask = function (id, doneFn) {
+  var retrieve = function (id, doneFn, alwaysFn) {
     $.get('/api/task/' + id)
     .done(doneFn)
-    .fail(this.handleError);
+    .fail(ajax.handleError)
+    .always(alwaysFn);
   };
 
   var persist = function(id, rev, property, value, doneFn) {
@@ -12,28 +11,21 @@ var model = (function () {
       type: 'PUT',
       headers: {Rev: rev},
       url: '/api/task/' + id + '/' + property,
-      contentType: "application/json",
+      contentType: 'application/json',
       data: JSON.stringify({value: value})
     })
     .done(doneFn)
-    .fail(this.handleError);
+    .fail(ajax.handleError);
   };
 
-  Model.prototype = {
-    constructor: Model,
-    loadTask: loadTask,
+  return {
+    retrieve: retrieve,
     persist: persist
   };
-
-  ajaxMixin.extend(Model.prototype);
-
-  return new Model();
 })();
 
 var viewModel = (function() {
-  var ViewModel = function() {};
-
-  var task = {};
+  var task = {}; //ko.observable(false);
 
   var error = {
     title: ko.observable(),
@@ -59,7 +51,7 @@ var viewModel = (function() {
       value.extend({
         rateLimit: {
           timeout: 500,
-          method: "notifyWhenChangesStop"
+          method: 'notifyWhenChangesStop'
         }
       });
 
@@ -69,12 +61,9 @@ var viewModel = (function() {
     _.extend(task, observables);
   };
 
-  ViewModel.prototype = {
-    constructor: ViewModel,
+  return {
     error: error,
     mapTask: mapTask,
     task: task
   };
-
-  return new ViewModel();
 })();
