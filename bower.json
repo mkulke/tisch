@@ -21,6 +21,7 @@
     "underscore": "~1.7.0",
     "knockout-mapping": "~2.4.1",
     "bootswatch": "~3.2.0+4",
-    "underscore-contrib": "~0.3.0"
+    "underscore-contrib": "~0.3.0",
+    "bootstrap-datepicker": "~1.3.0"
   }
 }

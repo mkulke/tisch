@@ -18,8 +18,12 @@ app.use('/api', tasks);
 app.use('/api', stories);
 app.use('/api', sprints);
 
-app.get('/app/task/:id', function(req, res){
+app.get('/app/task/:id', function (req, res) {
   res.render('task', {id: req.params.id});
+});
+
+app.get('/app/component/:name', function (req, res) {
+  res.render(req.params.name);
 });
 
 module.exports = app;

@@ -5,3 +5,11 @@ textarea {
 .modal-header h4 {
 	color: #fff;
 }
+
+.datepicker table tr td {
+  border-radius: 50%;
+}
+
+.datepicker table tr td.active {
+  font-weight: 800;
+}

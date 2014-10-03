@@ -4,19 +4,28 @@ block content
   div(data-bind='if: task._id').container
     form(data-bind='with: task').form-horizontal
       fieldset
-        legend Legend
+        legend Task properties
         .form-group
-          label(for="inputSummary").col-lg-2.control-label Summary
+          label(for='inputSummary').col-lg-2.control-label Summary
           .col-lg-10
-            input(type="text", placeholder="Summary", data-bind="textInput: summary").form-control#inputSummary
+            input(type='text', placeholder='Summary', data-bind='textInput: summary').form-control#inputSummary
         .form-group
-          label(for="textAreaDescription").col-lg-2.control-label Description
+          label(for='textAreaDescription').col-lg-2.control-label Description
           .col-lg-10
             .form-control-wrapper
-              textarea(rows="5", data-bind="textInput: description").form-control.empty#textAreaDescription
+              textarea(rows='5', data-bind='textInput: description').form-control.empty#textAreaDescription
             span.help-block Add the task description here.
+        .form-group
+          time-spent
+        .form-group
+          popover-test
 
 block js
+  script(src='/bootstrap/js/tooltip.js')
+  script(src='/bootstrap/js/popover.js')
+  script(src='/template-loader.js')
+  script(src='/components/time-spent.js')
+  script(src='/components/popover-test.js')
   script(src='/task.js')
   script.
     $(function () {
