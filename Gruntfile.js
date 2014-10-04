@@ -20,6 +20,16 @@ module.exports = function(grunt) {
         filesSrc: ['test/functional/rt.coffee.js']
       }
     },
+    less: {
+      development: {
+        options: {
+          paths: ['src/less']
+        },
+        files: {
+          'public/css/main.css': 'src/less/main.less'
+        }
+      }
+    },
     coffee: {
       compile: {
         options: {
@@ -49,8 +59,32 @@ module.exports = function(grunt) {
     },
     watch: {
       coffee: {
-        files: ['coffee/*.coffee', 'test/unit/*.coffee', 'test/functional/*.coffee'],
-        tasks: 'coffee'
+        files: [
+          // 'coffee/*.coffee',
+          'test/unit/*.coffee',
+          // 'test/functional/*.coffee',
+        ],
+        tasks: [
+          'coffee',
+        ]
+      },
+      less: {
+        files: [
+          'src/less/*.less'
+        ],
+        tasks: [
+          'less'
+        ]
+      },
+      jshint: {
+        files: [
+          'routes/*.js',
+          'public/**/*.js',
+          'lib/*.js'
+        ],
+        tasks: [
+          'jshint'
+        ]
       }
     },
     mochaTest: {
@@ -82,7 +116,7 @@ module.exports = function(grunt) {
       },
     },
     jshint: {
-      src: ['*.js', 'lib/*.js', 'routes/*.js', 'public/js/*.js']
+      src: ['*.js', 'lib/*.js', 'routes/*.js', 'public/**/*.js']
     },
   });
 
@@ -93,6 +127,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-ghost');
   grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-env');
 
   grunt.registerTask('server', function() {
@@ -112,4 +147,6 @@ module.exports = function(grunt) {
   grunt.registerTask('functional', ['env:test', 'server', 'functional_task', 'functional_story', 'functional_sprint', 'functional_rt']);
   grunt.registerTask('pg', ['env:test', 'mochaTest:pg']);
   grunt.registerTask('test', ['jshint', 'coffee', 'pg', 'mocha_phantomjs']);
+
+  grunt.registerTask('default', ['less', 'jshint']);
 };

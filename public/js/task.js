@@ -25,9 +25,7 @@ var model = (function () {
 })();
 
 var viewModel = (function() {
-  var task = {}; //ko.observable(false);
-
-  task.userRating = ko.observable(null);
+  var task = {};
 
   var error = {
     title: ko.observable(),
