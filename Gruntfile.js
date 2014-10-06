@@ -79,7 +79,7 @@ module.exports = function(grunt) {
       jshint: {
         files: [
           'routes/*.js',
-          'public/**/*.js',
+          'public/js/**/*.js',
           'lib/*.js'
         ],
         tasks: [
@@ -116,7 +116,7 @@ module.exports = function(grunt) {
       },
     },
     jshint: {
-      src: ['*.js', 'lib/*.js', 'routes/*.js', 'public/**/*.js']
+      src: ['*.js', 'lib/*.js', 'routes/*.js', 'public/js/**/*.js']
     },
   });
 
