@@ -90,7 +90,7 @@ module.exports = function(grunt) {
     mochaTest: {
       pg: {
         options: {
-          reporter: 'spec'
+          reporter: 'tap'
         },
         src: ['test/unit/postgres.coffee.js']
       }

@@ -159,7 +159,7 @@ describe 'postgres', ->
   before prepare
   after cleanup
 
-  describe 'sprint functions', ->
+  describe 'sprint functions:', ->
     beforeEach prepareSprints
     afterEach cleanupSprints
 
@@ -253,7 +253,7 @@ describe 'postgres', ->
 
       do expectItToReturnOneRow
 
-  describe 'story functions', ->
+  describe 'story functions:', ->
     beforeEach prepareStories
     afterEach cleanupSprints
 
@@ -281,7 +281,7 @@ describe 'postgres', ->
           postgres.findSingleSprint @id
 
       do expectItToReturnOneRow
-  describe 'task functions', ->
+  describe 'task functions:', ->
     beforeEach prepareTasks
     afterEach cleanupSprints
 
@@ -305,7 +305,7 @@ describe 'postgres', ->
       it 'returns an object with an empty time spent property', ->
         expect(do @subject).to.eventually.have.property('time_spent').to.deep.equal {}
 
-      it 'returns an object with correct _id and _rev propertie', ->
+      it 'returns an object with correct _id and _rev properties', ->
         expect(do @subject).to.eventually.satisfy (result) ->
           expect(result).to.have.property '_id'
           expect(result).to.have.property '_rev', 1
@@ -531,7 +531,7 @@ describe 'postgres', ->
           it 'throws an exception', ->
             expect(do @subject).to.eventually.be.rejectedWith(Error)
 
-  describe 'calculation functions', ->
+  describe 'calculation functions:', ->
     describe 'remaining times', ->
       beforeEach prepareRemainingTimes
       afterEach cleanupSprints

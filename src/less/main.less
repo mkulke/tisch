@@ -6,10 +6,47 @@ textarea {
   color: #fff;
 }
 
-.datepicker table tr td {
-  border-radius: 50%;
+.datepicker {
+  padding: 6px;
+  border-radius: 3px !important;
+  border: 0px !important;
 
-  .active {
-    font-weight: 800;
+  table tr td {
+    border-radius: 50%;
+
+    .active {
+      font-weight: 800;
+    }
+  }
+
+  &-dropdown {
+    &:before {
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-bottom: 10px solid #ccc;
+    }
+
+    &:after {
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-bottom: 9px solid #fff;
+    }
+
+    &.datepicker-orient-left:before { left: 24px; }
+    &.datepicker-orient-left:after {
+      left: 25px !important;
+    }
+    &.datepicker-orient-right:before  { right: 9px; }
+    &.datepicker-orient-right:after { right: 10px; }
+    &.datepicker-orient-top:before { top: -10px; }
+    &.datepicker-orient-top:after { top: -9px; }
+    &.datepicker-orient-bottom:before {
+      bottom: -10px;
+      border-top: 10px solid #ccc;
+    }
+    &.datepicker-orient-bottom:after {
+      border-top: 10px solid #fff;
+      bottom: -9px !important;
+    }
   }
 }
