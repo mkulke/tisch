@@ -17,10 +17,10 @@
   ],
   "dependencies": {
     "knockout": "~3.2.0",
-    "bootstrap": "~3.2.0",
+    "bootstrap": "~3.3.1",
     "underscore": "~1.7.0",
     "knockout-mapping": "~2.4.1",
-    "bootswatch": "~3.2.0+4",
+    "bootswatch": "~3.3.1",
     "underscore-contrib": "~0.3.0",
     "bootstrap-datepicker": "mkulke/bootstrap-datepicker#~1.4.1"
   }

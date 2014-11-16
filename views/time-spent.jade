@@ -1,6 +1,9 @@
-label(for='time-spent').col-lg-2.control-label Time spent
-.col-lg-10
+label(for='time-spent-index').col-lg-2.control-label Time spent
+.col-lg-5
   .input-group.date
-    input(type='text', placeholder='YYYY-MM-DD').form-control#time-spent
+    input(type='text', placeholder='YYYY-MM-DD').form-control#time-spent-index
     span.input-group-addon
       i.fa.fa-calendar.fa-lg
+.col-lg-5
+  div(data-bind='css: { "has-error": timeSpentValue.hasError }')
+    input(type='text', placeholder='0h', data-bind='textInput: timeSpentValue').form-control#time-spent-value
